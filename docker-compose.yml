@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./api-gateway/.env
+    depends_on:
+      - auth-service
+    volumes:
+      - ./api-gateway/logs:/app/logs
+    networks:
+      - shared
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    env_file:
+      - ./auth-service/.env
+    volumes:
+     - profile_image_data:/app/uploads
+     - ./auth-service/uploads/profiles:/app/uploads/profiles
+    networks:
+      - shared
+
+  auth-db:
+    image: postgres:alpine
+    container_name: auth-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=devhuddle_auth
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - auth_data:/var/lib/postgresql/data
+    networks:
+      - shared
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    volumes:
+      - redis_data:/data
+    networks:
+      - shared
+
+volumes:
+  auth_data:
+  profile_image_data:
+  redis_data:
+
+networks:
+  shared:
+    driver: bridge
