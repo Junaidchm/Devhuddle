@@ -1,12 +1,10 @@
-import {
-  ISessionRepository,
-  SessionRepository,
-} from "../repositories/session.repository";
+import { Request, Response } from "express";
 import {
   IUserRepository,
   UserRepository,
 } from "../repositories/user.repository";
 import {
+  jwtAccessToken,
   LoginRequest,
   OAuthUser,
   PasswordResetConfirmRequest,
@@ -22,28 +20,25 @@ import {
   sendVerificationEmail,
 } from "../utils/email.util";
 import { CustomError } from "../utils/error.util";
-import {
-  generateAccessToken,
-  generatePasswordResetToken,
-  generateRefreshToken,
-  verifyPasswordResetToken,
-} from "../utils/jwt.util";
+
 import logger from "../utils/logger.util";
 import { generateOTP, storeOTP, verifyOTP } from "../utils/otp.util";
 import jwt from "jsonwebtoken";
 import path from "path";
 import fs from "fs";
+import { setAuthToken } from "../utils/jwtHandler";
+import {
+  generatePasswordResetToken,
+  verifyPasswordResetToken,
+} from "../utils/jwt.util";
+import { HttpStatus } from "../constents/httpStatus";
+import { Messages } from "../constents/reqresMessages";
 
 export class AuthService {
   private userRepository: IUserRepository;
-  private sessionRepository: ISessionRepository;
 
-  constructor(
-    userRepository: IUserRepository = new UserRepository(),
-    sessionRepository: ISessionRepository = new SessionRepository()
-  ) {
+  constructor(userRepository: IUserRepository = new UserRepository()) {
     this.userRepository = userRepository;
-    this.sessionRepository = sessionRepository;
   }
 
   ////////// user Signup
@@ -86,7 +81,10 @@ export class AuthService {
 
   //////////// verify otp
 
-  async verifyOTP({ email, otp }: VerifyOTPRequest): Promise<TokenResponse> {
+  async verifyOTP(
+    { email, otp }: VerifyOTPRequest,
+    res: Response
+  ): Promise<User> {
     try {
       const isValid = await verifyOTP(email, otp);
       if (!isValid) {
@@ -94,12 +92,9 @@ export class AuthService {
       }
 
       const user = await this.userRepository.updateEmailVerified(email, true);
-      const accessToken = generateAccessToken(user);
-      const refreshToken = await generateRefreshToken(user.id);
-      await this.sessionRepository.createSession(user.id, refreshToken);
 
       logger.info("Email verified", { email });
-      return { accessToken };
+      return user;
     } catch (err: any) {
       throw err instanceof CustomError
         ? err
@@ -145,11 +140,14 @@ export class AuthService {
 
   //////////// user login
 
-  async login({ email, password }: LoginRequest): Promise<TokenResponse> {
+  async login({ email, password }: LoginRequest): Promise<User> {
     try {
       const user = await this.userRepository.findByEmail(email);
-      if(user && user.email === email && !password) {
-        throw new CustomError(500, "You are already Loged In , please login using google");
+      if (user && user.email === email && !user.password) {
+        throw new CustomError(
+          500,
+          "This account was created using Google. Please login using Google."
+        );
       }
       if (
         !user ||
@@ -161,12 +159,8 @@ export class AuthService {
         throw new CustomError(403, "Email not verified");
       }
 
-      const accessToken = generateAccessToken(user);
-      const refreshToken = await generateRefreshToken(user.id);
-      await this.sessionRepository.createSession(user.id, refreshToken);
-
       logger.info("User logged in", { email });
-      return { accessToken };
+      return user;
     } catch (err: any) {
       throw err instanceof CustomError
         ? err
@@ -178,11 +172,12 @@ export class AuthService {
   async requestPasswordReset({ email }: PasswordResetRequest): Promise<void> {
     try {
       const user = await this.userRepository.findByEmail(email);
+
       if (!user) {
         logger.warn("Password reset requested for non-existent email", {
           email,
         });
-        return;
+        throw new CustomError(404, "No account found with this email address.");
       }
 
       const token = await generatePasswordResetToken(email);
@@ -221,24 +216,36 @@ export class AuthService {
   }
 
   ///////// handle authLogin
-  async handleOAuthLogin(oauthUser: OAuthUser): Promise<TokenResponse> {
+  async handleOAuthLogin(oauthUser: OAuthUser, res: Response): Promise<User> {
     try {
       let user = await this.userRepository.findByEmail(oauthUser.email);
       if (!user) {
         user = await this.userRepository.createOAuthUser(oauthUser);
         logger.info("OAuth user created", { email: oauthUser.email });
       }
-
-      const accessToken = generateAccessToken(user);
-      const refreshToken = await generateRefreshToken(user.id);
-      await this.sessionRepository.createSession(user.id, refreshToken);
-
       logger.info("OAuth login successful", { email: oauthUser.email });
-      return { accessToken };
+      return user;
     } catch (err: any) {
       throw err instanceof CustomError
         ? err
         : new CustomError(500, "OAuth login failed");
+    }
+  }
+
+  //////// verify User
+  async verifyUser(email: string): Promise<User> {
+    try {
+      const user = await this.userRepository.findByEmail(email);
+
+      if (!user) {
+        throw new CustomError(HttpStatus.NOT_FOUND, Messages.USER_NOT_FOUND);
+      }
+
+      return user;
+    } catch (err: any) {
+      throw err instanceof CustomError
+        ? err
+        : new CustomError(500, "Refresh creation faild");
     }
   }
 
@@ -296,7 +303,7 @@ export class AuthService {
       yearsOfExperience,
       jobTitle,
       company,
-      profilePicture : profilePicturePath,
+      profilePicture: profilePicturePath,
     };
 
     // Remove undefined fields
@@ -305,7 +312,10 @@ export class AuthService {
     );
 
     // Update user
-    const updatedUser = await this.userRepository.updateProfile(userId,filteredFields);
+    const updatedUser = await this.userRepository.updateProfile(
+      userId,
+      filteredFields
+    );
 
     return {
       id: updatedUser.id,

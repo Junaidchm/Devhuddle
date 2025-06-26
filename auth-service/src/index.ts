@@ -33,7 +33,6 @@ app.get("/health", (req, res) => {
 
 app.use("/", authRoutes);
 
-
 // Serve static files from uploads/profiles
 const uploadPath = path.join(process.cwd(), "uploads");
 logger.info("Serving static files from", { cwd: process.cwd(), uploadPath });
