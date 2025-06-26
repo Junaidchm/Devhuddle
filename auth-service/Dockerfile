@@ -1,12 +1,7 @@
-# Base image
-FROM node:20-alpine3.18 AS base
-
-# Build stage
-FROM base AS builder
+FROM node:20-alpine3.18
 
 WORKDIR /app
 
-# Copy package files and install dependencies
 COPY package*.json ./
 COPY prisma ./prisma
 COPY tsconfig.json ./
@@ -23,22 +18,8 @@ RUN npx prisma generate
 # Build the app
 RUN npm run build
 
-# Production stage
-FROM base AS runner
-
-WORKDIR /app
-
-# Copy only what's needed for running
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/dist ./dist
-
-# Install only production dependencies (optional if needed)
-# RUN npm install --omit=dev
-
 # Expose port
 EXPOSE 3001
 
 # Run migration and start app
-CMD ["sh", "-c", "npx prisma migrate dev --name init && npm start"]
+CMD ["sh", "-c", "npx prisma migrate dev --name init && npm run dev"]

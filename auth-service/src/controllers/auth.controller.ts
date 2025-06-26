@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { AuthService } from "../services/auth.service";
 import {
+  jwtAccessToken,
   LoginRequest,
   OAuthUser,
   PasswordResetConfirmRequest,
@@ -14,9 +15,13 @@ import { HttpStatus } from "../constents/httpStatus";
 import logger from "../utils/logger.util";
 import { verifyAccessToken, verifyRefreshToken } from "../utils/jwt.util";
 import passport from "../config/passport.config";
+import { User } from "../generated/prisma";
+import { setAccesToken, setAuthToken } from "../utils/jwtHandler";
+import { Messages } from "../constents/reqresMessages";
+import redisClient from "../utils/redis.util";
 
 export class AuthController {
-  private   authService: AuthService;
+  private authService: AuthService;
   constructor(authservice: AuthService = new AuthService()) {
     this.authService = authservice;
   }
@@ -52,15 +57,16 @@ export class AuthController {
         throw new CustomError(400, "Email and OTP are required");
       }
 
-      const result: TokenResponse = await this.authService.verifyOTP({
-        email,
-        otp,
-      });
-      res.cookie("accessToken", result.accessToken, {
-        httpOnly: true,
-        sameSite: "strict",
-        maxAge: 15 * 60 * 1000,
-      });
+      const user: User = await this.authService.verifyOTP(
+        {
+          email,
+          otp,
+        },
+        res
+      );
+
+      await setAuthToken(user, res);
+
       res.status(200).json({ message: "Email verified successfully" });
     } catch (err: any) {
       sendErrorResponse(
@@ -79,15 +85,13 @@ export class AuthController {
         throw new CustomError(400, "Email and password are required");
       }
 
-      const result: TokenResponse = await this.authService.login({
+      const user: User = await this.authService.login({
         email,
         password,
       });
-      res.cookie("accessToken", result.accessToken, {
-        httpOnly: true,
-        sameSite: "strict",
-        maxAge: 15 * 60 * 1000,
-      });
+
+      await setAuthToken(user, res);
+
       res.status(200).json({ message: "Login successful" });
     } catch (err: any) {
       sendErrorResponse(
@@ -117,17 +121,7 @@ export class AuthController {
 
   async getCurrentUser(req: Request, res: Response) {
     try {
-      console.log("request is comming for getting user data ....");
-      const token = req.cookies.accessToken;
-      if (!token) {
-        throw new CustomError(401, "No token provided");
-      }
-
-      const decoded = verifyAccessToken(token);
-      if (!decoded) {
-        throw new CustomError(401, "Invalid or expired token");
-      }
-
+      const decoded = req.user as jwtAccessToken;
       const user = await this.authService.getUserById(decoded.id);
 
       res.status(200).json({
@@ -230,19 +224,57 @@ export class AuthController {
     }
   }
 
+  async verifyRefreshToken(req: Request, res: Response) {
+    try {
+      const decode = req.user as jwtAccessToken;
+
+      const user: User = await this.authService.verifyUser(decode.email!);
+
+      await setAccesToken(res, user);
+      res.status(HttpStatus.OK).json({message:Messages.OK})
+    } catch (err: any) {
+      logger.error("error in verifyRefreshToken", { error: err.message });
+      sendErrorResponse(
+        res,
+        err instanceof CustomError
+          ? err
+          : { status: 500, message: "Server error" }
+      );
+    }
+  }
+
+  
+    logoutUser = async (req: Request, res: Response): Promise<void> => {
+    try {
+
+      //clear cookies
+      res.clearCookie("accessToken", {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+      });
+
+      res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+      });
+
+      res.status(HttpStatus.OK).json({ success: true, message: Messages.LOGOUT_SUCCESS});
+    } catch (error) {
+
+      console.error("error in logout user ",error);
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR)   
+         .json({message:Messages.SERVER_ERROR,success:false}); 
+    }
+  };
+
+
   async getProfile(req: Request, res: Response) {
     try {
-      console.log("request is comming for getting Profile data ....");
-      const token = req.cookies.accessToken;
-      if (!token) {
-        throw new CustomError(401, "No token provided");
-      }
-
-      const decoded = verifyAccessToken(token);
-      if (!decoded) {
-        throw new CustomError(401, "Invalid or expired token");
-      }
-
+     
+      const decoded = req.user as jwtAccessToken
+     
       const user = await this.authService.getUserById(decoded.id);
 
       res.status(200).json({
@@ -300,14 +332,12 @@ export class AuthController {
             throw new CustomError(500, "No user data received");
           }
           logger.info("Google OAuth user", { email: oauthUser.email });
-          const result: TokenResponse = await this.authService.handleOAuthLogin(
-            oauthUser
+          const user: User = await this.authService.handleOAuthLogin(
+            oauthUser,
+            res
           );
-          res.cookie("accessToken", result.accessToken, {
-            httpOnly: true,
-            sameSite: "strict",
-            maxAge: 15 * 60 * 1000,
-          });
+          await setAuthToken(user, res);
+
           res.redirect(`${process.env.FRONTEND_URL}/success`);
         } catch (err: any) {
           logger.error("Google callback processing error", {

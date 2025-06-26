@@ -73,6 +73,7 @@ const authServiceProxy = createProxyMiddleware({
 });
 
 
+
 // Apply proxy for auth routes
 app.use('/auth',authServiceProxy)
 

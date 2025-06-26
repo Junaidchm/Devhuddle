@@ -13,6 +13,7 @@ services:
     depends_on:
       - auth-service
     volumes:
+      - ./api-gateway/src:/app/src
       - ./api-gateway/logs:/app/logs
     networks:
       - shared
@@ -28,10 +29,15 @@ services:
     env_file:
       - ./auth-service/.env
     volumes:
+     - ./auth-service/src:/app/src
+     - ./auth-service/prisma:/app/prisma
      - profile_image_data:/app/uploads
      - ./auth-service/uploads/profiles:/app/uploads/profiles
+     - /app/node_modules
     networks:
       - shared
+    command: sh -c "npx prisma migrate dev --name init && npm run dev"
+
 
   auth-db:
     image: postgres:alpine

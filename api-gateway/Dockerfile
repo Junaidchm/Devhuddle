@@ -1,7 +1,4 @@
-FROM node:lts-alpine as base
-
-# stage 1 : Building image  
-FROM base as builder
+FROM node:lts-alpine
 
 WORKDIR /app
 
@@ -14,20 +11,10 @@ COPY /src ./src
 
 RUN npm run build
 
-# stage 2 : Production stage
-FROM base as runner
-
-WORKDIR /app
-
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package*.json ./
-
-RUN npm install --omit=dev
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nodejs
-USER nodejs
+# RUN addgroup --system --gid 1001 nodejs
+# RUN adduser --system --uid 1001 nodejs
+# USER nodejs
 
 EXPOSE 8080
 
-CMD [ "npm","start" ]
+CMD [ "npm","run","dev" ]
