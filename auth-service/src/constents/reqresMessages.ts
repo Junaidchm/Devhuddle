@@ -42,6 +42,6 @@ export const Messages = {
     UPDATE_PASS_SUCCESS : "successfully updated password ! kindly login with new credentials",
     LOGOUT_SUCCESS  : "logout successfully!",
     ROUTE_WILD_CARD_MESSAGE : "Endpoint not found. Please check the URL.",
-
+    INCOMPLETE_FORM: 'Please complete the form',
   };
   

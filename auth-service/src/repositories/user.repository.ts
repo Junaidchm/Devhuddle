@@ -1,8 +1,9 @@
 import prisma from "../config/prisma.config";
-import { ProfileUpdatePayload, User } from "../types/auth";
+import { Prisma, User as PrismaUser } from "@prisma/client";
 import logger from "../utils/logger.util";
 import { BaseRepository } from "./base.repository";
 import bcrypt from "bcrypt";
+import { User } from "../types/auth";
 
 export interface IUserRepository {
   findByEmail(email: string): Promise<User | null>;
@@ -19,25 +20,33 @@ export interface IUserRepository {
   createOAuthUser(oauthUser: {
     email: string;
     username: string;
-    name?: string;
+    name: string;
   }): Promise<User>;
   updatePassword(email: string, password: string): Promise<User>;
-  updateProfile(userId:string,data:Partial<User>):Promise<User>
+  updateProfile(userId: string, data: Partial<User>): Promise<User>;
 }
 
 export class UserRepository
-  extends BaseRepository<User>
+  extends BaseRepository<
+    typeof prisma.user,
+    PrismaUser,
+    Prisma.UserCreateInput,
+    Prisma.UserUpdateInput,
+    Prisma.UserWhereUniqueInput
+  >   
   implements IUserRepository
 {
   constructor() {
-    super(prisma, prisma.user);
+    super(prisma.user);
   }
 
   async findByEmail(email: string): Promise<User | null> {
     try {
       return await this.model.findUnique({ where: { email } });
-    } catch (error: any) {
-      logger.error("Error finding user by email", { error: error.message });
+    } catch (error) {
+      logger.error("Error finding user by email", {
+        error: (error as Error).message,
+      });
       throw new Error("Database error");
     }
   }
@@ -45,8 +54,10 @@ export class UserRepository
   async findByIdUser(id: string): Promise<User | null> {
     try {
       return await super.findById(id);
-    } catch (error: any) {
-      logger.error("Error finding user by id", { error: error.message });
+    } catch (error) {
+      logger.error("Error finding user by id", {
+        error: (error as Error).message,
+      });
       throw new Error("Database error");
     }
   }
@@ -54,8 +65,10 @@ export class UserRepository
   async findByUsername(username: string): Promise<User | null> {
     try {
       return await this.model.findUnique({ where: { username } });
-    } catch (error: any) {
-      logger.error("Error finding user by username", { error: error.message });
+    } catch (error) {
+      logger.error("Error finding user by username", {
+        error: (error as Error).message,
+      });
       throw new Error("Database error");
     }
   }
@@ -74,8 +87,8 @@ export class UserRepository
         name,
         password: hashedPassword,
       });
-    } catch (error: any) {
-      logger.error("Error creating user", { error: error.message });
+    } catch (error) {
+      logger.error("Error creating user", { error: (error as Error).message });
       throw new Error("Database error");
     }
   }
@@ -85,9 +98,11 @@ export class UserRepository
     password: string
   ): Promise<boolean> {
     try {
-      return await bcrypt.compare(password,userPassword);
-    } catch (error: any) {
-      logger.error("Error verifying password", { error: error.message });
+      return await bcrypt.compare(password, userPassword);
+    } catch (error) {
+      logger.error("Error verifying password", {
+        error: (error as Error).message,
+      });
       throw new Error("Password verification failed");
     }
   }
@@ -98,8 +113,10 @@ export class UserRepository
   ): Promise<User> {
     try {
       return await super.updateWhere({ email }, { emailVerified });
-    } catch (err: any) {
-      logger.error("Error updating email verification", { error: err.message });
+    } catch (error) {
+      logger.error("Error updating email verification", {
+        error: (error as Error).message,
+      });
       throw new Error("Database error");
     }
   }
@@ -108,17 +125,24 @@ export class UserRepository
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       return await super.updateWhere({ email }, { password: hashedPassword });
-    } catch (err: any) {
-      logger.error("Error updating password", { error: err.message });
+    } catch (error) {
+      logger.error("Error updating password", {
+        error: (error as Error).message,
+      });
       throw new Error("Database error");
     }
   }
 
-  async updateProfile(userId:string,data:Partial<User>) : Promise<User> {
+  async updateProfile(userId: string, data: Partial<User>): Promise<User> {
     try {
-       return await super.updateWhere({id:userId},data)
-    } catch (err:any) {
-      logger.error("Error updating Profile", { error: err.message });
+      return await super.updateWhere(
+        { id: userId },
+        data as Prisma.UserUpdateInput
+      );
+    } catch (error) {
+      logger.error("Error updating profile", {
+        error: (error as Error).message,
+      });
       throw new Error("Database error");
     }
   }
@@ -130,12 +154,14 @@ export class UserRepository
   }: {
     email: string;
     username: string;
-    name?: string;
+    name: string;
   }): Promise<User> {
     try {
       return await super.create({ email, username, name, emailVerified: true });
-    } catch (err: any) {
-      logger.error("Error creating OAuth user", { error: err.message });
+    } catch (error) {
+      logger.error("Error creating OAuth user", {
+        error: (error as Error).message,
+      });
       throw new Error("Database error");
     }
   }

@@ -4,6 +4,7 @@ import logger from "../utils/logger.util";
 import multer from "multer";
 import jwtMiddleware from "../middleware/jwt.middleware";
 import refreshTokenMiddleware from "../middleware/refreshToken";
+import { requireRole } from "../middleware/role.middleware";
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -31,7 +32,11 @@ router
   .post("/resend", authController.resendOTP.bind(authController))
   .get("/me", jwtMiddleware, authController.getCurrentUser.bind(authController))
   .post("/login", authController.login.bind(authController))
-  .post("/logout",jwtMiddleware,authController.logoutUser.bind(authController))
+  .post(
+    "/logout",
+    jwtMiddleware,
+    authController.logoutUser.bind(authController)
+  )
 
   // User authentication
   .get("/google", authController.googleAuth.bind(authController))
@@ -66,5 +71,6 @@ router
     refreshTokenMiddleware,
     authController.verifyRefreshToken.bind(authController)
   )
+
 
 export default router;

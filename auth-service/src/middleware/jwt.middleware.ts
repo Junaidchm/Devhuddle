@@ -1,34 +1,34 @@
 import { Request, Response, NextFunction } from "express";
 import logger from "../utils/logger.util";
 import { CustomError, sendErrorResponse } from "../utils/error.util";
-import { jwtAccessToken } from "../types/auth";
-import jwt from "jsonwebtoken";
 import { HttpStatus } from "../constents/httpStatus";
 import { Messages } from "../constents/reqresMessages";
+import { verifyAccessToken } from "../utils/jwt.util";
+import { checkUserBlockBlackList } from "../utils/redis.actions";
+import { clearCookies } from "../utils/jwtHandler";
 
-export default function jwtMiddleware(
+export default async function jwtMiddleware(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   const token = req.cookies.access_token;
-  console.log(token)
   if (!token) {
     logger.error("No JWT token provided");
-    throw new CustomError(401, "No token provided");
+    throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.TOKEN_NOT_FOUND);
   }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.ACCESS_TOKEN_SECRET!
-    ) as jwtAccessToken;
+    const decoded = await verifyAccessToken(token);
+    if (!decoded) {
+      throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.TOKEN_INVALID);
+    }
+    const isBlackListed = await checkUserBlockBlackList(decoded.id);
+    if (isBlackListed) {
+      clearCookies(res);
+      throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.USER_BLOCKED);
+    }
     req.user = decoded;
-
-    // if (!decoded.email || !decoded.id || !decoded.username || !decoded.role) {
-    //   console.log('hello this causing the error')
-    //   throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.TOKEN_INVALID);
-    // }
 
     next();
   } catch (err: any) {
@@ -37,7 +37,7 @@ export default function jwtMiddleware(
       res,
       err instanceof CustomError
         ? err
-        : { status: 401, message: Messages.TOKEN_INVALID }
+        : { status: HttpStatus.UNAUTHORIZED, message: Messages.TOKEN_INVALID }
     );
   }
 }
