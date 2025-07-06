@@ -1,7 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { AuthService } from "../services/auth.service";
 import {
-  jwtAccessToken,
+  jwtPayload,
+  jwtUserFilter,
   LoginRequest,
   OAuthUser,
   PasswordResetConfirmRequest,
@@ -13,12 +14,13 @@ import {
 import { CustomError, sendErrorResponse } from "../utils/error.util";
 import { HttpStatus } from "../constents/httpStatus";
 import logger from "../utils/logger.util";
-import { verifyAccessToken, verifyRefreshToken } from "../utils/jwt.util";
 import passport from "../config/passport.config";
 import { User } from "../generated/prisma";
-import { setAccesToken, setAuthToken } from "../utils/jwtHandler";
+import { clearCookies, setAccesToken, setAuthToken } from "../utils/jwtHandler"
 import { Messages } from "../constents/reqresMessages";
 import redisClient from "../utils/redis.util";
+import { generateUuid4 } from "../utils/uuid.util";
+import { setJtiAsBlackListed } from "../utils/redis.actions";
 
 export class AuthController {
   private authService: AuthService;
@@ -57,13 +59,10 @@ export class AuthController {
         throw new CustomError(400, "Email and OTP are required");
       }
 
-      const user: User = await this.authService.verifyOTP(
-        {
-          email,
-          otp,
-        },
-        res
-      );
+      const user: jwtUserFilter = await this.authService.verifyOTP({
+        email,
+        otp,
+      });
 
       await setAuthToken(user, res);
 
@@ -85,7 +84,7 @@ export class AuthController {
         throw new CustomError(400, "Email and password are required");
       }
 
-      const user: User = await this.authService.login({
+      const user: jwtUserFilter = await this.authService.login({
         email,
         password,
       });
@@ -121,7 +120,7 @@ export class AuthController {
 
   async getCurrentUser(req: Request, res: Response) {
     try {
-      const decoded = req.user as jwtAccessToken;
+      const decoded = req.user as jwtPayload;
       const user = await this.authService.getUserById(decoded.id);
 
       res.status(200).json({
@@ -186,9 +185,7 @@ export class AuthController {
   async updateProfile(req: Request, res: Response, next: NextFunction) {
     try {
       const user = req.user as OAuthUser;
-      if (!user) {
-        throw new CustomError(401, "Unauthorized");
-      }
+
       const {
         name,
         username,
@@ -226,12 +223,14 @@ export class AuthController {
 
   async verifyRefreshToken(req: Request, res: Response) {
     try {
-      const decode = req.user as jwtAccessToken;
+      const decode = req.user as jwtPayload;
 
-      const user: User = await this.authService.verifyUser(decode.email!);
+      const user: jwtUserFilter = await this.authService.verifyUser(
+        decode.email!
+      );
 
-      await setAccesToken(res, user);
-      res.status(HttpStatus.OK).json({message:Messages.OK})
+      await setAccesToken(res, user, generateUuid4());
+      res.status(HttpStatus.OK).json({ message: Messages.OK });
     } catch (err: any) {
       logger.error("error in verifyRefreshToken", { error: err.message });
       sendErrorResponse(
@@ -243,38 +242,33 @@ export class AuthController {
     }
   }
 
-  
-    logoutUser = async (req: Request, res: Response): Promise<void> => {
+  logoutUser = async (req: Request, res: Response): Promise<void> => {
     try {
-
+      const decoded = req.user as jwtPayload;
+      
+      // revoke both access and refresh tokens
+      setJtiAsBlackListed(req.cookies)
       //clear cookies
-      res.clearCookie("accessToken", {
-        httpOnly: true,
-        secure: false,
-        sameSite: "lax",
-      });
-
-      res.clearCookie("refreshToken", {
-        httpOnly: true,
-        secure: false,
-        sameSite: "lax",
-      });
-
-      res.status(HttpStatus.OK).json({ success: true, message: Messages.LOGOUT_SUCCESS});
-    } catch (error) {
-
-      console.error("error in logout user ",error);
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR)   
-         .json({message:Messages.SERVER_ERROR,success:false}); 
+      clearCookies(res);
+      
+      res
+        .status(HttpStatus.OK)
+        .json({ success: true, message: Messages.LOGOUT_SUCCESS });
+    } catch (err: any) {
+      logger.error("error in Logout user", { error: err.message });
+      sendErrorResponse(
+        res,
+        err instanceof CustomError
+          ? err
+          : { status: 500, message: "Server error" }
+      );
     }
   };
 
-
   async getProfile(req: Request, res: Response) {
     try {
-     
-      const decoded = req.user as jwtAccessToken
-     
+      const decoded = req.user as jwtPayload;
+
       const user = await this.authService.getUserById(decoded.id);
 
       res.status(200).json({
@@ -302,7 +296,6 @@ export class AuthController {
   }
 
   // google authentication
-
   googleAuth(req: Request, res: Response, next: NextFunction) {
     logger.info("Initiating Google OAuth");
     passport.authenticate("google", { scope: ["profile", "email"] }, (err) => {
@@ -332,7 +325,7 @@ export class AuthController {
             throw new CustomError(500, "No user data received");
           }
           logger.info("Google OAuth user", { email: oauthUser.email });
-          const user: User = await this.authService.handleOAuthLogin(
+          const user: jwtUserFilter = await this.authService.handleOAuthLogin(
             oauthUser,
             res
           );

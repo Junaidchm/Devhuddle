@@ -1,68 +1,93 @@
-import { PrismaClient } from "@prisma/client";
+
 import logger from "../utils/logger.util";
 
-export abstract class BaseRepository<T> {
-  protected prisma: PrismaClient;
-  protected model: any;
+export abstract class BaseRepository<
+  TModel extends {
+    findUnique: Function;
+    findFirst: Function;
+    create: Function;
+    update: Function;
+    delete: Function;
+  },
+  Entity,
+  CreateInput,
+  UpdateInput,
+  WhereUniqueInput
+> {
+  protected model: TModel;
 
-  constructor(prisma: PrismaClient, model: any) {
-    this.prisma = prisma;
+  constructor(model: TModel) {
     this.model = model;
   }
 
-  async findById(id: string): Promise<T | null> {
+  async findById(id: string): Promise<Entity | null> {
     try {
-      return await this.model.findUnique({ where: { id } });
-    } catch (error: any) {
+      return await this.model.findUnique({ where: { id } as WhereUniqueInput });
+    } catch (error) {
       logger.error(`Error finding entity by id: ${id}`, {
-        error: error.message,
+        error: (error as Error).message,
       });
       throw new Error("Database error");
     }
   }
 
-  async findOne(where: Partial<T>): Promise<T | null> {
+  async findOne(where: Partial<Entity>): Promise<Entity | null> {
     try {
       return await this.model.findFirst({ where });
-    } catch (error: any) {
-      logger.error("Error finding entity", { error: error.message });
+    } catch (error) {
+      logger.error("Error finding entity", { error: (error as Error).message });
       throw new Error("Database error");
     }
   }
 
-  async create(data: Partial<T>): Promise<T> {
+
+  async create(data:Partial<CreateInput>): Promise<Entity> {
     try {
       return await this.model.create({ data });
-    } catch (error: any) {
-      logger.error("Error creating entity", { error: error.message });
+    } catch (error) {
+      logger.error("Error creating entity", {
+        error: (error as Error).message,
+      });
       throw new Error("Database error");
     }
   }
 
-  async update(id: string, data: Partial<T>): Promise<T> {
+  async update(id: string, data: UpdateInput): Promise<Entity> {
     try {
-      return await this.model.update({ where: { id }, data });
-    } catch (error: any) {
-      logger.error(`Error updating entity: ${id}`, { error: error.message });
+      return await this.model.update({
+        where: { id } as WhereUniqueInput,
+        data,
+      });
+    } catch (error) {
+      logger.error(`Error updating entity: ${id}`, {
+        error: (error as Error).message,
+      });
       throw new Error("Database error");
     }
   }
 
-  async delete(id: string) {
+  async delete(id: string): Promise<void> {
     try {
-      await this.model.delete({ where: { id } });
-    } catch (error: any) {
-      logger.error(`Error deleting entity: ${id}`, { error: error.message });
+      await this.model.delete({ where: { id } as WhereUniqueInput });
+    } catch (error) {
+      logger.error(`Error deleting entity: ${id}`, {
+        error: (error as Error).message,
+      });
       throw new Error("Database error");
     }
   }
 
-  async updateWhere(where: Partial<T>, data: Partial<T>): Promise<T> {
+  async updateWhere(
+    where: WhereUniqueInput,
+    data: UpdateInput
+  ): Promise<Entity> {
     try {
-      return await this.model.update({ where, data });
-    } catch (error: any) {
-      logger.error('Error updating entity by criteria', { error: error.message });
-      throw new Error('Database error');
+      return await this.model.update({ where, data});
+    } catch (error) {
+      logger.error("Error updating entity by criteria", {
+        error: (error as Error).message,
+      });
+      throw new Error("Database error");
     }
   }
 }

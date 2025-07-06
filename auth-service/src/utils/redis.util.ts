@@ -19,4 +19,8 @@ export const connectRedis = async ()=> {
     }
 }
 
+export const generateBlockUserRedisKey = (sensitive:string):string=> {
+ return `blacklist:user:${sensitive}`
+}
+
 export default redisClient

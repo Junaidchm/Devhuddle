@@ -4,14 +4,14 @@ import {
   UserRepository,
 } from "../repositories/user.repository";
 import {
-  jwtAccessToken,
+  jwtPayload,
+  jwtUserFilter,
   LoginRequest,
   OAuthUser,
   PasswordResetConfirmRequest,
   PasswordResetRequest,
   ProfileUpdatePayload,
   RegisterRequest,
-  TokenResponse,
   User,
   VerifyOTPRequest,
 } from "../types/auth";
@@ -28,6 +28,7 @@ import path from "path";
 import fs from "fs";
 import { setAuthToken } from "../utils/jwtHandler";
 import {
+  filterUserJwtPayload,
   generatePasswordResetToken,
   verifyPasswordResetToken,
 } from "../utils/jwt.util";
@@ -81,10 +82,7 @@ export class AuthService {
 
   //////////// verify otp
 
-  async verifyOTP(
-    { email, otp }: VerifyOTPRequest,
-    res: Response
-  ): Promise<User> {
+  async verifyOTP({ email, otp }: VerifyOTPRequest): Promise<jwtUserFilter> {
     try {
       const isValid = await verifyOTP(email, otp);
       if (!isValid) {
@@ -94,7 +92,7 @@ export class AuthService {
       const user = await this.userRepository.updateEmailVerified(email, true);
 
       logger.info("Email verified", { email });
-      return user;
+      return filterUserJwtPayload(user);
     } catch (err: any) {
       throw err instanceof CustomError
         ? err
@@ -126,7 +124,6 @@ export class AuthService {
   async getUserById(id: string): Promise<User> {
     try {
       const user = await this.userRepository.findByIdUser(id);
-      console.log(".......... user found this is the user :  ", user);
       if (!user) {
         throw new CustomError(404, "User not found");
       }
@@ -140,9 +137,10 @@ export class AuthService {
 
   //////////// user login
 
-  async login({ email, password }: LoginRequest): Promise<User> {
+  async login({ email, password }: LoginRequest): Promise<jwtUserFilter> {
     try {
       const user = await this.userRepository.findByEmail(email);
+
       if (user && user.email === email && !user.password) {
         throw new CustomError(
           500,
@@ -153,14 +151,18 @@ export class AuthService {
         !user ||
         !(await this.userRepository.verifyPassword(user.password, password))
       ) {
-        throw new CustomError(401, "Invalid credentials");
+        throw new CustomError(404, "User Not Found");
       }
       if (!user.emailVerified) {
         throw new CustomError(403, "Email not verified");
       }
 
+      if (user.isBlocked) {
+        throw new CustomError(HttpStatus.FORBIDDEN, "User blocke by admin");
+      }
+
       logger.info("User logged in", { email });
-      return user;
+      return filterUserJwtPayload(user);
     } catch (err: any) {
       throw err instanceof CustomError
         ? err
@@ -216,7 +218,10 @@ export class AuthService {
   }
 
   ///////// handle authLogin
-  async handleOAuthLogin(oauthUser: OAuthUser, res: Response): Promise<User> {
+  async handleOAuthLogin(
+    oauthUser: OAuthUser,
+    res: Response
+  ): Promise<jwtUserFilter> {
     try {
       let user = await this.userRepository.findByEmail(oauthUser.email);
       if (!user) {
@@ -224,7 +229,7 @@ export class AuthService {
         logger.info("OAuth user created", { email: oauthUser.email });
       }
       logger.info("OAuth login successful", { email: oauthUser.email });
-      return user;
+      return filterUserJwtPayload(user);
     } catch (err: any) {
       throw err instanceof CustomError
         ? err
@@ -233,7 +238,7 @@ export class AuthService {
   }
 
   //////// verify User
-  async verifyUser(email: string): Promise<User> {
+  async verifyUser(email: string): Promise<jwtUserFilter> {
     try {
       const user = await this.userRepository.findByEmail(email);
 
@@ -241,7 +246,11 @@ export class AuthService {
         throw new CustomError(HttpStatus.NOT_FOUND, Messages.USER_NOT_FOUND);
       }
 
-      return user;
+      if (user?.isBlocked) {
+        throw new CustomError(HttpStatus.FORBIDDEN, "User blocked");
+      }
+
+      return filterUserJwtPayload(user);
     } catch (err: any) {
       throw err instanceof CustomError
         ? err

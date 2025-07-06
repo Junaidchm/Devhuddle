@@ -5,10 +5,11 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import logger from "./utils/logger.util";
 import authRoutes from "./routes/auth.routes";
+import adminRoutes from "./routes/admin.routes";
 import { CustomError, sendErrorResponse } from "./utils/error.util";
 import { connectPrisma } from "./config/prisma.config";
 import { connectRedis } from "./utils/redis.util";
-import passport from './config/passport.config';
+import passport from "./config/passport.config";
 import path from "path";
 
 dotenv.config();
@@ -32,13 +33,12 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/", authRoutes);
+app.use("/admin", adminRoutes);
 
 // Serve static files from uploads/profiles
 const uploadPath = path.join(process.cwd(), "uploads");
 logger.info("Serving static files from", { cwd: process.cwd(), uploadPath });
 
-
-// ⬇️ Add this before static middleware
 app.use("/uploads", (req, res, next) => {
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
   next();
@@ -55,20 +55,22 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   );
 });
 
-
 const startServer = async () => {
   try {
-    logger.info('Prisma connection established');
+    logger.info("Prisma connection established");
     await connectPrisma();
-   
+
     await connectRedis();
-    logger.info('Redis connection established');
+    logger.info("Redis connection established");
     const PORT = process.env.PORT || 3001;
     app.listen(PORT, () => {
       logger.info(`Auth Service running on port ${PORT}`);
     });
   } catch (err: any) {
-    logger.error('Failed to start server', { error: err.message, stack: err.stack });
+    logger.error("Failed to start server", {
+      error: err.message,
+      stack: err.stack,
+    });
     process.exit(1);
   }
 };

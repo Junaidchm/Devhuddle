@@ -1,16 +1,15 @@
 import jwt from "jsonwebtoken";
-import { User } from "../types/auth";
+import { jwtPayload, jwtUserFilter, User } from "../types/auth";
 import logger from "./logger.util";
 import redisClient from "./redis.util";
-// import { encryptData } from "../encription";
-// import { generateRedisKey, generateTTL, setCache } from "./redis.actions";
+import { checkIsRevoked } from "./redis.actions";
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 const ACCESS_TOKEN_EXPIRY = "15m";
-const REFRESH_TOKEN_EXPIRY_DAYS = 30;
+const REFRESH_TOKEN_EXPIRY_DAYS = 7;
 const PASSWORD_RESET_TOKEN_EXPIRY_SECONDS = 3600; // 1 hour
 
-export const generateAccessToken = (user: User): string => {
+export const generateAccessToken = (user:jwtUserFilter,jti:string): string => {
   try {
     return jwt.sign(
       {
@@ -18,8 +17,9 @@ export const generateAccessToken = (user: User): string => {
         email: user.email,
         username: user.username,
         role: user.role,
+        jti: jti,
       },
-      (process.env.ACCESS_TOKEN_SECRET as string),
+      process.env.ACCESS_TOKEN_SECRET as string,
       { expiresIn: ACCESS_TOKEN_EXPIRY }
     );
   } catch (error: any) {
@@ -28,33 +28,21 @@ export const generateAccessToken = (user: User): string => {
   }
 };
 
-// export const saveRefreshToken = async (
-//   token: string,
-//   encryptedToken:string,
-// ) => {
-//   try {
-//     const decodedData = jwt.decode(token, { json: true });
-//     if (!decodedData) throw new Error("Unable to decode token");
-//     const key = generateRedisKey(decodedData.id);
-//     const TTL = generateTTL(decodedData.exp!);
-//     await setCache(key,encryptedToken, TTL);
-//     console.log("Saved Refresh Token");
-//   } catch (error) {
-//     console.log("Error in saving refresh token: ", error);
-//     throw error;
-//   }
-// };
-
-export const GenerateRefreshToken = (user:User): string=> {
+export const GenerateRefreshToken = (user: jwtUserFilter,jti:string): string => {
   try {
-    const refreshToken = jwt.sign({
+    const refreshToken = jwt.sign(
+      {
         id: user.id,
         email: user.email,
         username: user.username,
         role: user.role,
-      }, process.env.REFRESH_TOKEN_SECRET!, {
-      expiresIn: `${REFRESH_TOKEN_EXPIRY_DAYS}d`,
-    });
+        jti: jti,
+      },
+      process.env.REFRESH_TOKEN_SECRET!,
+      {
+        expiresIn: `${REFRESH_TOKEN_EXPIRY_DAYS}d`,
+      }
+    );
     return refreshToken;
   } catch (err: any) {
     logger.error("Error generating refresh token", { error: err.message });
@@ -62,63 +50,65 @@ export const GenerateRefreshToken = (user:User): string=> {
   }
 };
 
-
-// export const generateRefreshToken = async (userId: string): Promise<string> => {
-//   try {
-//     const refreshToken = jwt.sign({ userId }, JWT_SECRET, {
-//       expiresIn: `${REFRESH_TOKEN_EXPIRY_DAYS}d`,
-//     });
-
-//     // const encryptedRefreshToken = encryptData(refreshToken)
-//     await redisClient.setEx(
-//       `refresh:${userId}:${refreshToken}`,
-//       REFRESH_TOKEN_EXPIRY_DAYS * 24 * 3600,
-//       "1"
-//     );
-//     return refreshToken;
-//   } catch (err: any) {
-//     logger.error("Error generating refresh token", { error: err.message });
-//     throw new Error("Token generation failed");
-//   }
-// };
+const TOKEN_BLACKLIST_NAME = process.env.TOKEN_BLACKLIST_NAME as string;
 
 export const verifyRefreshToken = async (
-  userId: string,
   token: string
-): Promise<boolean> => {
+): Promise<jwtPayload | null> => {
   try {
-    // const stored = await redisClient.get(`refresh:${userId}:${token}`);
-    // if (!stored) {
-    //   return false;
-    // }
-    jwt.verify(token, process.env.REFRESH_TOKEN_SECRET as string);
-    return true;
+    const decoded = jwt.verify(
+      token,
+      process.env.REFRESH_TOKEN_SECRET as string
+    ) as jwtPayload;
+    const isRevoked = await checkIsRevoked(decoded.jti);
+    if (isRevoked) {
+      logger.error("Revoked refresh token used");
+      return null;
+    }
+    return decoded;
   } catch (err: any) {
     logger.error("Invalid refresh token", { error: err.message });
-    return false;
+    return null;
   }
 };
 
-export const verifyAccessToken = (
-  token: string
-): {
-  id: string;
-  email?: string;
-  username?: string;
-  role?: string;
-} | null => {
+export const revokeToken = async (
+  jti: string,
+  expiresInSeconds: number
+): Promise<void> => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      id: string;
-      email?: string;
-      username?: string;
-      role?: string;
-    };
+    await redisClient.sadd("revoked_tokens", jti);
+    await redisClient.expire("revoked_tokens", expiresInSeconds);
+  } catch (err: any) {
+    logger.error("Error revoking token", { error: err.message });
+    throw new Error("Token revocation failed");
+  }
+};
+
+export const verifyAccessToken = async (
+  token: string
+): Promise<jwtPayload | null> => {
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.ACCESS_TOKEN_SECRET!
+    ) as jwtPayload;
+    const isRevoked = await checkIsRevoked(decoded.jti);
+    if (isRevoked) {
+      logger.error("Revoked access token used");
+      return null;
+    }
     return decoded;
-  } catch (error) {
+  } catch (err: any) {
     // Invalid or expired token
+    logger.error("Invalid refresh token", { error: err.message });
     return null;
   }
+};
+
+export const extractRefreshJti = (token: string): string => {
+  const decode = jwt.decode(token) as jwtPayload;
+  return decode.jti;
 };
 
 export const generatePasswordResetToken = async (
@@ -159,3 +149,14 @@ export const verifyPasswordResetToken = async (
     return false;
   }
 };
+
+export const filterUserJwtPayload = (user: User): jwtUserFilter => {
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+  };
+};
+
+

@@ -3,10 +3,11 @@ import { HttpStatus } from "../constents/httpStatus";
 import { Messages } from "../constents/reqresMessages";
 import jwt from "jsonwebtoken";
 import { CustomError, sendErrorResponse } from "../utils/error.util";
-import { jwtAccessToken } from "../types/auth";
+import { jwtPayload } from "../types/auth";
 import logger from "../utils/logger.util";
+import { verifyRefreshToken } from "../utils/jwt.util";
 
-export default function refreshTokenMiddleware(
+export default async function refreshTokenMiddleware(
   req: Request,
   res: Response,
   next: NextFunction
@@ -15,21 +16,15 @@ export default function refreshTokenMiddleware(
     const token = req.cookies.refresh_token;
     if (!token) {
       logger.error("No JWT token provided");
-      throw new CustomError(HttpStatus.UNAUTHORIZED, "No token provided");
+      throw new CustomError(403, "No token provided");
     }
-    
+
     // decode refresh token
-    const decoded = jwt.verify(
-      token,
-      process.env.REFRESH_TOKEN_SECRET as string
-    ) as jwtAccessToken;
-
+    const decoded = await verifyRefreshToken(token);
+    if (!decoded) {
+      throw new CustomError(403, Messages.TOKEN_INVALID);
+    }
     req.user = decoded;
-
-    // if (!decoded.email || !decoded.id || !decoded.username || !decoded.role) {
-    //   throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.TOKEN_INVALID);
-    // }
-
     next();
   } catch (err: any) {
     logger.error("refresh token verification failed", { error: err.message });
@@ -37,7 +32,7 @@ export default function refreshTokenMiddleware(
       res,
       err instanceof CustomError
         ? err
-        : { status: HttpStatus.UNAUTHORIZED, message: Messages.TOKEN_INVALID }
+        : { status: 403, message: Messages.TOKEN_INVALID }
     );
   }
 }

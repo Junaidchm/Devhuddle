@@ -11,7 +11,6 @@ import { sendErrorResponse } from "./utils/error.util";
 import { ApiError } from "./types/auth";
 import cors from "cors";
 import morgan from "morgan";
-// import { authServiceProxy } from "./middleware/authserver.proxy.middleware";
 
 dotenv.config();
 
@@ -29,13 +28,13 @@ app.use( cors({
   }))
 
 // Rate Limiting
-// app.use(rateLimiter);
+app.use(rateLimiter);
 
 // Log all request
-app.use((req: Request, res: Response, next: NextFunction) => {
-  logger.info(`${req.method} ${req.url}`);
-  next();
-});
+// app.use((req: Request, res: Response, next: NextFunction) => {
+//   logger.info(`${req.method} ${req.url}`);
+//   next();
+// });
 app.use(morgan('dev'))
 
 // Health check
@@ -71,8 +70,6 @@ const authServiceProxy = createProxyMiddleware({
   }
 },
 });
-
-
 
 // Apply proxy for auth routes
 app.use('/auth',authServiceProxy)

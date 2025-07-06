@@ -17,8 +17,8 @@ model User {
   id                String    @id @default(uuid())
   email             String    @unique
   username          String    @unique
-  name              String?
-  password          String?
+  name              String
+  password          String
   role              String    @default("user")
   emailVerified     Boolean   @default(false)
   profilePicture    String? // URL to profile picture
@@ -28,8 +28,8 @@ model User {
   yearsOfExperience String?
   jobTitle          String?
   company           String?
+  isBlocked         Boolean   @default(false) 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
 }
-
