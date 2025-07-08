@@ -34,5 +34,5 @@ router
     jwtMiddleware,
     requireRole("superAdmin"),
     adminController.getUserFullDetails.bind(adminController)
-  );
+  )
 export default router;

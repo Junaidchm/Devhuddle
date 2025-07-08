@@ -31,11 +31,8 @@ services:
     volumes:
      - ./auth-service/src:/app/src
      - ./auth-service/prisma:/app/prisma
-     - profile_image_data:/app/uploads
-     - ./auth-service/uploads/profiles:/app/uploads/profiles
      - /app/node_modules
-     - ./api-gateway/package.json:/app/package.json
-     - ./api-gateway/package-lock.json:/app/package-lock.json
+
     networks:
       - shared
     command: sh -c "npx prisma migrate dev --name init && npm run dev"
@@ -68,7 +65,6 @@ services:
 
 volumes:
   auth_data:
-  profile_image_data:
   redis_data:
 
 networks:

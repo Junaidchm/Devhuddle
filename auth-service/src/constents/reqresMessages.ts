@@ -43,5 +43,6 @@ export const Messages = {
     LOGOUT_SUCCESS  : "logout successfully!",
     ROUTE_WILD_CARD_MESSAGE : "Endpoint not found. Please check the URL.",
     INCOMPLETE_FORM: 'Please complete the form',
+    PRESIGNED_URL_GETPUT_ERROR : 'Invalid operation. Use PUT or GET'
   };
   

@@ -34,6 +34,11 @@ import {
 } from "../utils/jwt.util";
 import { HttpStatus } from "../constents/httpStatus";
 import { Messages } from "../constents/reqresMessages";
+import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { s3Client } from "../config/s3.config";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 export class AuthService {
   private userRepository: IUserRepository;
@@ -265,10 +270,6 @@ export class AuthService {
       username,
       location,
       bio,
-      skills,
-      yearsOfExperience,
-      jobTitle,
-      company,
       profilePicture,
     } = data;
 
@@ -280,39 +281,13 @@ export class AuthService {
         throw new CustomError(400, "Username already taken");
       }
     }
-    if (profilePicture && profilePicture.size > 1024 * 1024) {
-      throw new CustomError(400, "Profile picture must be less than 1MB");
-    }
-    if (skills && !Array.isArray(skills)) {
-      throw new CustomError(400, "Skills must be an array");
-    }
-
-    // Save profile picture to local storage
-    let profilePicturePath: string | undefined;
-    if (profilePicture) {
-      const uploadDir = process.env.UPLOAD_DIR || "uploads/profiles";
-      const fileName = `${userId}-${Date.now()}${path.extname(
-        profilePicture.originalname
-      )}`;
-      const filePath = path.join(uploadDir, fileName);
-
-      // Ensure upload directory exists
-      fs.mkdirSync(uploadDir, { recursive: true });
-      fs.writeFileSync(filePath, profilePicture.buffer);
-
-      profilePicturePath = filePath;
-    }
 
     const updatedFields = {
       name,
       username,
       location,
       bio,
-      skills,
-      yearsOfExperience,
-      jobTitle,
-      company,
-      profilePicture: profilePicturePath,
+      profilePicture
     };
 
     // Remove undefined fields
@@ -326,18 +301,102 @@ export class AuthService {
       filteredFields
     );
 
-    return {
-      id: updatedUser.id,
-      username: updatedUser.username,
-      name: updatedUser.name,
-      role: updatedUser.role,
-      profilePicture: updatedUser.profilePicture,
-      location: updatedUser.location,
-      bio: updatedUser.bio,
-      skills: updatedUser.skills,
-      yearsOfExperience: updatedUser.yearsOfExperience,
-      jobTitle: updatedUser.jobTitle,
-      company: updatedUser.company,
-    };
+    return updatedUser
+  }
+
+  async generatePresignedUrl(
+    userId: string,
+    operation: string,
+    fileName?: string,
+    fileType?: string,
+    key?: string
+  ) {
+    try {
+      const EXPIRES_IN_SECONDS = Number(process.env.EXPIRES_IN_SECONDS);
+      console.log("..............this is the file type :", fileType, fileName);
+      if (operation === "PUT") {
+        if (!fileName || !fileType) {
+          throw new CustomError(
+            400,
+            "fileName and fileType are required for PUT operation"
+          );
+        }
+        const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+        if (!allowedTypes.includes(fileType)) {
+          throw new CustomError(
+            400,
+            "Invalid file type. Only JPG, PNG, or GIF allowed"
+          );
+        }
+
+        console.log(
+          fileName.split(".").pop()?.toLowerCase(),
+          fileType.split("/")[1]
+        );
+        const extension = fileName.split(".").pop()?.toLowerCase();
+        const mimeType = fileType.split("/")[1].toLowerCase();
+
+        // Handle jpg and jpeg as equal
+        const equivalent = (ext: string, type: string) => {
+          if (ext === "jpg" && type === "jpeg") return true;
+          if (ext === "jpeg" && type === "jpg") return true;
+          return ext === type;
+        };
+
+        if (!equivalent(extension!, mimeType)) {
+          throw new CustomError(
+            400,
+            "File extension does not match content type"
+          );
+        }
+
+        const newKey = `profiles/${userId}-${Date.now()}${path.extname(
+          fileName
+        )}`;
+
+        const command = new PutObjectCommand({
+          Bucket: "devhuddle-bucket-junaid",
+          Key: newKey,
+          ContentType: fileType,
+        });
+        const url = await getSignedUrl(s3Client, command, {
+          expiresIn: EXPIRES_IN_SECONDS,
+        });
+
+        console.log("this is the url :", url);
+
+        return {
+          url,
+          key: newKey,
+          expiresAt: Date.now() + EXPIRES_IN_SECONDS * 1000,
+        };
+      } else if (operation === "GET") {
+        if (!key) {
+          throw new CustomError(400, "key is required for GET operation");
+        }
+        const command = new GetObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET,
+          Key: key,
+        });
+
+        const url = await getSignedUrl(s3Client, command, {
+          expiresIn: EXPIRES_IN_SECONDS,
+        });
+        return {
+          url,
+          presignedKey: key,
+          expiresAt: Date.now() + EXPIRES_IN_SECONDS * 1000,
+        };
+      } else {
+        throw new CustomError(400, "Invalid operation. Use PUT or GET");
+      }
+    } catch (error: any) {
+      logger.error("Failed to generate presigned URL", {
+        error: error.message,
+      });
+      throw error instanceof CustomError
+        ? error
+        : new CustomError(500, "Failed to generate presigned URL");
+    }
   }
 }

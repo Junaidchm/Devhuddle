@@ -16,11 +16,14 @@ import { HttpStatus } from "../constents/httpStatus";
 import logger from "../utils/logger.util";
 import passport from "../config/passport.config";
 import { User } from "../generated/prisma";
-import { clearCookies, setAccesToken, setAuthToken } from "../utils/jwtHandler"
+import { clearCookies, setAccesToken, setAuthToken } from "../utils/jwtHandler";
 import { Messages } from "../constents/reqresMessages";
 import redisClient from "../utils/redis.util";
 import { generateUuid4 } from "../utils/uuid.util";
 import { setJtiAsBlackListed } from "../utils/redis.actions";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { s3Client } from "../config/s3.config";
 
 export class AuthController {
   private authService: AuthService;
@@ -191,22 +194,14 @@ export class AuthController {
         username,
         location,
         bio,
-        skills,
-        yearsOfExperience,
-        jobTitle,
-        company,
+        profilePicture
       } = req.body;
-      const file = req.file; // Profile picture file
       const updatedUser = await this.authService.updateProfile(user.id, {
         name,
         username,
         location,
         bio,
-        skills: skills ? JSON.parse(skills) : undefined, // Parse skills if stringified
-        yearsOfExperience,
-        jobTitle,
-        company,
-        profilePicture: file,
+        profilePicture,
       });
 
       res.status(200).json(updatedUser);
@@ -245,12 +240,12 @@ export class AuthController {
   logoutUser = async (req: Request, res: Response): Promise<void> => {
     try {
       const decoded = req.user as jwtPayload;
-      
+
       // revoke both access and refresh tokens
-      setJtiAsBlackListed(req.cookies)
+      setJtiAsBlackListed(req.cookies);
       //clear cookies
       clearCookies(res);
-      
+
       res
         .status(HttpStatus.OK)
         .json({ success: true, message: Messages.LOGOUT_SUCCESS });
@@ -291,6 +286,40 @@ export class AuthController {
         err instanceof CustomError
           ? err
           : { status: 500, message: "Server error" }
+      );
+    }
+  }
+
+  // generate presigned url
+  async generatePresignedUrl(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = req.user as OAuthUser;
+      const { operation, fileName, fileType, key } = req.body;
+
+      if (!["PUT", "GET"].includes(operation)) {
+        throw new CustomError(
+          HttpStatus.BAD_REQUEST,
+          Messages.PRESIGNED_URL_GETPUT_ERROR
+        );
+      }
+
+      const result = await this.authService.generatePresignedUrl(
+        user.id,
+        operation,
+        fileName,
+        fileType,
+        key
+      );
+
+      const { url, key: presignedKey , expiresAt } = result;
+      res.status(200).json({ url, key: presignedKey,expiresAt });
+    } catch (err: any) {
+      logger.error("Generate presigned URL error", { error: err.message });
+      sendErrorResponse(
+        res,
+        err instanceof CustomError
+          ? err
+          : { status: 500, message: "Failed to generate presigned URL" }
       );
     }
   }
