@@ -7,19 +7,19 @@ import refreshTokenMiddleware from "../middleware/refreshToken";
 import { requireRole } from "../middleware/role.middleware";
 
 // Configure multer for file uploads
-const storage = multer.memoryStorage();
-const upload = multer({
-  storage,
-  limits: { fileSize: 1024 * 1024 }, // 1MB limit
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Invalid file type. Only JPG, PNG, or GIF allowed."));
-    }
-  },
-});
+// const storage = multer.memoryStorage();
+// const upload = multer({
+//   storage,
+//   limits: { fileSize: 1024 * 1024 }, // 1MB limit
+//   fileFilter: (req, file, cb) => {
+//     const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+//     if (allowedTypes.includes(file.mimetype)) {
+//       cb(null, true);
+//     } else {
+//       cb(new Error("Invalid file type. Only JPG, PNG, or GIF allowed."));
+//     }
+//   },
+// });
 
 const router = Router();
 const authController: AuthController = new AuthController();
@@ -56,13 +56,19 @@ router
   .patch(
     "/profile",
     jwtMiddleware,
-    upload.single("profilePicture"),
+    // upload.single("profilePicture"),
     authController.updateProfile.bind(authController)
   )
   .get(
     "/profile",
     jwtMiddleware,
     authController.getProfile.bind(authController)
+  )
+
+  .post(
+    '/generate-presigned-url',
+    jwtMiddleware,
+    authController.generatePresignedUrl.bind(authController)
   )
 
   // verify refresh token

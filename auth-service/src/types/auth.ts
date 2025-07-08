@@ -28,7 +28,7 @@ export interface ProfileUpdatePayload {
   yearsOfExperience?: string;
   jobTitle?: string;
   company?: string;
-  profilePicture?: Express.Multer.File;
+  profilePicture?: string
 }
 
 

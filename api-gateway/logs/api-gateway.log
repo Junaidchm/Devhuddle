@@ -32,3 +32,67 @@
 {"level":"info","message":"Connected to Redis","timestamp":"2025-07-06T06:42:41.145Z"}
 {"level":"info","message":"Connected to Redis","timestamp":"2025-07-06T06:54:09.828Z"}
 {"level":"info","message":"Connected to Redis","timestamp":"2025-07-06T07:01:16.038Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-06T10:10:17.204Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-06T10:11:05.958Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-06T10:12:28.436Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-06T10:15:31.514Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-07T05:55:06.483Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-07T06:09:04.258Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-07T06:10:36.793Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-07T06:12:33.904Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-07T10:58:46.708Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-07T12:58:24.690Z"}
+{"level":"error","message":"Redis error: Socket closed unexpectedly","timestamp":"2025-07-07T13:19:33.332Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-07T13:20:23.359Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-07T15:48:10.408Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-07T16:05:58.574Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-07T18:41:43.522Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-08T03:35:34.231Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:50:25.590Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:50:25.621Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:50:31.715Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:50:31.717Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:50:31.719Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:50:31.729Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:50:31.729Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:50:32.751Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:50:34.768Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:50:38.783Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:50:49.488Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-08T06:51:39.489Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:52:15.829Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:52:15.832Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:52:25.605Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:52:25.606Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:52:25.611Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:52:25.611Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:52:25.613Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:52:26.623Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:52:28.634Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:52:32.650Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:52:40.971Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:52:41.985Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:52:43.995Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:52:48.006Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:52:50.903Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:53:47.295Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:53:47.302Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:53:52.059Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:53:52.066Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:53:52.075Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:53:52.078Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:53:52.110Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:53:53.087Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:53:55.102Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:53:59.113Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:54:03.373Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:54:03.383Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:54:03.383Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:54:03.385Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:54:03.386Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:54:04.384Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:54:06.393Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:54:10.405Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:54:13.479Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:54:14.500Z"}
+{"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:54:16.511Z"}

@@ -28,14 +28,13 @@ app.use( cors({
   }))
 
 // Rate Limiting
-app.use(rateLimiter);
+// app.use(rateLimiter);
 
 // Log all request
 // app.use((req: Request, res: Response, next: NextFunction) => {
 //   logger.info(`${req.method} ${req.url}`);
 //   next();
 // });
-app.use(morgan('dev'))
 
 // Health check
 app.get("/health", (req: Request, res: Response) => {

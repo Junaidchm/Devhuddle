@@ -10,7 +10,6 @@ import { CustomError, sendErrorResponse } from "./utils/error.util";
 import { connectPrisma } from "./config/prisma.config";
 import { connectRedis } from "./utils/redis.util";
 import passport from "./config/passport.config";
-import path from "path";
 
 dotenv.config();
 
@@ -34,17 +33,6 @@ app.get("/health", (req, res) => {
 
 app.use("/", authRoutes);
 app.use("/admin", adminRoutes);
-
-// Serve static files from uploads/profiles
-const uploadPath = path.join(process.cwd(), "uploads");
-logger.info("Serving static files from", { cwd: process.cwd(), uploadPath });
-
-app.use("/uploads", (req, res, next) => {
-  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-  next();
-});
-
-app.use("/uploads", express.static(uploadPath));
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   sendErrorResponse(
