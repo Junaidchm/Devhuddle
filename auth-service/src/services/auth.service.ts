@@ -56,10 +56,6 @@ export class AuthService implements IAuthService {
   }: RegisterRequest): Promise<void> {
     try {
       const existingUser = await this.userRepository.findByEmail(email);
-      console.log(
-        "this is the existing user .....................",
-        existingUser
-      );
       if (existingUser) {
         throw new CustomError(400, "Email already exists");
       }
@@ -145,7 +141,7 @@ export class AuthService implements IAuthService {
     try {
       const user = await this.userRepository.findByEmail(email);
 
-      if (user && user.email === email && !user.password) {
+      if (user && user.email === email && user.password=="") {
         throw new CustomError(
           500,
           "This account was created using Google. Please login using Google."
@@ -185,7 +181,7 @@ export class AuthService implements IAuthService {
         });
         throw new CustomError(404, "No account found with this email address.");
       }
-
+   
       const token = await generatePasswordResetToken(email);
       await sendPasswordResetEmail(email, token);
       logger.info("Password reset token sent", { email });
