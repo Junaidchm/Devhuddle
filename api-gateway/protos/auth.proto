@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package auth;
+
+service AuthService {
+  // User-related methods
+  rpc Register (RegisterRequest) returns (RegisterResponse);
+  rpc VerifyOTP (VerifyOTPRequest) returns (VerifyOTPResponse);
+  
+}
+
+// User-related messages
+message RegisterRequest {
+  string email = 1;
+  string username = 2;
+  string name = 3;
+  string password = 4;
+}
+
+
+message RegisterResponse {
+  string message = 1;
+}
+
+
+message VerifyOTPRequest {
+  string email = 1;
+  string otp = 2;
+}
+
+message VerifyOTPResponse {
+  string message = 1;
+}

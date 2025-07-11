@@ -5,14 +5,16 @@ import multer from "multer";
 import jwtMiddleware from "../middleware/jwt.middleware";
 import refreshTokenMiddleware from "../middleware/refreshToken";
 import { requireRole } from "../middleware/role.middleware";
+import { AuthService } from "../services/auth.service";
+import { UserRepository } from "../repositories/user.repository";
 
 const router = Router();
-const authController: AuthController = new AuthController();
+
+const userRepository:UserRepository = new UserRepository()
+const authService:AuthService = new AuthService(userRepository)
+const authController: AuthController = new AuthController(authService);
 
 router
-  .post("/signup", (req, res, next) => {
-    authController.register(req, res, next);
-  })
   .post("/verify-otp", authController.verifyOTP.bind(authController))
   .post("/resend", authController.resendOTP.bind(authController))
   .get("/me", jwtMiddleware, authController.getCurrentUser.bind(authController))

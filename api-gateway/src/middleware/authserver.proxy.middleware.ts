@@ -8,16 +8,11 @@ export const authServiceProxy = createProxyMiddleware({
     console.log(`[Proxy] Forwarding ${req.method} ${req.originalUrl} to ${process.env.AUTH_SERVICE_URL}`);
   },
   onProxyRes: (proxyRes, req, res) => {
-    // Set CORS headers on the real response for images
     if (proxyRes.headers["content-type"]?.includes("image")) {
-      // @ts-ignore
-      res.setHeader("Access-Control-Allow-Origin", process.env.frontend_URL || "http://localhost:3000");
-      // @ts-ignore
-      res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
-      // @ts-ignore
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
-      // @ts-ignore
-      res.setHeader("Access-Control-Allow-Credentials", "true");
+      proxyRes.headers["access-control-allow-origin"] = process.env.frontend_URL || "http://localhost:3000";
+      proxyRes.headers["access-control-allow-methods"] = "GET";
+      proxyRes.headers["access-control-allow-headers"] = "Content-Type";
+      proxyRes.headers["access-control-allow-credentials"] = "true";
     }
   },
   onError: (err, req, res) => {

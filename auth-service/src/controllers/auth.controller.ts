@@ -24,35 +24,30 @@ import { setJtiAsBlackListed } from "../utils/redis.actions";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3Client } from "../config/s3.config";
+import * as authProto from "../../grpc-generated/auth_pb";
+import { IAuthService } from "../services/interface/IauthService";
+import { IAuthController } from "./interface/IauthController";
 
-export class AuthController {
-  private authService: AuthService;
-  constructor(authservice: AuthService = new AuthService()) {
-    this.authService = authservice;
-  }
+export class AuthController implements IAuthController {
 
-  async register(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { email, username, name, password } = req.body as RegisterRequest;
-      if (!email || !username || !password) {
-        throw new CustomError(
-          400,
-          "Email, username, and password are required"
-        );
-      }
+  constructor(private authService: IAuthService) {}
 
-      await this.authService.register({ email, username, name, password });
-      res
-        .status(HttpStatus.CREATED)
-        .json({ message: "User registered, please verify email with OTP" });
-    } catch (err: any) {
-      sendErrorResponse(
-        res,
-        err instanceof CustomError
-          ? err
-          : { status: 500, message: "Server error" }
-      );
+  async register(
+    call: authProto.RegisterRequest
+  ): Promise<authProto.RegisterResponse> {
+    const email = call.getEmail();
+    const username = call.getUsername();
+    const name = call.getName();
+    const password = call.getPassword();
+    if (!email || !username || !password) {
+      throw new CustomError(400, "Email, username, and password are required");
     }
+
+    await this.authService.register({ email, username, name, password });
+
+    const response = new authProto.RegisterResponse();
+    response.setMessage("User registered, please verify email with OTP");
+    return response;
   }
 
   async verifyOTP(req: Request, res: Response) {
@@ -189,13 +184,7 @@ export class AuthController {
     try {
       const user = req.user as OAuthUser;
 
-      const {
-        name,
-        username,
-        location,
-        bio,
-        profilePicture
-      } = req.body;
+      const { name, username, location, bio, profilePicture } = req.body;
       const updatedUser = await this.authService.updateProfile(user.id, {
         name,
         username,
@@ -266,20 +255,7 @@ export class AuthController {
 
       const user = await this.authService.getUserById(decoded.id);
 
-      res.status(200).json({
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        name: user.name,
-        role: user.role,
-        profilePicture: user.profilePicture,
-        location: user.location,
-        bio: user.bio,
-        skills: user.skills,
-        yearsOfExperience: user.yearsOfExperience,
-        jobTitle: user.jobTitle,
-        company: user.company,
-      });
+      res.status(200).json(user);
     } catch (err: any) {
       sendErrorResponse(
         res,
@@ -311,8 +287,8 @@ export class AuthController {
         key
       );
 
-      const { url, key: presignedKey , expiresAt } = result;
-      res.status(200).json({ url, key: presignedKey,expiresAt });
+      const { url, key: presignedKey, expiresAt } = result;
+      res.status(200).json({ url, key: presignedKey, expiresAt });
     } catch (err: any) {
       logger.error("Generate presigned URL error", { error: err.message });
       sendErrorResponse(

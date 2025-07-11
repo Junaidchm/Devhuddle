@@ -39,13 +39,12 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3Client } from "../config/s3.config";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { IAuthService } from "./interface/IauthService";
 
-export class AuthService {
-  private userRepository: IUserRepository;
 
-  constructor(userRepository: IUserRepository = new UserRepository()) {
-    this.userRepository = userRepository;
-  }
+export class AuthService implements IAuthService {
+
+  constructor(private userRepository: IUserRepository) {}
 
   ////////// user Signup
 

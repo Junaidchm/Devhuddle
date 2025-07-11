@@ -4,8 +4,9 @@ import logger from "../../utils/logger.util";
 import { CustomError } from "../../utils/error.util";
 import redisClient from "../../utils/redis.util";
 import { setUsertoBlockBlackList } from "../../utils/redis.actions";
+import { IAdminService } from "../interface/IadminService";
 
-export class AdminService {
+export class AdminService implements IAdminService {
   constructor(private adminRepository: AdminRepository) {}
 
   async getUsers(
