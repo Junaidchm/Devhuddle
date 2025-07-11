@@ -97,3 +97,1072 @@
 {"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:54:14.500Z"}
 {"level":"warn","message":"Rate limit exceeded for IP: ::ffff:192.168.65.1","timestamp":"2025-07-08T06:54:16.511Z"}
 {"level":"info","message":"Connected to Redis","timestamp":"2025-07-09T06:56:11.473Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-09T19:30:19.914Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-09T19:34:22.633Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-09T19:48:22.256Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-09T19:48:59.511Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-09T20:07:48.954Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T04:39:23.712Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T06:21:14.028Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T06:25:12.261Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T06:25:23.974Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T06:25:23.977Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T06:25:36.157Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T06:25:36.159Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:50:45.486Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T07:51:06.986Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T07:51:06.989Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T07:51:24.264Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T07:51:24.268Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:51:56.532Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:51:58.436Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:51:59.582Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:52:00.047Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:52:01.283Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:52:02.032Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:52:02.347Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:52:03.506Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:52:04.467Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:52:05.447Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T07:52:19.329Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T07:52:19.333Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:53:10.149Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:53:11.646Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:53:12.717Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:53:13.038Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:53:13.814Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:53:17.337Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:53:19.718Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:53:20.297Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:53:21.868Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:53:22.789Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:53:23.378Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:53:24.457Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T07:53:26.025Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T07:53:27.484Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T07:53:27.488Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T07:53:28.081Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T07:53:28.084Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T07:57:00.122Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T07:57:00.126Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T07:57:31.100Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T07:57:31.104Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T08:06:30.010Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T08:06:53.364Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T08:07:40.367Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T08:07:40.648Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T08:08:13.434Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T08:08:13.440Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T08:08:33.263Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T08:08:33.268Z"}
+{"level":"info","message":"GET /auth/google","timestamp":"2025-07-10T08:09:11.745Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T08:09:11.763Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T08:09:11.764Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T08:09:53.471Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T08:09:56.640Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T08:13:34.953Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T09:14:59.996Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T09:16:04.146Z"}
+{"level":"error","message":"Error: 14 UNAVAILABLE: Connection dropped (Status: 500)","timestamp":"2025-07-10T09:19:32.945Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T09:33:30.313Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: call.request.getUserId is not a function (Status: 500)","timestamp":"2025-07-10T09:33:30.353Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T09:34:36.967Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: call.request.getUserId is not a function (Status: 500)","timestamp":"2025-07-10T09:34:37.007Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T09:34:57.549Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: call.request.getUserId is not a function (Status: 500)","timestamp":"2025-07-10T09:34:57.578Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T09:35:32.928Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: call.request.getUserId is not a function (Status: 500)","timestamp":"2025-07-10T09:35:32.952Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T09:36:21.682Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: call.request.getUserId is not a function (Status: 500)","timestamp":"2025-07-10T09:36:21.716Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T11:21:49.839Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T11:30:32.250Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T11:37:22.443Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T11:42:54.505Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: Email already exists (Status: 500)","timestamp":"2025-07-10T11:42:54.570Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T11:43:30.105Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: Email already exists (Status: 500)","timestamp":"2025-07-10T11:43:30.134Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T11:43:35.131Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: Email already exists (Status: 500)","timestamp":"2025-07-10T11:43:35.136Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T11:43:39.772Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: Email already exists (Status: 500)","timestamp":"2025-07-10T11:43:39.788Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T11:43:49.831Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: Email already exists (Status: 500)","timestamp":"2025-07-10T11:43:49.844Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T11:46:08.826Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T11:55:34.085Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T11:55:34.909Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T11:55:39.348Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T11:55:39.807Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T11:55:40.952Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T12:54:30.703Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T12:56:14.861Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T12:56:20.541Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T12:57:08.071Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T12:57:12.267Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:03:50.312Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:03:50.588Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:03:52.500Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:03:54.003Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:03:54.338Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:04:05.834Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:04:07.599Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:04:14.843Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:04:27.534Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:04:29.507Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:04:34.146Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:04:34.504Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:04:35.743Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:41:43.306Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:41:43.890Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:41:45.131Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:42:49.992Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:42:50.688Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:42:52.120Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:43:45.565Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:43:46.683Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:43:47.401Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:43:54.997Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:43:55.965Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:43:56.407Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:44:15.403Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:44:15.726Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:44:23.888Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:44:35.053Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:44:39.509Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:44:39.857Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:44:41.849Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T13:44:47.078Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T16:41:20.463Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T16:43:53.624Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T16:43:54.319Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-10T16:49:24.455Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-10T16:49:43.508Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-10T16:50:26.933Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-10T16:51:14.870Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-10T16:52:16.996Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-10T16:52:31.162Z"}
+{"level":"info","message":"GET /auth/google","timestamp":"2025-07-10T16:53:44.460Z"}
+{"level":"info","message":"GET /auth/google/callback?code=4%2F0AVMBsJhUeT-Nz49m_oLgVnBVuHX_0CnSJmFrU0VtsAWc5pN0rhYAX3MnAtPF_-OjIzS9oA&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+openid&authuser=0&prompt=none","timestamp":"2025-07-10T16:53:47.636Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-10T16:53:49.521Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-10T16:53:49.572Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T16:53:50.747Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T16:53:50.751Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T16:53:57.715Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T16:53:57.726Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T16:53:57.729Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T16:54:02.576Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T16:54:02.578Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T16:54:02.585Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T16:54:02.588Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T16:54:02.590Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T16:54:22.265Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T16:54:42.517Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T16:54:44.763Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T16:55:05.617Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T16:55:11.650Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T16:55:32.959Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T16:55:36.708Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T16:56:40.287Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T16:58:53.129Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T16:59:26.983Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T16:59:31.584Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T16:59:31.589Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T16:59:42.492Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T17:00:07.674Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T17:00:19.062Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T17:01:33.357Z"}
+{"level":"info","message":"PATCH /auth/profile","timestamp":"2025-07-10T17:01:34.751Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T17:02:19.420Z"}
+{"level":"info","message":"PATCH /auth/profile","timestamp":"2025-07-10T17:02:21.099Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T17:02:29.568Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T17:02:29.571Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T17:02:31.102Z"}
+{"level":"info","message":"PATCH /auth/profile","timestamp":"2025-07-10T17:02:48.691Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T17:04:05.329Z"}
+{"level":"info","message":"POST /auth/logout","timestamp":"2025-07-10T17:04:09.971Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-10T17:04:35.807Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-10T17:05:40.311Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:06:30.432Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-10T17:06:44.406Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-10T17:07:02.691Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:08:25.380Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:08:45.503Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:08:52.811Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:20:20.548Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:20:40.664Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T17:25:13.911Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T17:25:37.781Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T17:26:27.775Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T17:27:28.862Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:27:56.269Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:28:01.905Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:28:13.135Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T17:28:16.844Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: Username already exists (Status: 500)","timestamp":"2025-07-10T17:28:16.951Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T17:28:27.859Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:29:21.385Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:29:22.072Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:29:22.546Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:29:23.615Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:29:24.251Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:29:25.126Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:29:25.718Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:29:27.832Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:29:28.175Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:29:28.538Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:29:29.750Z"}
+{"level":"info","message":"POST /auth/resend","timestamp":"2025-07-10T17:30:16.357Z"}
+{"level":"info","message":"POST /auth/verify-otp","timestamp":"2025-07-10T17:30:54.988Z"}
+{"level":"info","message":"POST /auth/verify-otp","timestamp":"2025-07-10T17:31:10.966Z"}
+{"level":"info","message":"POST /auth/resend","timestamp":"2025-07-10T17:31:35.532Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T17:33:48.278Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T17:35:28.526Z"}
+{"level":"info","message":"POST /auth/verify-otp","timestamp":"2025-07-10T17:35:50.534Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:36:12.660Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:36:14.416Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:36:17.013Z"}
+{"level":"info","message":"POST /auth/verify-otp","timestamp":"2025-07-10T17:36:18.737Z"}
+{"level":"info","message":"POST /auth/verify-otp","timestamp":"2025-07-10T17:36:35.964Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:36:42.260Z"}
+{"level":"info","message":"POST /auth/verify-otp","timestamp":"2025-07-10T17:36:43.886Z"}
+{"level":"info","message":"POST /auth/verify-otp","timestamp":"2025-07-10T17:37:13.087Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:37:21.238Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:37:34.129Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:37:50.468Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T17:39:53.485Z"}
+{"level":"error","message":"Error: Cannot read properties of undefined (reading 'email') (Status: 500)","timestamp":"2025-07-10T17:40:00.086Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:40:27.845Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:40:38.889Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:41:43.599Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:42:02.171Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:42:03.066Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:42:10.574Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:42:12.967Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:42:17.738Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:42:34.369Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:42:34.941Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:42:35.530Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:42:39.117Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:42:43.171Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:43:19.138Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:43:20.312Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:43:20.747Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:43:21.375Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:43:21.751Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:43:23.027Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:43:23.335Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:43:23.704Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:43:24.604Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:43:26.062Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-07-10T17:43:52.043Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:43:52.269Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:44:00.611Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:44:08.946Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:44:09.290Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:44:13.252Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:44:22.607Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:44:23.138Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T17:44:30.303Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T17:44:38.086Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T17:44:39.115Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T17:44:39.686Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T17:44:39.841Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:44:58.921Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:45:52.826Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T17:45:55.135Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: Email already exists (Status: 500)","timestamp":"2025-07-10T17:45:55.247Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:46:02.997Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:49:37.177Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:49:37.517Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:49:37.866Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:49:38.630Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:49:39.246Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:49:40.355Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:49:41.377Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:49:43.442Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:49:43.733Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:49:47.237Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:49:49.050Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:49:50.110Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:49:50.423Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:49:52.022Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:49:53.047Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:49:53.415Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:50:01.750Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:50:12.224Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:52:25.895Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T17:52:37.349Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: Email already exists (Status: 500)","timestamp":"2025-07-10T17:52:37.445Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T17:52:39.117Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: Email already exists (Status: 500)","timestamp":"2025-07-10T17:52:39.146Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T17:52:47.295Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T17:53:03.577Z"}
+{"level":"info","message":"POST /auth/verify-otp","timestamp":"2025-07-10T17:53:24.525Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-10T17:53:24.588Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T17:53:28.287Z"}
+{"level":"info","message":"POST /auth/logout","timestamp":"2025-07-10T17:53:30.844Z"}
+{"level":"info","message":"POST /auth/password-reset","timestamp":"2025-07-10T17:53:46.000Z"}
+{"level":"info","message":"POST /auth/password-reset","timestamp":"2025-07-10T17:53:57.734Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-10T17:56:46.123Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T17:58:33.302Z"}
+{"level":"info","message":"POST /auth/verify-otp","timestamp":"2025-07-10T18:00:56.880Z"}
+{"level":"info","message":"POST /auth/resend","timestamp":"2025-07-10T18:02:14.504Z"}
+{"level":"info","message":"POST /auth/verify-otp","timestamp":"2025-07-10T18:02:40.055Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-10T18:02:40.114Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T18:02:43.740Z"}
+{"level":"info","message":"POST /auth/logout","timestamp":"2025-07-10T18:02:52.466Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T18:03:51.280Z"}
+{"level":"info","message":"POST /auth/verify-otp","timestamp":"2025-07-10T18:04:33.940Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-10T18:04:34.011Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T18:04:42.090Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T18:05:06.791Z"}
+{"level":"info","message":"POST /auth/logout","timestamp":"2025-07-10T18:05:15.400Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-10T18:05:30.772Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-10T18:05:30.960Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-10T18:07:22.331Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-10T18:07:22.425Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T18:09:03.173Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-10T18:09:03.204Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T18:09:39.220Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-10T18:09:39.244Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T18:10:44.588Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-10T18:10:44.627Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:16:55.736Z"}
+{"level":"info","message":"GET /auth/admin/users?page=2&limit=5","timestamp":"2025-07-10T18:17:23.649Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:17:25.874Z"}
+{"level":"info","message":"PATCH /auth/admin/users/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3/toogle","timestamp":"2025-07-10T18:17:31.668Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:17:31.703Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-10T18:17:52.867Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:18:00.807Z"}
+{"level":"info","message":"PATCH /auth/admin/users/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3/toogle","timestamp":"2025-07-10T18:18:01.714Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:18:01.744Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-10T18:18:03.905Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-10T18:18:03.999Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T18:18:07.763Z"}
+{"level":"info","message":"PATCH /auth/admin/users/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3/toogle","timestamp":"2025-07-10T18:18:10.621Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:18:10.640Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T18:18:25.206Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-10T18:18:25.250Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:19:11.191Z"}
+{"level":"info","message":"PATCH /auth/admin/users/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3/toogle","timestamp":"2025-07-10T18:19:14.025Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:19:14.054Z"}
+{"level":"info","message":"PATCH /auth/admin/users/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3/toogle","timestamp":"2025-07-10T18:19:15.064Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:19:15.089Z"}
+{"level":"info","message":"PATCH /auth/admin/users/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3/toogle","timestamp":"2025-07-10T18:19:15.605Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:19:15.625Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=j","timestamp":"2025-07-10T18:19:22.853Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=jn","timestamp":"2025-07-10T18:19:23.254Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=ju","timestamp":"2025-07-10T18:19:23.948Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=jua","timestamp":"2025-07-10T18:19:24.184Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=juan","timestamp":"2025-07-10T18:19:24.258Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=juani","timestamp":"2025-07-10T18:19:24.492Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=juanid","timestamp":"2025-07-10T18:19:24.706Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:19:27.006Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=10","timestamp":"2025-07-10T18:19:31.845Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-10T18:19:42.005Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:19:49.447Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&date=today","timestamp":"2025-07-10T18:19:57.792Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:20:01.412Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&date=last-month","timestamp":"2025-07-10T18:20:03.629Z"}
+{"level":"info","message":"GET /auth/admin/users?page=2&limit=5&date=last-month","timestamp":"2025-07-10T18:20:07.030Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&date=last-month","timestamp":"2025-07-10T18:20:20.152Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&date=last-month","timestamp":"2025-07-10T18:20:35.962Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-10T18:21:01.999Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&date=last-month","timestamp":"2025-07-10T18:21:09.402Z"}
+{"level":"info","message":"POST /auth/verify-otp","timestamp":"2025-07-10T18:21:23.006Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-10T18:21:23.056Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T18:21:27.040Z"}
+{"level":"info","message":"PATCH /auth/profile","timestamp":"2025-07-10T18:21:38.977Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T18:21:39.035Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T18:21:50.966Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T18:22:32.919Z"}
+{"level":"info","message":"PATCH /auth/profile","timestamp":"2025-07-10T18:22:35.045Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T18:22:35.068Z"}
+{"level":"info","message":"PATCH /auth/profile","timestamp":"2025-07-10T18:22:36.162Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T18:22:36.183Z"}
+{"level":"info","message":"PATCH /auth/profile","timestamp":"2025-07-10T18:22:36.335Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T18:22:36.354Z"}
+{"level":"info","message":"PATCH /auth/profile","timestamp":"2025-07-10T18:22:36.519Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T18:22:36.543Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T18:22:47.322Z"}
+{"level":"info","message":"POST /auth/logout","timestamp":"2025-07-10T18:22:51.362Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&date=last-month","timestamp":"2025-07-10T18:24:07.666Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-10T18:24:07.700Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&date=last-month","timestamp":"2025-07-10T18:24:07.722Z"}
+{"level":"info","message":"GET /auth/admin/users?page=2&limit=5&date=last-month","timestamp":"2025-07-10T18:24:09.757Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&date=last-month","timestamp":"2025-07-10T18:24:55.474Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:26:53.173Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:27:13.761Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&date=today","timestamp":"2025-07-10T18:28:35.773Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:28:36.546Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&status=inactive","timestamp":"2025-07-10T18:28:39.363Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T18:28:45.875Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:28:51.490Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:29:34.876Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:30:23.239Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T18:30:31.221Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:30:37.004Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-10T18:30:50.029Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:30:57.681Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:31:42.001Z"}
+{"level":"info","message":"GET /auth/admin/users?page=2&limit=5","timestamp":"2025-07-10T18:31:45.069Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:33:03.389Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:33:27.735Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:34:20.428Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:36:36.212Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:39:17.708Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-10T18:39:17.860Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:39:17.897Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:39:40.828Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:41:42.503Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:41:57.359Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:42:51.565Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:43:41.404Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:43:48.559Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:44:10.135Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:44:22.049Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:44:35.060Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:45:04.345Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:45:31.999Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:45:43.084Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:45:53.704Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:46:24.881Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:46:48.688Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:47:00.987Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:47:29.437Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:49:00.719Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:49:05.639Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:49:28.074Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:49:57.901Z"}
+{"level":"info","message":"PATCH /auth/admin/users/f7fb0f48-782b-426f-a2ba-d581d646f96a/toogle","timestamp":"2025-07-10T18:50:18.276Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:50:18.345Z"}
+{"level":"info","message":"PATCH /auth/admin/users/f7fb0f48-782b-426f-a2ba-d581d646f96a/toogle","timestamp":"2025-07-10T18:50:21.468Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:50:21.495Z"}
+{"level":"info","message":"PATCH /auth/admin/users/f7fb0f48-782b-426f-a2ba-d581d646f96a/toogle","timestamp":"2025-07-10T18:50:25.870Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:50:25.894Z"}
+{"level":"info","message":"PATCH /auth/admin/users/f7fb0f48-782b-426f-a2ba-d581d646f96a/toogle","timestamp":"2025-07-10T18:50:32.018Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:50:32.041Z"}
+{"level":"info","message":"PATCH /auth/admin/users/f7fb0f48-782b-426f-a2ba-d581d646f96a/toogle","timestamp":"2025-07-10T18:50:33.467Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:50:33.491Z"}
+{"level":"info","message":"GET /auth/admin/users?page=2&limit=5","timestamp":"2025-07-10T18:50:51.123Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:50:52.785Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:51:26.549Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:51:52.401Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:52:02.937Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:52:27.614Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:52:39.065Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:52:50.101Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:53:05.516Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:53:15.859Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:54:02.237Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:54:27.132Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-10T18:54:27.189Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:54:27.216Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:54:38.741Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:55:30.058Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:55:40.227Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T18:55:48.892Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:56:09.145Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-10T18:56:11.992Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:56:39.134Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T18:56:41.597Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:57:05.945Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:57:25.115Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:58:15.604Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:58:31.342Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T18:58:37.698Z"}
+{"level":"info","message":"PATCH /auth/admin/users/f7fb0f48-782b-426f-a2ba-d581d646f96a/toogle","timestamp":"2025-07-10T18:58:41.791Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:58:41.827Z"}
+{"level":"info","message":"PATCH /auth/admin/users/f7fb0f48-782b-426f-a2ba-d581d646f96a/toogle","timestamp":"2025-07-10T18:58:43.387Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:58:43.409Z"}
+{"level":"info","message":"PATCH /auth/admin/users/f7fb0f48-782b-426f-a2ba-d581d646f96a/toogle","timestamp":"2025-07-10T18:58:44.073Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:58:44.101Z"}
+{"level":"info","message":"PATCH /auth/admin/users/f7fb0f48-782b-426f-a2ba-d581d646f96a/toogle","timestamp":"2025-07-10T18:58:44.350Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:58:44.373Z"}
+{"level":"info","message":"PATCH /auth/admin/users/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3/toogle","timestamp":"2025-07-10T18:58:54.245Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:58:54.294Z"}
+{"level":"info","message":"PATCH /auth/admin/users/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3/toogle","timestamp":"2025-07-10T18:58:55.473Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T18:58:55.503Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:00:09.104Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T19:00:14.089Z"}
+{"level":"info","message":"GET /auth/admin/user/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912","timestamp":"2025-07-10T19:00:20.142Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-10T19:00:23.756Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:00:34.685Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:00:46.440Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-10T19:00:57.036Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-10T19:00:57.133Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:01:04.343Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T19:01:17.490Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T19:01:32.127Z"}
+{"level":"info","message":"PATCH /auth/profile","timestamp":"2025-07-10T19:01:33.355Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T19:01:33.411Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T19:01:33.414Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T19:01:33.415Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:01:45.337Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:01:56.447Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T19:01:58.136Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-10T19:02:01.848Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:03:00.683Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T19:03:02.671Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T19:03:41.818Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T19:03:41.828Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:03:41.847Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T19:04:04.081Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T19:04:04.100Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T19:04:06.278Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T19:04:06.297Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:04:06.315Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:04:17.169Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:04:28.481Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T19:04:32.080Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:04:51.121Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:04:53.329Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T19:04:55.892Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T19:05:54.500Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:05:54.528Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:06:21.070Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:06:25.261Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T19:06:32.274Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T19:06:32.283Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:06:32.530Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T19:06:42.082Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T19:06:42.089Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:06:42.332Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T19:06:58.116Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-10T19:07:07.598Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:07:57.929Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:08:21.754Z"}
+{"level":"info","message":"GET /auth/admin/user/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912","timestamp":"2025-07-10T19:08:26.849Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:08:36.408Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:09:03.931Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T19:09:05.872Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-10T19:09:32.101Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-10T19:09:32.133Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-10T19:09:32.168Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T19:10:06.686Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-10T19:10:48.771Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T19:11:32.371Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T23:25:34.781Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:25:38.578Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-10T23:26:16.798Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:26:38.504Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-10T23:26:38.591Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:26:38.650Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:26:43.802Z"}
+{"level":"info","message":"GET /auth/admin/users?page=2&limit=5","timestamp":"2025-07-10T23:26:50.281Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:27:02.183Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:27:02.197Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:27:02.202Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-10T23:27:02.210Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-10T23:27:02.234Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:27:02.236Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-10T23:27:02.243Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:27:02.244Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:27:02.262Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:27:06.659Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:27:06.661Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:27:15.719Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:27:15.728Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:27:15.730Z"}
+{"level":"info","message":"PATCH /auth/profile","timestamp":"2025-07-10T23:27:18.457Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:27:18.483Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:27:21.313Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:27:44.773Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:28:36.706Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:31:59.207Z"}
+{"level":"info","message":"PATCH /auth/profile","timestamp":"2025-07-10T23:32:02.149Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:32:02.183Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:32:06.547Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:32:19.149Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:32:33.417Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:35:11.551Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:35:13.705Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:35:15.800Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:35:15.809Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:35:15.812Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:35:15.815Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:35:15.817Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:35:20.728Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:35:20.755Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:35:20.758Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:35:20.760Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:35:20.762Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:35:28.521Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:35:39.209Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:35:58.698Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:36:26.433Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:36:26.445Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:36:26.448Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:36:26.449Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:36:26.450Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:36:33.036Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:36:33.047Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:36:33.051Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:36:33.055Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:36:33.057Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:36:33.291Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:36:36.287Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:36:52.496Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:36:52.512Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:36:52.522Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:36:52.527Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:36:52.530Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:36:52.538Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:37:26.409Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:37:31.424Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:37:33.816Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:37:33.832Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:37:33.835Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:37:33.837Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:37:33.839Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:37:51.639Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:38:00.540Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:38:15.897Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:39:48.347Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:39:48.368Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:39:48.378Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:39:48.386Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:39:48.389Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:40:18.206Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:41:38.685Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-10T23:41:38.751Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:41:38.786Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:41:43.573Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:41:43.588Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:41:43.594Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:41:43.598Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-10T23:41:43.600Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:41:57.382Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:42:07.332Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-10T23:42:07.356Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:42:07.373Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:42:37.471Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:42:49.396Z"}
+{"level":"info","message":"PATCH /auth/profile","timestamp":"2025-07-10T23:42:54.180Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:42:54.206Z"}
+{"level":"info","message":"PATCH /auth/profile","timestamp":"2025-07-10T23:43:04.425Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:43:04.447Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-10T23:45:01.562Z"}
+{"level":"info","message":"POST /auth/logout","timestamp":"2025-07-10T23:45:32.518Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:46:21.377Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:47:43.306Z"}
+{"level":"info","message":"GET /auth/admin/users?page=2&limit=5","timestamp":"2025-07-10T23:47:46.251Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T23:48:00.517Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-10T23:48:06.023Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-10T23:48:55.239Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:48:59.920Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:49:02.733Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:49:14.836Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T23:49:17.804Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:49:35.401Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-10T23:49:49.773Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-10T23:49:56.592Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-10T23:50:13.074Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T23:50:20.479Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-10T23:50:49.550Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T23:50:54.800Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-10T23:51:22.989Z"}
+{"level":"info","message":"GET /auth/admin/user/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912","timestamp":"2025-07-10T23:51:41.244Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:53:32.594Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:54:31.216Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:54:34.820Z"}
+{"level":"info","message":"GET /auth/admin/user/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912","timestamp":"2025-07-10T23:54:39.068Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-10T23:54:44.333Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-10T23:54:51.732Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:55:56.608Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:56:01.480Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-10T23:56:04.381Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-10T23:56:37.569Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-10T23:57:03.389Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-10T23:57:03.407Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-10T23:57:03.429Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T23:57:20.399Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:57:41.764Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:58:03.812Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T23:58:03.821Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T23:59:03.034Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-10T23:59:03.064Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-10T23:59:56.952Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:00:21.914Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-11T00:00:31.113Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:00:36.591Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:00:47.933Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-11T00:00:53.324Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:01:02.319Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-11T00:01:05.105Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:01:17.296Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:01:48.653Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-11T00:01:52.294Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:02:19.681Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:02:30.009Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:02:35.737Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:02:38.675Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-11T00:02:42.293Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-11T00:03:38.182Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:03:38.190Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-11T00:06:39.592Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:06:59.459Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:07:02.916Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-11T00:07:07.460Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:07:23.367Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:07:25.023Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-11T00:07:28.281Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:07:47.684Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:07:59.292Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:08:48.048Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:09:01.605Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-11T00:09:07.908Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-11T00:09:55.359Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:10:11.361Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:10:26.222Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:10:45.725Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:10:58.671Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:11:29.695Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:11:32.188Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-11T00:11:34.433Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:11:50.853Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:12:02.003Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-11T00:12:06.038Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-11T00:12:06.108Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-11T00:12:06.240Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:12:19.952Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-11T00:12:22.329Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-11T00:14:31.810Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:14:45.978Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:14:53.287Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:15:31.560Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:15:33.922Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-11T00:15:36.419Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:15:46.508Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-11T00:15:49.784Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:16:15.049Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:16:33.535Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-11T00:16:33.652Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:16:51.749Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:16:55.500Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:17:38.800Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:17:49.473Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:17:56.192Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:18:13.228Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:18:36.976Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:18:59.172Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:19:09.424Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:19:22.995Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:19:33.092Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:19:44.261Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:21:10.801Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:21:22.830Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:21:46.070Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:21:56.798Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:22:07.851Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:22:12.460Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:22:26.592Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:22:30.539Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:22:52.626Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:23:01.783Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:23:17.960Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:23:59.159Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:24:44.431Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:24:57.484Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:25:22.765Z"}
+{"level":"info","message":"GET /auth/admin/users?page=2&limit=5","timestamp":"2025-07-11T00:25:28.829Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:25:39.596Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:25:58.709Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:26:10.638Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:26:24.472Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:26:35.765Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:26:43.824Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:26:53.198Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:27:03.330Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:27:15.010Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-11T00:27:15.043Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:27:15.085Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:27:26.149Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:27:36.560Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:27:47.456Z"}
+{"level":"info","message":"GET /auth/admin/users?page=2&limit=5","timestamp":"2025-07-11T00:27:55.924Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:27:58.558Z"}
+{"level":"info","message":"GET /auth/admin/users?page=2&limit=5","timestamp":"2025-07-11T00:28:06.981Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:28:09.629Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:29:29.031Z"}
+{"level":"info","message":"GET /auth/admin/users?page=2&limit=5","timestamp":"2025-07-11T00:29:31.573Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=j","timestamp":"2025-07-11T00:29:49.493Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=ju","timestamp":"2025-07-11T00:29:49.692Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=jun","timestamp":"2025-07-11T00:29:49.891Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=juna","timestamp":"2025-07-11T00:29:50.002Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=junai","timestamp":"2025-07-11T00:29:50.132Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=junaid","timestamp":"2025-07-11T00:29:50.269Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:29:55.402Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=h","timestamp":"2025-07-11T00:30:28.570Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=he","timestamp":"2025-07-11T00:30:28.683Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:30:29.769Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=j","timestamp":"2025-07-11T00:30:31.350Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=ja","timestamp":"2025-07-11T00:30:31.545Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5&search=jay","timestamp":"2025-07-11T00:30:32.279Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-11T00:30:36.233Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:31:26.222Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:31:40.560Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-11T00:31:43.010Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:32:11.309Z"}
+{"level":"info","message":"GET /auth/admin/user/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912","timestamp":"2025-07-11T00:32:13.709Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-11T00:32:16.999Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-11T00:32:20.466Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-11T00:32:30.870Z"}
+{"level":"info","message":"PATCH /auth/admin/users/f7fb0f48-782b-426f-a2ba-d581d646f96a/toogle","timestamp":"2025-07-11T00:32:40.750Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:32:40.794Z"}
+{"level":"info","message":"PATCH /auth/admin/users/f7fb0f48-782b-426f-a2ba-d581d646f96a/toogle","timestamp":"2025-07-11T00:32:42.655Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:32:42.682Z"}
+{"level":"info","message":"PATCH /auth/admin/users/f7fb0f48-782b-426f-a2ba-d581d646f96a/toogle","timestamp":"2025-07-11T00:32:45.531Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:32:45.550Z"}
+{"level":"info","message":"PATCH /auth/admin/users/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912/toogle","timestamp":"2025-07-11T00:32:48.915Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:32:48.939Z"}
+{"level":"info","message":"PATCH /auth/admin/users/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912/toogle","timestamp":"2025-07-11T00:32:50.497Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:32:50.518Z"}
+{"level":"info","message":"GET /auth/admin/user/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912","timestamp":"2025-07-11T00:32:53.447Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:33:33.205Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:34:53.688Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:42:50.231Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-11T00:42:50.481Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:42:50.766Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:43:02.684Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:43:04.304Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:43:15.100Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:44:09.657Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:46:31.774Z"}
+{"level":"info","message":"GET /auth/admin/user/undefined","timestamp":"2025-07-11T00:46:34.727Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-11T00:46:34.729Z"}
+{"level":"info","message":"GET /auth/admin/user/undefined","timestamp":"2025-07-11T00:46:34.756Z"}
+{"level":"info","message":"GET /auth/admin/user/undefined","timestamp":"2025-07-11T00:46:34.767Z"}
+{"level":"info","message":"GET /auth/admin/user/undefined","timestamp":"2025-07-11T00:46:34.783Z"}
+{"level":"info","message":"GET /auth/admin/user/undefined","timestamp":"2025-07-11T00:46:40.422Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-11T00:46:40.426Z"}
+{"level":"info","message":"GET /auth/admin/user/undefined","timestamp":"2025-07-11T00:46:40.440Z"}
+{"level":"info","message":"GET /auth/admin/user/undefined","timestamp":"2025-07-11T00:46:40.450Z"}
+{"level":"info","message":"GET /auth/admin/user/undefined","timestamp":"2025-07-11T00:46:40.460Z"}
+{"level":"info","message":"GET /auth/admin/user/undefined","timestamp":"2025-07-11T00:46:43.692Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-11T00:46:43.694Z"}
+{"level":"info","message":"GET /auth/admin/user/undefined","timestamp":"2025-07-11T00:46:43.712Z"}
+{"level":"info","message":"GET /auth/admin/user/undefined","timestamp":"2025-07-11T00:46:43.722Z"}
+{"level":"info","message":"GET /auth/admin/user/undefined","timestamp":"2025-07-11T00:46:43.730Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:47:13.297Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:48:58.772Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:49:56.154Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:50:37.661Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:52:35.948Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:53:55.469Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:53:58.075Z"}
+{"level":"info","message":"GET /auth/admin/user/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912","timestamp":"2025-07-11T00:54:01.679Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:54:20.830Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-11T00:54:42.097Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-11T00:54:42.238Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T00:54:45.578Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T00:55:37.876Z"}
+{"level":"info","message":"PATCH /auth/profile","timestamp":"2025-07-11T00:55:38.601Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T00:55:38.646Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T00:55:38.648Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T00:55:38.648Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:55:48.012Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-11T00:55:51.340Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:56:40.190Z"}
+{"level":"info","message":"GET /auth/admin/users?page=2&limit=5","timestamp":"2025-07-11T00:56:45.280Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=10","timestamp":"2025-07-11T00:56:50.995Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:56:56.865Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:57:16.099Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-11T00:57:26.355Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-11T00:58:13.700Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-11T00:58:13.752Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-11T00:58:13.795Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:58:28.883Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-11T00:58:33.202Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:58:42.732Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:58:55.832Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-11T00:58:59.256Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-11T00:59:39.697Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:59:41.373Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:59:45.878Z"}
+{"level":"info","message":"GET /auth/admin/user/undefined","timestamp":"2025-07-11T00:59:49.622Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-11T00:59:49.625Z"}
+{"level":"info","message":"GET /auth/admin/user/undefined","timestamp":"2025-07-11T00:59:49.643Z"}
+{"level":"info","message":"GET /auth/admin/user/undefined","timestamp":"2025-07-11T00:59:49.660Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T00:59:59.556Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:00:01.060Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:00:01.075Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:00:01.078Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:00:01.081Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:00:01.091Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:00:01.096Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:00:03.652Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-11T01:00:06.800Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:00:27.315Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-11T01:00:54.656Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:00:58.081Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:01:15.484Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:01:19.525Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:01:22.361Z"}
+{"level":"info","message":"GET /auth/admin/user/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912","timestamp":"2025-07-11T01:01:25.768Z"}
+{"level":"info","message":"GET /auth/admin/user/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912","timestamp":"2025-07-11T01:01:55.917Z"}
+{"level":"info","message":"GET /auth/admin/user/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912","timestamp":"2025-07-11T01:02:30.132Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:02:30.487Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:02:34.192Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:02:36.769Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-11T01:02:40.254Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:02:57.266Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-11T01:03:23.785Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:03:34.941Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:03:37.619Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-11T01:03:41.210Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-11T01:04:14.322Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:04:33.368Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:04:38.457Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-11T01:04:42.869Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:04:51.615Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:04:51.620Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-11T01:05:27.297Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:05:39.247Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:05:44.609Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-11T01:05:48.738Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:06:06.119Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-11T01:07:00.240Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:08:00.415Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:08:47.068Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:09:24.454Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:09:30.337Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:09:33.431Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-11T01:09:36.924Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:09:42.651Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:09:42.706Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-11T01:09:42.754Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-11T01:09:42.792Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:09:42.795Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:09:42.823Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:09:55.680Z"}
+{"level":"info","message":"GET /auth/admin/user/8a270a5e-c2f2-4042-be3e-ceb6fd5169f3","timestamp":"2025-07-11T01:10:13.298Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:10:16.455Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:10:17.417Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:10:46.917Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:10:50.051Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:11:51.247Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:11:53.451Z"}
+{"level":"info","message":"GET /auth/admin/user/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912","timestamp":"2025-07-11T01:11:55.470Z"}
+{"level":"info","message":"GET /auth/admin/user/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912","timestamp":"2025-07-11T01:13:11.014Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:14:33.668Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:14:33.678Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:15:41.985Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:15:46.714Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-11T01:15:46.796Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:15:46.839Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:15:52.227Z"}
+{"level":"info","message":"GET /auth/admin/user/76649551-52df-492a-b57a-390ad7088bdc","timestamp":"2025-07-11T01:15:56.294Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:15:56.317Z"}
+{"level":"info","message":"GET /auth/admin/user/098aac76-85df-4200-89ff-240778d1ecc6","timestamp":"2025-07-11T01:16:01.181Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:16:04.785Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:16:04.789Z"}
+{"level":"info","message":"GET /auth/admin/user/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912","timestamp":"2025-07-11T01:16:13.979Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-11T01:16:18.247Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:16:18.274Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:16:22.426Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:16:22.428Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:16:29.422Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:16:29.426Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:16:40.185Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:16:40.195Z"}
+{"level":"info","message":"GET /auth/admin/user/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912","timestamp":"2025-07-11T01:16:53.205Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-11T01:16:56.349Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:16:56.354Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:16:56.356Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-11T01:17:49.260Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:17:49.488Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:17:55.066Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:17:57.700Z"}
+{"level":"info","message":"POST /auth/logout","timestamp":"2025-07-11T01:18:04.039Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-11T01:18:15.184Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-11T01:18:15.287Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:18:18.655Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:19:24.630Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:19:24.636Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:23:14.870Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:23:19.242Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:23:19.243Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:23:23.646Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:23:23.649Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:23:35.413Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:23:35.418Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:23:35.420Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:23:42.697Z"}
+{"level":"info","message":"GET /auth/admin/user/f7fb0f48-782b-426f-a2ba-d581d646f96a","timestamp":"2025-07-11T01:23:44.713Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:23:44.738Z"}
+{"level":"info","message":"GET /auth/admin/user/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912","timestamp":"2025-07-11T01:23:58.249Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:24:01.651Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:24:01.653Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:24:15.615Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:24:35.561Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:25:10.462Z"}
+{"level":"info","message":"GET /auth/admin/users?page=2&limit=5","timestamp":"2025-07-11T01:25:13.474Z"}
+{"level":"info","message":"GET /auth/admin/user/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912","timestamp":"2025-07-11T01:25:29.766Z"}
+{"level":"info","message":"PATCH /auth/admin/users/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912/toogle","timestamp":"2025-07-11T01:25:33.721Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:25:33.751Z"}
+{"level":"info","message":"PATCH /auth/admin/users/6e88ddcf-7bc1-4774-b3b5-76bf8a5b5912/toogle","timestamp":"2025-07-11T01:25:34.579Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:25:34.605Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:28:03.793Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-11T01:28:03.837Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:28:03.855Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:28:25.463Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:28:41.500Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:29:06.601Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:29:59.659Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:32:21.845Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:33:15.617Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:33:57.622Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:38:06.628Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:38:48.627Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-11T01:39:17.812Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:43:00.432Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-11T01:44:26.705Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:44:32.817Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-11T01:44:32.855Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-11T01:44:32.874Z"}
+{"level":"info","message":"POST /auth/logout","timestamp":"2025-07-11T01:44:36.359Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:44:57.827Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-11T01:44:57.871Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:44:57.886Z"}
+{"level":"info","message":"POST /auth/logout","timestamp":"2025-07-11T01:45:01.823Z"}
+{"level":"info","message":"GET /auth/google","timestamp":"2025-07-11T01:45:06.594Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-11T01:45:26.885Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-11T01:46:22.169Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: Email already exists (Status: 500)","timestamp":"2025-07-11T01:46:22.300Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-11T01:46:27.376Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: Email already exists (Status: 500)","timestamp":"2025-07-11T01:46:27.388Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-11T01:48:12.121Z"}
+{"level":"error","message":"Error: 3 INVALID_ARGUMENT: Email already exists (Status: 500)","timestamp":"2025-07-11T01:48:12.167Z"}
+{"level":"info","message":"POST /auth/signup","timestamp":"2025-07-11T01:51:30.801Z"}
+{"level":"info","message":"POST /auth/verify-otp","timestamp":"2025-07-11T01:52:10.225Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-11T01:52:10.286Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:52:16.049Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:52:45.891Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:53:22.635Z"}
+{"level":"info","message":"PATCH /auth/profile","timestamp":"2025-07-11T01:53:23.140Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:53:23.184Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:53:23.187Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:53:23.189Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:55:48.961Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:56:44.078Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:57:33.246Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:58:13.604Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T01:58:13.612Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T01:58:22.230Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T02:03:04.598Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-11T02:03:04.603Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-11T02:05:07.422Z"}
+{"level":"info","message":"POST /auth/logout","timestamp":"2025-07-11T02:05:12.596Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-11T03:19:01.084Z"}
+{"level":"info","message":"GET /auth/google","timestamp":"2025-07-11T03:19:03.191Z"}
+{"level":"info","message":"GET /favicon.ico","timestamp":"2025-07-11T03:19:03.257Z"}
+{"level":"info","message":"GET /auth/google","timestamp":"2025-07-11T03:19:22.911Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-11T03:20:59.419Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-11T03:20:59.545Z"}
+{"level":"info","message":"POST /auth/logout","timestamp":"2025-07-11T03:21:30.451Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-11T03:25:31.340Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-11T03:25:31.469Z"}
+{"level":"info","message":"POST /auth/logout","timestamp":"2025-07-11T03:25:36.310Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-11T03:26:03.591Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-11T03:26:03.705Z"}
+{"level":"info","message":"POST /auth/logout","timestamp":"2025-07-11T03:26:07.892Z"}

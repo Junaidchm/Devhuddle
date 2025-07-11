@@ -5,9 +5,11 @@ import { CustomError, sendErrorResponse } from "../../utils/error.util";
 import { HttpStatus } from "../../constents/httpStatus";
 import { User } from "@prisma/client";
 import { Messages } from "../../constents/reqresMessages";
+import { IAdminService } from "../../services/interface/IadminService";
+import { IAdminController } from "../interface/IadminController";
 
-export class AdminController {
-  constructor(private adminService: AdminService) {}
+export class AdminController implements IAdminController {
+  constructor(private adminService: IAdminService) {}
 
   async getUsers(req: Request, res: Response) {
     try {
