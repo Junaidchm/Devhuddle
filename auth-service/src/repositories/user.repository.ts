@@ -157,8 +157,8 @@ export class UserRepository
     name: string;
   }): Promise<User> {
     try {
-      const hashedPassword = await bcrypt.hash(Math.random().toString(36).slice(-8), 10);
-      return await super.create({ email, username, name, emailVerified: true,password:hashedPassword });
+      
+      return await super.create({ email, username, name, emailVerified: true,password:"" });
     } catch (error) {
       logger.error("Error creating OAuth user", {
         error: (error as Error).message,
