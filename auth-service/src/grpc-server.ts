@@ -1,64 +1,272 @@
 import * as grpc from "@grpc/grpc-js";
-import { AuthController } from "./controllers/auth.controller";
-import { AuthService } from "./services/auth.service";
-import { UserRepository } from "./repositories/user.repository";
+
+import {
+  AuthServiceService,
+  RegisterRequest,
+  RegisterResponse,
+  AuthServiceServer,
+  VerifyOTPRequest,
+  VerifyOTPResponse,
+  ResentOTPResponse,
+  ResentOTPRequest,
+  GetJwtUserRequest,
+  GetJwtUserResponse,
+  LogingRequest,
+  LogingResponse,
+  PasswordResetRequest,
+  PasswordResetResponse,
+  PasswordResetConfirmRequest,
+  GetProfileRequest,
+  GetProfileResponse,
+  UpdateProfileRequest,
+  UpdateProfileResponse,
+  VerifyRefreshTokenRequest,
+  VerifyRefreshTokenResponse,
+  GeneratePresignedUrlRequest,
+  GeneratePresignedUrlResponse,
+} from "./grpc/generated/auth";
+
 import logger from "./utils/logger.util";
-import { setAuthToken } from "./utils/jwtHandler";
-import * as authProto from "../grpc-generated/auth_pb";
-import { AuthServiceService } from "../grpc-generated/auth_grpc_pb";
-import { UntypedServiceImplementation, ServiceDefinition } from "@grpc/grpc-js";
-import { CustomError, sendErrorResponse } from "./utils/error.util";
+import { UserRepository } from "./repositories/user.repository";
+import { AuthService } from "./services/impliments/auth.service";
+import { AuthController } from "./controllers/implimentation/auth.controller";
+import { CustomError } from "./utils/error.util";
 
-// Initialize repositories, services, and controllers
-const userRepository = new UserRepository();
-const authServiceUser = new AuthService(userRepository);
-const authController = new AuthController(authServiceUser);
+const userRepository: UserRepository = new UserRepository();
+const authenticationService: AuthService = new AuthService(userRepository);
+const authController: AuthController = new AuthController(
+  authenticationService
+);
 
-// gRPC service implementation
-const authServiceImpl: UntypedServiceImplementation = {
+//  Implementing the server interface
+const authService: AuthServiceServer = {
   register: async (
-    call: grpc.ServerUnaryCall<
-      authProto.RegisterRequest,
-      authProto.RegisterResponse
-    >,
-    callback: grpc.sendUnaryData<authProto.RegisterResponse>
-  ) => {
+    call: grpc.ServerUnaryCall<RegisterRequest, RegisterResponse>,
+    callback: grpc.sendUnaryData<RegisterResponse>
+  ): Promise<void> => {
+    const request = call.request;
+
     try {
-      logger.info("Received gRPC register request", {
-        request: call.request.toObject(),
-      });
-      const response = await authController.register(call.request);
+      const response = await authController.register(request);
       callback(null, response);
     } catch (err: any) {
-      logger.error("gRPC register error", {
+      callback(
+        {
+          code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,
+          message: err.message || "Internal server error",
+        },
+        null
+      );
+    }
+  },
+  verifyOtp: async (
+    call: grpc.ServerUnaryCall<VerifyOTPRequest, VerifyOTPResponse>,
+    callback: grpc.sendUnaryData<VerifyOTPResponse>
+  ) => {
+    const request = call.request;
+    try {
+      const response = await authController.verifyOTP(request);
+      callback(null, response);
+    } catch (err: any) {
+      callback({
+        code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,
+        message: err.message || "Internal server error",
+      });
+    }
+  },
+  resendOtp: async (
+    call: grpc.ServerUnaryCall<ResentOTPRequest, ResentOTPResponse>,
+    callback: grpc.sendUnaryData<ResentOTPResponse>
+  ) => {
+    try {
+      const request = call.request;
+      const response = await authController.resendOTP(request);
+      callback(null, response);
+    } catch (err: any) {
+      callback({
+        code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,
+        message: err.message || "Internal server error",
+      });
+    }
+  },
+  getJwtUser: async (
+    call: grpc.ServerUnaryCall<GetJwtUserRequest, GetJwtUserResponse>,
+    callback: grpc.sendUnaryData<GetJwtUserResponse>
+  ) => {
+    try {
+      const request = call.request;
+      const response = await authController.getCurrentUser(request);
+      callback(null, response);
+    } catch (err: any) {
+      callback({
+        code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,
+        message: err.message || "Internal server error",
+      });
+    }
+  },
+  login: async (
+    call: grpc.ServerUnaryCall<LogingRequest, LogingResponse>,
+    callback: grpc.sendUnaryData<LogingResponse>
+  ) => {
+    try {
+      logger.info("Received gRPC login request", { request: call });
+      const request = call.request;
+      const response = await authController.login(request);
+      callback(null, response);
+    } catch (err: any) {
+      logger.error("gRPC login error", {
         error: err.message,
         stack: err.stack,
       });
-      const statusCode = err instanceof CustomError ? err.status : 500;
       callback({
-        code:
-          statusCode === 400
-            ? grpc.status.INVALID_ARGUMENT
-            : grpc.status.INTERNAL,
-        message: err.message || "Server error",
+        code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,
+        message: err.message || "Internal server error",
+      });
+    }
+  },
+  requestPasswordReset: async (
+    call: grpc.ServerUnaryCall<PasswordResetRequest, PasswordResetResponse>,
+    callback:grpc.sendUnaryData<PasswordResetResponse>
+  ) => {
+    try {
+      logger.info("Received gRPC requestPasswordReset request", {
+        request: call,
+      });
+      const request = call.request
+      const response = await authController.requestPasswordReset(request);
+      callback(null,response)
+    } catch (err: any) {
+      logger.error("gRPC requestPasswordReset error", {
+        error: err.message,
+        stack: err.stack,
+      });
+      callback({
+        code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,
+        message: err.message || "Internal server error",
+      });
+    }
+  },
+  resetPassword: async (
+    call: grpc.ServerUnaryCall<PasswordResetConfirmRequest, PasswordResetResponse>,
+    callback:grpc.sendUnaryData<PasswordResetResponse>
+  ) => {
+    try {
+      logger.info("Received gRPC requestPasswordReset request", {
+        request: call,
+      });
+      const request = call.request
+      const response = await authController.resetPassword(request);
+      callback(null,response)
+    } catch (err: any) {
+      logger.error("gRPC requestPasswordReset error", {
+        error: err.message,
+        stack: err.stack,
+      });
+      callback({
+        code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,
+        message: err.message || "Internal server error",
+      });
+    }
+  },
+  getProfile:async (
+    call: grpc.ServerUnaryCall<GetProfileRequest, GetProfileResponse>,
+    callback:grpc.sendUnaryData<GetProfileResponse>
+  ) => {
+    try {
+      logger.info("Received gRPC getProfile request", {
+        request: call,
+      });
+      const request = call.request
+      const response = await authController.getProfile(request);
+      callback(null,response)
+    } catch (err: any) {
+      logger.error("gRPC getProfile error", {
+        error: err.message,
+        stack: err.stack,
+      });
+      callback({
+        code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,
+        message: err.message || "Internal server error",
+      });
+    }
+  },
+  updateProfile:async (
+    call: grpc.ServerUnaryCall<UpdateProfileRequest, UpdateProfileResponse>,
+    callback:grpc.sendUnaryData<UpdateProfileResponse>
+  ) => {
+    try {
+      logger.info("Received gRPC updateProfile request", {
+        request: call,
+      });
+      const request = call.request
+      const response = await authController.updateProfile(request);
+      callback(null,response)
+    } catch (err: any) {
+      logger.error("gRPC getProfile error", {
+        error: err.message,
+        stack: err.stack,
+      });
+      callback({
+        code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,
+        message: err.message || "Internal server error",
+      });
+    }
+  },
+  verifyRefreshToken:async (
+    call: grpc.ServerUnaryCall<VerifyRefreshTokenRequest, VerifyRefreshTokenResponse>,
+    callback:grpc.sendUnaryData<VerifyRefreshTokenResponse>
+  ) => {
+    try {
+      logger.info("Received gRPC updateProfile request", {
+        request: call,
+      });
+      const request = call.request
+      const response = await authController.verifyRefreshToken(request);
+      callback(null,response)
+    } catch (err: any) {
+      logger.error("gRPC getProfile error", {
+        error: err.message,
+        stack: err.stack,
+      });
+      callback({
+        code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,
+        message: err.message || "Internal server error",
+      });
+    }
+  },
+  generatePresignedUrl:async (
+    call: grpc.ServerUnaryCall<GeneratePresignedUrlRequest, GeneratePresignedUrlResponse>,
+    callback:grpc.sendUnaryData<GeneratePresignedUrlResponse>
+  ) => {
+    try {
+      logger.info("Received gRPC updateProfile request", {
+        request: call,
+      });
+      const request = call.request
+      const response = await authController.generatePresignedUrl(request);
+      callback(null,response)
+    } catch (err: any) {
+      logger.error("gRPC getProfile error", {
+        error: err.message,
+        stack: err.stack,
+      });
+      callback({
+        code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,
+        message: err.message || "Internal server error",
       });
     }
   },
 };
 
-// Start gRPC server
 const server = new grpc.Server();
-server.addService(
-  AuthServiceService as unknown as ServiceDefinition<UntypedServiceImplementation>,
-  authServiceImpl
-);
+server.addService(AuthServiceService, authService);
 
 const GRPC_PORT = process.env.GRPC_PORT || "50051";
 server.bindAsync(
   `0.0.0.0:${GRPC_PORT}`,
   grpc.ServerCredentials.createInsecure(),
   () => {
-    logger.info(`gRPC server running on port ${GRPC_PORT}`);
+    logger.info(`✅ gRPC server running on port ${GRPC_PORT}`);
   }
 );
 

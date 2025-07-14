@@ -2,7 +2,7 @@ export const Messages = {
     OK : "OK",
     SERVER_ERROR: "Internel server error",
     USER_EXIST: "User already exist",
-    USER_BLOCKED: "Your are blocked from DevHuddle, Please contact support",
+    USER_BLOCKED: "Your are blocked from TicketFlow, Please contact support",
     USER_NOT_FOUND: "User not found !",
     OTP_ERROR: "Error while sending OTP, Try again later",
     OTP_RESENT: "OTP has been resent successfully",
@@ -28,9 +28,7 @@ export const Messages = {
     FORGOT_PASS_LINK : "change password link sended to email",
     INVALID_FIELDS : "Invalid fileds , or missing some field !",
     PASSWORD_UPDATED : "Password updated , login with new credentials",
-    PASSWORD_SENDTO_MAIL:"Password reset email sent to your email",
     PASSWORD_NOT_MATCHING : "Current password is not matching !",
-    PASSWORD_REQUEST_FAILD : "Password reset request failed",
     INPUT_INVALID_OR_MISSING_SOME_FIELD : "Given input are invalid or some of fields are missing ! try again",
     SOMETHING_WENT_WRONG : "Something went wrong try again later",
     DATA_NOT_FOUND : "requested data not found",
@@ -54,11 +52,6 @@ export const Messages = {
     USERNAME_EXISTS:"Username already exists",
     REGISTRATION_FAILD:"Registration failed",
     OTP_VERIFICATION_FAILD:"OTP verification failed",
-    FAILD_TO_FETCH_USER:"Failed to fetch user",
-    EMAIL_PASSWORD_REQUIRED:'Email and password are required',
-    LOGING_USING_GOOGLE_MESSAGE:"This account was created using Google. Please login using Google.",
-    LOGING_FAILD:"Login failed",
-    PASSWORD_RESET_TOKEN_PASSWORD:"Token and new password are required",
-    USER_ID_REQUIRED : 'User ID is required'
+    EMAIL_PASSWORD_REQUIRED:'Email and password are required'
   };
   
