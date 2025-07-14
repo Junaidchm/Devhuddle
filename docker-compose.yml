@@ -1,75 +1,3 @@
-# version: "3.8"
-
-# services:
-#   api-gateway:
-#     build:
-#       context: ./api-gateway
-#       dockerfile: Dockerfile
-#     container_name: api-gateway
-#     ports:
-#       - "8080:8080"
-#     env_file:
-#       - ./api-gateway/.env
-#     depends_on:
-#       - auth-service
-#     volumes:
-#       - ./api-gateway/src:/app/src
-#       - ./api-gateway/logs:/app/logs
-#     networks:
-#       - shared
-
-#   auth-service:
-#     build:
-#       context: ./auth-service
-#       dockerfile: Dockerfile
-#     container_name: auth-service
-#     depends_on:
-#       auth-db:
-#         condition: service_healthy
-#     env_file:
-#       - ./auth-service/.env
-#     volumes:
-#      - ./auth-service/src:/app/src
-#      - ./auth-service/prisma:/app/prisma
-#      - /app/node_modules
-
-#     networks:
-#       - shared
-#     command: sh -c "npx prisma migrate dev --name init && npm run dev"
-
-
-#   auth-db:
-#     image: postgres:alpine
-#     container_name: auth-db
-#     environment:
-#       - POSTGRES_USER=postgres
-#       - POSTGRES_PASSWORD=postgres
-#       - POSTGRES_DB=devhuddle_auth
-#     healthcheck:
-#       test: ["CMD-SHELL", "pg_isready -U postgres"]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 5
-#     volumes:
-#       - auth_data:/var/lib/postgresql/data
-#     networks:
-#       - shared
-
-#   redis:
-#     image: redis:alpine
-#     container_name: redis
-#     volumes:
-#       - redis_data:/data
-#     networks:
-#       - shared
-
-# volumes:
-#   auth_data:
-#   redis_data:
-
-# networks:
-#   shared:
-#     driver: bridge
 version: "3.8"
 
 services:
@@ -83,15 +11,16 @@ services:
     env_file:
       - ./api-gateway/.env
     depends_on:
+      - redis
       - auth-service
     volumes:
       - ./api-gateway/src:/app/src
       - ./api-gateway/protos:/app/protos
-      - ./api-gateway/grpc-generated:/app/grpc-generated
+      - ./auth-service/src/grpc/generated:/app/src/grpc/generated
       - ./api-gateway/logs:/app/logs
     networks:
       - shared
-    command: sh -c "node generate.js && npm run dev"
+    command: sh -c "npx ts-node generate.ts && npm run dev"
 
   auth-service:
     build:
@@ -109,12 +38,12 @@ services:
     volumes:
       - ./auth-service/src:/app/src
       - ./auth-service/protos:/app/protos
-      - ./auth-service/grpc-generated:/app/grpc-generated
+      - ./auth-service/src/grpc/generated:/app/src/grpc/generated
       - ./auth-service/prisma:/app/prisma
       - /app/node_modules
     networks:
       - shared
-    command: sh -c "node generate.js && npx prisma migrate dev --name init && npm run dev"
+    command: sh -c "npx ts-node generate.ts && npx prisma migrate dev --name init && npm run dev"
 
   auth-db:
     image: postgres:alpine

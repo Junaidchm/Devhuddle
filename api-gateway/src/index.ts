@@ -2,27 +2,28 @@ import express, { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import { HttpStatus } from "./utils/constents";
-import { createProxyMiddleware } from "http-proxy-middleware";
 import { logger } from "./utils/logger";
 import { rateLimiter } from "./middleware/rate-limit.middleware";
-import { verifyToken } from "./middleware/auth.middleware";
 import { sendErrorResponse } from "./utils/error.util";
 import { ApiError } from "./types/auth";
 import cors from "cors";
-import cookieParser from 'cookie-parser';
-import authRouter from "./routes/auth.routes"
+import { authServiceProxy } from "./middleware/authserver.proxy.middleware";
+import authRouter from "./routes/authservice/auth.routes";
+import { connectRedis } from "./utils/redis.util";
 
 dotenv.config();
 
 // create app
 const app = express();
 
-app.use(cors({
+app.use(
+  cors({
     origin: [process.env.frontend_URL!],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
-}));
+  })
+);
 
 // Rate Limiting
 // app.use(rateLimiter);
@@ -38,40 +39,13 @@ app.get("/health", (req: Request, res: Response) => {
   res.status(HttpStatus.OK).json({ status: "API Gateway is running" });
 });
 
-
 // HTTP proxy for Google OAuth routes
-const authServiceProxy = createProxyMiddleware({
-  target: process.env.AUTH_SERVICE_URL!,
-  changeOrigin: true,
-  pathRewrite: { "^/auth": "" },
-  onProxyReq: (proxyReq, req, res) => {
-    console.log(`[Proxy] Forwarding ${req.method} ${req.originalUrl} to ${process.env.AUTH_SERVICE_URL}`);
-  },
-  onProxyRes: (proxyRes, req, res) => {
-    if (proxyRes.headers["content-type"]?.includes("image")) {
-      proxyRes.headers["access-control-allow-origin"] = process.env.frontend_URL || "http://localhost:3000";
-      proxyRes.headers["access-control-allow-methods"] = "GET";
-      proxyRes.headers["access-control-allow-headers"] = "Content-Type";
-      proxyRes.headers["access-control-allow-credentials"] = "true";
-    }
-  },
-  onError: (err, req, res) => {
-    console.error("Proxy error:", err.message);
-    if (typeof res.status === "function") {
-      res.status(500).json({ error: "Proxy failed" });
-    } else {
-      res.end('Proxy failed');
-    }
-  },
-});
+app.use('/auth/google', authServiceProxy);
+app.use("/auth/google/callback",authServiceProxy)
+app.use("/auth/admin",authServiceProxy)
 
-
-// Proxy Google OAuth routes to HTTP server
-app.use('/auth/signup',authRouter)
 // grpc rpc routing
-app.use('/auth', authServiceProxy);
-
-
+app.use("/auth", authRouter);
 
 // Handle favicon to prevent unhandled requests
 app.get("/favicon.ico", (req: Request, res: Response) => {
@@ -87,7 +61,22 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   sendErrorResponse(res, error);
 });
 
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  logger.info(`API Gateway running on port ${PORT}`);
-});
+const startServer = async () => {
+  try {
+    await connectRedis();
+    logger.info("Redis connection established");
+
+    const PORT = process.env.PORT || 8080;
+    app.listen(PORT, () => {
+      logger.info(`API Gateway running on port ${PORT}`);
+    });
+  } catch (err: any) {
+    logger.error("Failed to start server", {
+      error: err.message,
+      stack: err.stack,
+    });
+    process.exit(1);
+  }
+};
+
+startServer();

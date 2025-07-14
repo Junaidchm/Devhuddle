@@ -2,48 +2,53 @@ import { Request, Response } from "express";
 import {
   IUserRepository,
   UserRepository,
-} from "../repositories/user.repository";
+} from "../../repositories/user.repository";
 import {
-  jwtPayload,
   jwtUserFilter,
   LoginRequest,
   OAuthUser,
   PasswordResetConfirmRequest,
-  PasswordResetRequest,
   ProfileUpdatePayload,
   RegisterRequest,
   User,
   VerifyOTPRequest,
-} from "../types/auth";
+} from "../../types/auth";
 import {
   sendPasswordResetEmail,
   sendVerificationEmail,
-} from "../utils/email.util";
-import { CustomError } from "../utils/error.util";
+} from "../../utils/email.util";
+import { CustomError } from "../../utils/error.util";
 
-import logger from "../utils/logger.util";
-import { generateOTP, storeOTP, verifyOTP } from "../utils/otp.util";
+import logger from "../../utils/logger.util";
+import { generateOTP, storeOTP, verifyOTP } from "../../utils/otp.util";
 import jwt from "jsonwebtoken";
 import path from "path";
 import fs from "fs";
-import { setAuthToken } from "../utils/jwtHandler";
+import { setAuthToken } from "../../utils/jwtHandler";
 import {
   filterUserJwtPayload,
+  filterUserProfileData,
   generatePasswordResetToken,
   verifyPasswordResetToken,
-} from "../utils/jwt.util";
-import { HttpStatus } from "../constents/httpStatus";
-import { Messages } from "../constents/reqresMessages";
+} from "../../utils/jwt.util";
+import { HttpStatus } from "../../constents/httpStatus";
+import { Messages } from "../../constents/reqresMessages";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { s3Client } from "../config/s3.config";
+import { s3Client } from "../../config/s3.config";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { IAuthService } from "./interface/IauthService";
-
+import { IAuthService } from "../interface/IauthService";
+import {
+  GetJwtUserResponse,
+  GetProfileResponse,
+  JwtPayload,
+  PasswordResetRequest,
+  UpdateProfileResponse,
+} from "../../grpc/generated/auth";
+import * as grpc from "@grpc/grpc-js";
 
 export class AuthService implements IAuthService {
-
   constructor(private userRepository: IUserRepository) {}
 
   ////////// user Signup
@@ -57,14 +62,17 @@ export class AuthService implements IAuthService {
     try {
       const existingUser = await this.userRepository.findByEmail(email);
       if (existingUser) {
-        throw new CustomError(400, "Email already exists");
+        throw new CustomError(grpc.status.ALREADY_EXISTS, Messages.EMAIL_EXIST);
       }
 
       const existingUsername = await this.userRepository.findByUsername(
         username
       );
       if (existingUsername) {
-        throw new CustomError(400, "Username already exists");
+        throw new CustomError(
+          grpc.status.ALREADY_EXISTS,
+          Messages.USERNAME_EXISTS
+        );
       }
 
       await this.userRepository.createUser(email, username, name, password);
@@ -76,17 +84,20 @@ export class AuthService implements IAuthService {
     } catch (err: any) {
       throw err instanceof CustomError
         ? err
-        : new CustomError(500, "Registration failed");
+        : new CustomError(grpc.status.INTERNAL, Messages.REGISTRATION_FAILD);
     }
   }
 
   //////////// verify otp
 
-  async verifyOTP({ email, otp }: VerifyOTPRequest): Promise<jwtUserFilter> {
+  async verifyOTP({ email, otp }: VerifyOTPRequest): Promise<JwtPayload> {
     try {
       const isValid = await verifyOTP(email, otp);
       if (!isValid) {
-        throw new CustomError(400, "Invalid or expired OTP");
+        throw new CustomError(
+          grpc.status.INVALID_ARGUMENT,
+          "Invalid or expired OTP"
+        );
       }
 
       const user = await this.userRepository.updateEmailVerified(email, true);
@@ -96,7 +107,10 @@ export class AuthService implements IAuthService {
     } catch (err: any) {
       throw err instanceof CustomError
         ? err
-        : new CustomError(500, "OTP verification failed");
+        : new CustomError(
+            grpc.status.INTERNAL,
+            Messages.OTP_VERIFICATION_FAILD
+          );
     }
   }
 
@@ -106,7 +120,7 @@ export class AuthService implements IAuthService {
     try {
       const user = await this.userRepository.findByEmail(email);
       if (!user) {
-        throw new CustomError(404, "User not found");
+        throw new CustomError(grpc.status.NOT_FOUND, Messages.USER_NOT_FOUND);
       }
 
       const otp = generateOTP();
@@ -115,58 +129,63 @@ export class AuthService implements IAuthService {
     } catch (err: any) {
       throw err instanceof CustomError
         ? err
-        : new CustomError(500, "OTP verification failed");
+        : new CustomError(
+            grpc.status.INTERNAL,
+            Messages.OTP_VERIFICATION_FAILD
+          );
     }
   }
 
   //////////// get User
 
-  async getUserById(id: string): Promise<User> {
+  async getJwtPayload(id: string): Promise<GetJwtUserResponse> {
     try {
       const user = await this.userRepository.findByIdUser(id);
       if (!user) {
-        throw new CustomError(404, "User not found");
+        throw new CustomError(grpc.status.NOT_FOUND, Messages.USER_NOT_FOUND);
       }
-      return user;
+      return filterUserProfileData(user, "jwt") as GetJwtUserResponse;
     } catch (err: any) {
       throw err instanceof CustomError
         ? err
-        : new CustomError(500, "Failed to fetch user");
+        : new CustomError(grpc.status.INTERNAL, Messages.FAILD_TO_FETCH_USER);
     }
   }
 
   //////////// user login
 
-  async login({ email, password }: LoginRequest): Promise<jwtUserFilter> {
+  async login({ email, password }: LoginRequest): Promise<JwtPayload> {
     try {
       const user = await this.userRepository.findByEmail(email);
 
-      if (user && user.email === email && user.password=="") {
+      if (user && user.email === email && user.password == "") {
         throw new CustomError(
-          500,
-          "This account was created using Google. Please login using Google."
+          grpc.status.ALREADY_EXISTS,
+          Messages.LOGING_USING_GOOGLE_MESSAGE
         );
       }
       if (
         !user ||
         !(await this.userRepository.verifyPassword(user.password, password))
       ) {
-        throw new CustomError(404, "User Not Found");
+        throw new CustomError(grpc.status.NOT_FOUND, Messages.USER_NOT_FOUND);
       }
       if (!user.emailVerified) {
-        throw new CustomError(403, "Email not verified");
+        throw new CustomError(
+          grpc.status.PERMISSION_DENIED,
+          Messages.VERIFIED_EMAIL_ERR
+        );
       }
 
       if (user.isBlocked) {
-        throw new CustomError(HttpStatus.FORBIDDEN, "User blocke by admin");
+        throw new CustomError(HttpStatus.FORBIDDEN, Messages.USER_BLOCKED);
       }
 
-      logger.info("User logged in", { email });
       return filterUserJwtPayload(user);
     } catch (err: any) {
       throw err instanceof CustomError
         ? err
-        : new CustomError(500, "Login failed");
+        : new CustomError(grpc.status.INTERNAL, Messages.LOGING_FAILD);
     }
   }
 
@@ -179,16 +198,19 @@ export class AuthService implements IAuthService {
         logger.warn("Password reset requested for non-existent email", {
           email,
         });
-        throw new CustomError(404, "No account found with this email address.");
+        throw new CustomError(grpc.status.NOT_FOUND, Messages.USER_NOT_FOUND);
       }
-   
+
       const token = await generatePasswordResetToken(email);
       await sendPasswordResetEmail(email, token);
       logger.info("Password reset token sent", { email });
     } catch (err: any) {
       throw err instanceof CustomError
         ? err
-        : new CustomError(500, "Password reset request failed");
+        : new CustomError(
+            grpc.status.INTERNAL,
+            Messages.PASSWORD_REQUEST_FAILD
+          );
     }
   }
 
@@ -200,12 +222,18 @@ export class AuthService implements IAuthService {
     try {
       const decoded = jwt.decode(token) as { email: string };
       if (!decoded?.email) {
-        throw new CustomError(400, "Invalid token");
+        throw new CustomError(
+          grpc.status.INVALID_ARGUMENT,
+          Messages.TOKEN_INVALID
+        );
       }
 
       const isValid = await verifyPasswordResetToken(decoded.email, token);
       if (!isValid) {
-        throw new CustomError(400, "Invalid or expired reset token");
+        throw new CustomError(
+          grpc.status.INVALID_ARGUMENT,
+          "Invalid or expired reset token"
+        );
       }
 
       await this.userRepository.updatePassword(decoded.email, newPassword);
@@ -213,7 +241,7 @@ export class AuthService implements IAuthService {
     } catch (err: any) {
       throw err instanceof CustomError
         ? err
-        : new CustomError(500, "Password reset failed");
+        : new CustomError(grpc.status.INTERNAL, "Password reset failed");
     }
   }
 
@@ -238,42 +266,63 @@ export class AuthService implements IAuthService {
   }
 
   //////// verify User
-  async verifyUser(email: string): Promise<jwtUserFilter> {
+  async verifyUser(email: string): Promise<JwtPayload> {
     try {
       const user = await this.userRepository.findByEmail(email);
 
       if (!user) {
-        throw new CustomError(HttpStatus.NOT_FOUND, Messages.USER_NOT_FOUND);
+        throw new CustomError(
+          grpc.status.PERMISSION_DENIED,
+          Messages.USER_NOT_FOUND
+        );
       }
 
       if (user?.isBlocked) {
-        throw new CustomError(HttpStatus.FORBIDDEN, "User blocked");
+        throw new CustomError(
+          grpc.status.PERMISSION_DENIED,
+          Messages.USER_BLOCKED
+        );
       }
 
       return filterUserJwtPayload(user);
     } catch (err: any) {
       throw err instanceof CustomError
         ? err
-        : new CustomError(500, "Refresh creation faild");
+        : new CustomError(grpc.status.INTERNAL, "Refresh creation faild");
+    }
+  }
+
+  ///////// get user profile
+  async getUserProfile(id: string): Promise<GetProfileResponse> {
+    try {
+      const user = await this.userRepository.findByIdUser(id);
+      if (!user) {
+        throw new CustomError(grpc.status.NOT_FOUND, Messages.USER_NOT_FOUND);
+      }
+      return filterUserProfileData(user, "profile") as GetProfileResponse;
+    } catch (err: any) {
+      throw err instanceof CustomError
+        ? err
+        : new CustomError(grpc.status.INTERNAL, Messages.FAILD_TO_FETCH_USER);
     }
   }
 
   ///////// update profile
-  async updateProfile(userId: string, data: ProfileUpdatePayload) {
-    const {
-      name,
-      username,
-      location,
-      bio,
-      profilePicture,
-    } = data;
+  async updateProfile(
+    userId: string,
+    data: ProfileUpdatePayload
+  ): Promise<UpdateProfileResponse> {
+    const { name, username, location, bio, profilePicture } = data;
 
     if (username) {
       const existingUsername = await this.userRepository.findByUsername(
         username
       );
       if (existingUsername && existingUsername.id !== userId) {
-        throw new CustomError(400, "Username already taken");
+        throw new CustomError(
+          grpc.status.INVALID_ARGUMENT,
+          Messages.USERNAME_EXISTS
+        );
       }
     }
 
@@ -282,7 +331,7 @@ export class AuthService implements IAuthService {
       username,
       location,
       bio,
-      profilePicture
+      profilePicture,
     };
 
     // Remove undefined fields
@@ -296,7 +345,15 @@ export class AuthService implements IAuthService {
       filteredFields
     );
 
-    return updatedUser
+    return {
+      bio: updatedUser.bio || "",
+      email: updatedUser.email,
+      id: updatedUser.id,
+      location: updatedUser.location || "",
+      name: updatedUser.name,
+      role: updatedUser.role,
+      username: updatedUser.name,
+    };
   }
 
   async generatePresignedUrl(
@@ -312,14 +369,14 @@ export class AuthService implements IAuthService {
       if (operation === "PUT") {
         if (!fileName || !fileType) {
           throw new CustomError(
-            400,
+            grpc.status.INVALID_ARGUMENT,
             "fileName and fileType are required for PUT operation"
           );
         }
         const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
         if (!allowedTypes.includes(fileType)) {
           throw new CustomError(
-            400,
+            grpc.status.INVALID_ARGUMENT,
             "Invalid file type. Only JPG, PNG, or GIF allowed"
           );
         }
@@ -340,7 +397,7 @@ export class AuthService implements IAuthService {
 
         if (!equivalent(extension!, mimeType)) {
           throw new CustomError(
-            400,
+            grpc.status.INVALID_ARGUMENT,
             "File extension does not match content type"
           );
         }
@@ -367,7 +424,7 @@ export class AuthService implements IAuthService {
         };
       } else if (operation === "GET") {
         if (!key) {
-          throw new CustomError(400, "key is required for GET operation");
+          throw new CustomError(grpc.status.INVALID_ARGUMENT, "key is required for GET operation");
         }
         const command = new GetObjectCommand({
           Bucket: process.env.AWS_S3_BUCKET,
@@ -383,7 +440,7 @@ export class AuthService implements IAuthService {
           expiresAt: Date.now() + EXPIRES_IN_SECONDS * 1000,
         };
       } else {
-        throw new CustomError(400, "Invalid operation. Use PUT or GET");
+        throw new CustomError(grpc.status.INVALID_ARGUMENT, "Invalid operation. Use PUT or GET");
       }
     } catch (error: any) {
       logger.error("Failed to generate presigned URL", {
@@ -391,7 +448,7 @@ export class AuthService implements IAuthService {
       });
       throw error instanceof CustomError
         ? error
-        : new CustomError(500, "Failed to generate presigned URL");
+        : new CustomError(grpc.status.INTERNAL, "Failed to generate presigned URL");
     }
   }
 }

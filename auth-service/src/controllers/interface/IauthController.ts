@@ -1,20 +1,40 @@
 import { NextFunction, Request, Response } from "express";
-import { jwtPayload, jwtUserFilter, LoginRequest, OAuthUser, PasswordResetConfirmRequest, PasswordResetRequest, RegisterRequest, VerifyOTPRequest } from "../../types/auth";
-import * as authProto from "../../../grpc-generated/auth_pb";
+import {
+  GeneratePresignedUrlRequest,
+  GeneratePresignedUrlResponse,
+  GetJwtUserRequest,
+  GetJwtUserResponse,
+  GetProfileRequest,
+  GetProfileResponse,
+  LogingRequest,
+  LogingResponse,
+  PasswordResetConfirmRequest,
+  PasswordResetRequest,
+  PasswordResetResponse,
+  RegisterRequest,
+  RegisterResponse,
+  ResentOTPRequest,
+  ResentOTPResponse,
+  UpdateProfileRequest,
+  UpdateProfileResponse,
+  VerifyOTPRequest,
+  VerifyOTPResponse,
+  VerifyRefreshTokenRequest,
+  VerifyRefreshTokenResponse,
+} from "../../grpc/generated/auth";
 
 export interface IAuthController {
-  register(call: authProto.RegisterRequest): Promise<authProto.RegisterResponse>;
-  verifyOTP(req: Request, res: Response): Promise<void>;
-  login(req: Request, res: Response): Promise<void>;
-  resendOTP(req: Request, res: Response): Promise<void>;
-  getCurrentUser(req: Request, res: Response): Promise<void>;
-  requestPasswordReset(req: Request, res: Response): Promise<void>;
-  resetPassword(req: Request, res: Response): Promise<void>;
-  updateProfile(req: Request, res: Response, next: NextFunction): Promise<void>;
-  verifyRefreshToken(req: Request, res: Response): Promise<void>;
-  logoutUser(req: Request, res: Response): Promise<void>;
-  getProfile(req: Request, res: Response): Promise<void>;
-  generatePresignedUrl(req: Request, res: Response, next: NextFunction): Promise<void>;
+  register(req: RegisterRequest): Promise<RegisterResponse>;
+  verifyOTP(req: VerifyOTPRequest): Promise<VerifyOTPResponse>;
+  login(req: LogingRequest): Promise<LogingResponse>;
+  resendOTP(req: ResentOTPRequest): Promise<ResentOTPResponse>;
+  getCurrentUser(req: GetJwtUserRequest): Promise<GetJwtUserResponse>;
+  requestPasswordReset(req:PasswordResetRequest): Promise<PasswordResetResponse>;
+  resetPassword(req:PasswordResetConfirmRequest): Promise<PasswordResetResponse>;
+  updateProfile(req:UpdateProfileRequest): Promise<UpdateProfileResponse>;
+  verifyRefreshToken(req:VerifyRefreshTokenRequest): Promise<VerifyRefreshTokenResponse>;
+  getProfile(req:GetProfileRequest): Promise<GetProfileResponse>;
+  generatePresignedUrl(req:GeneratePresignedUrlRequest): Promise<GeneratePresignedUrlResponse>;
   googleAuth(req: Request, res: Response, next: NextFunction): void;
   googleCallback(req: Request, res: Response, next: NextFunction): void;
 }

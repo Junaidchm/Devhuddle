@@ -1,18 +1,26 @@
 import { createClient } from "redis";
-import { logger } from "./logger";
+import {logger} from "./logger";
 
-// create client
 const redisClient = createClient({
-  url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
+  url: process.env.REDIS_URL,
 });
 
-redisClient.on("error", (err) =>
-  logger.error(logger.error(`Redis error: ${err.message}`))
-);
-redisClient.on('connect', () => logger.info('Connected to Redis'));
-redisClient.on('reconnecting', () => logger.info('Reconnecting to Redis'));
+redisClient.on("error", (err) => {
+  logger.error("Redis Client Error", { error: err.message });
+});
 
-// Connect once at startup
-redisClient.connect().catch((err) => logger.error(`Redis connection error: ${err.message}`));
+redisClient.on("connect",()=> {
+    logger.info("redis connected")
+})
 
-export default redisClient;
+export const connectRedis = async ()=> {
+    if(!redisClient.isOpen) {
+       await redisClient.connect()
+    }
+}
+
+export const generateBlockUserRedisKey = (sensitive:string):string=> {
+ return `blacklist:user:${sensitive}`
+}
+
+export default redisClient

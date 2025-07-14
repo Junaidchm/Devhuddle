@@ -1,4 +1,3 @@
-
 import logger from "../utils/logger.util";
 
 export abstract class BaseRepository<
@@ -40,8 +39,7 @@ export abstract class BaseRepository<
     }
   }
 
-
-  async create(data:Partial<CreateInput>): Promise<Entity> {
+  async create(data: Partial<CreateInput>): Promise<Entity> {
     try {
       return await this.model.create({ data });
     } catch (error) {
@@ -82,7 +80,7 @@ export abstract class BaseRepository<
     data: UpdateInput
   ): Promise<Entity> {
     try {
-      return await this.model.update({ where, data});
+      return await this.model.update({ where, data });
     } catch (error) {
       logger.error("Error updating entity by criteria", {
         error: (error as Error).message,

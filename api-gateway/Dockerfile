@@ -1,20 +1,22 @@
 FROM node:lts-alpine
 
+# Install protoc for ts-proto
+RUN apk add --no-cache protoc
+
 WORKDIR /app
 
 COPY package*.json ./
 COPY tsconfig.json ./
 
 RUN npm install
-RUN npm install grpc-tools grpc_tools_node_protoc_ts
+RUN npm install ts-proto ts-node
 
 COPY /src ./src
 
-COPY generate.js ./
+COPY generate.ts ./
 COPY protos/ ./protos/
 
-RUN mkdir -p protos grpc-generated
-RUN node generate.js
+RUN npx ts-node generate.ts
 RUN npm run build
 
 # RUN addgroup --system --gid 1001 nodejs

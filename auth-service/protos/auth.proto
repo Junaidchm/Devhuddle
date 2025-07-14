@@ -6,7 +6,15 @@ service AuthService {
   // User-related methods
   rpc Register (RegisterRequest) returns (RegisterResponse);
   rpc VerifyOTP (VerifyOTPRequest) returns (VerifyOTPResponse);
-  
+  rpc ResendOTP (ResentOTPRequest) returns (ResentOTPResponse);
+  rpc GetJwtUser (GetJwtUserRequest) returns (GetJwtUserResponse);
+  rpc Login (LogingRequest) returns (LogingResponse);
+  rpc RequestPasswordReset (PasswordResetRequest) returns (PasswordResetResponse);
+  rpc ResetPassword (PasswordResetConfirmRequest) returns (PasswordResetResponse);
+  rpc GetProfile (GetProfileRequest) returns (GetProfileResponse);
+  rpc UpdateProfile (UpdateProfileRequest) returns (UpdateProfileResponse);
+  rpc VerifyRefreshToken (VerifyRefreshTokenRequest) returns (VerifyRefreshTokenResponse);
+  rpc GeneratePresignedUrl (GeneratePresignedUrlRequest) returns (GeneratePresignedUrlResponse);
 }
 
 // User-related messages
@@ -30,5 +38,113 @@ message VerifyOTPRequest {
 
 message VerifyOTPResponse {
   string message = 1;
+  JwtPayload jwtpayload = 2;
 }
 
+message JwtPayload {
+  string id = 1;
+  string email = 2;
+  string username = 3;
+  string role = 4;
+}
+
+message ResentOTPRequest {
+  string email = 1;
+}
+
+message ResentOTPResponse {
+  string message = 1;
+}
+
+message GetJwtUserRequest {
+  string userId = 1;
+}
+
+message GetJwtUserResponse {
+  string id = 1;
+  string email = 2;
+  string username = 3;
+  string name = 4;
+  string role = 5;
+  bool emailVerified = 6;
+  string profilePicture = 7;
+}
+
+message LogingRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LogingResponse {
+  string message = 1;
+  JwtPayload jwtpayload = 2;
+}
+
+message PasswordResetRequest {
+  string email = 1;
+}
+
+message PasswordResetResponse {
+  string message = 1;
+}
+
+message PasswordResetConfirmRequest {
+  string token = 1;
+  string newPassword = 2;
+}
+
+message GetProfileRequest {
+  string userId = 1;
+}
+
+message GetProfileResponse {
+  string id = 1;
+  string email = 2;
+  string username = 3;
+  string name = 4;
+  string role = 5;
+  string location = 7;
+  string bio = 8;
+}
+
+message UpdateProfileRequest {
+  string userId = 1;
+  string name = 2;
+  string username = 3;
+  string location = 4;
+  string bio = 5;
+  string profilePicture = 6;
+}
+
+message UpdateProfileResponse {
+  string id = 1;
+  string email = 2;
+  string username = 3;
+  string name = 4;
+  string role = 5;
+  string location = 7;
+  string bio = 8;
+}
+
+message VerifyRefreshTokenRequest {
+  string email = 1;
+}
+
+message VerifyRefreshTokenResponse {
+  string message = 1;
+  JwtPayload jwtpayload = 2;
+}
+
+message GeneratePresignedUrlRequest {
+  string userId = 1;
+  string operation = 2;
+  string fileName = 3;
+  string fileType = 4;
+  string key = 5;
+}
+
+message GeneratePresignedUrlResponse {
+  string url = 1;
+  string key = 2;
+  int64 expiresAt = 3;
+}

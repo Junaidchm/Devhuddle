@@ -1,7 +1,7 @@
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 export const authServiceProxy = createProxyMiddleware({
-  target: process.env.AUTH_SERVICE_URL,
+  target: process.env.AUTH_SERVICE_URL!,
   changeOrigin: true,
   pathRewrite: { "^/auth": "" },
   onProxyReq: (proxyReq, req, res) => {

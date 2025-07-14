@@ -1,5 +1,8 @@
 FROM node:20-alpine3.18
 
+# Install protoc for ts-proto
+RUN apk add --no-cache protoc
+
 WORKDIR /app
 
 COPY package*.json ./
@@ -7,10 +10,9 @@ COPY prisma ./prisma
 COPY tsconfig.json ./
 
 RUN npm install
-RUN npm install grpc-tools grpc_tools_node_protoc_ts
 
 # Copy source files
-COPY generate.js ./
+COPY generate.ts ./
 COPY protos/ ./protos/
 COPY src ./src
 COPY logs ./logs
@@ -18,8 +20,7 @@ COPY logs ./logs
 # Generate Prisma client
 RUN npx prisma generate
 
-RUN mkdir -p protos grpc-generated
-RUN node generate.js
+RUN npx ts-node generate.ts
 # Build the app
 RUN npm run build
 

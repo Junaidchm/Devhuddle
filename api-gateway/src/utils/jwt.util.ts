@@ -1,9 +1,8 @@
 import jwt from "jsonwebtoken";
 import { jwtPayload, jwtUserFilter, User } from "../types/auth";
-import logger from "./logger.util";
-import redisClient from "./redis.util";
+import {logger} from "./logger";
+import redisClient from "../utils/redis.util";
 import { checkIsRevoked } from "./redis.actions";
-import { GetJwtUserResponse, GetProfileResponse, JwtPayload } from "../grpc/generated/auth";
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 const ACCESS_TOKEN_EXPIRY = "15m";
@@ -50,8 +49,6 @@ export const GenerateRefreshToken = (user: jwtUserFilter,jti:string): string => 
     throw new Error("Token generation failed");
   }
 };
-
-const TOKEN_BLACKLIST_NAME = process.env.TOKEN_BLACKLIST_NAME as string;
 
 export const verifyRefreshToken = async (
   token: string
@@ -151,48 +148,13 @@ export const verifyPasswordResetToken = async (
   }
 };
 
-export const filterUserJwtPayload = (user: User): JwtPayload => {
+export const filterUserJwtPayload = (user: User): jwtUserFilter => {
   return {
     id: user.id,
     username: user.username,
     email: user.email,
     role: user.role,
   };
-};
-
-
-export const filterUserProfileData = (
-  user: User,
-  dataFor: "profile" | "jwt"
-): GetJwtUserResponse | GetProfileResponse => {
-  if (dataFor === "jwt") {
-    return {
-      email: user.email,
-      emailVerified: user.emailVerified,
-      id: user.id,
-      name: user.name,
-      profilePicture: user.profilePicture!,
-      role: user.role,
-      username: user.username,
-    };
-  }
-
-  if (dataFor === "profile") {
-    return {
-      id: user.id,
-      email: user.email,
-      username: user.username,
-      role: user.role,
-      profilePicture: user.profilePicture || "",
-      name: user.name,
-      location: user.location || "",
-      bio: user.bio || "",
-      emailVerified: user.emailVerified,
-    };
-  }
-
-  // TypeScript safeguard (should never happen)
-  throw new Error("Invalid dataFor value");
 };
 
 
