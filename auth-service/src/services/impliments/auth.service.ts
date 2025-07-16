@@ -178,7 +178,7 @@ export class AuthService implements IAuthService {
       }
 
       if (user.isBlocked) {
-        throw new CustomError(HttpStatus.FORBIDDEN, Messages.USER_BLOCKED);
+        throw new CustomError(grpc.status.PERMISSION_DENIED, Messages.USER_BLOCKED);
       }
 
       return filterUserJwtPayload(user);
