@@ -49,6 +49,7 @@ import { setJtiAsBlackListed } from "../../utils/redis.actions";
 import { Messages } from "../../constants/reqresMessages";
 import { generateUuid4 } from "../../utils/uuid.util";
 import refreshTokenMiddleware from "../../middleware/refreshToken";
+import { createGrpcBreaker } from "../../utils/grpcResilience.util";
 
 const router = Router();
 router.use(compression());
@@ -67,7 +68,8 @@ router
         password,
         username,
       };
-      const response: RegisterResponse = await grpcCall("register", request);
+  
+      const response: RegisterResponse = await grpcCall("register",request);
       res.status(HttpStatus.CREATED).json({ message: response.message });
     } catch (err: any) {
       logger.error("Error in /auth/signup", {
@@ -159,10 +161,15 @@ router
         email,
         password,
       };
-      const response: LogingResponse = await grpcCall<
-        LogingRequest,
-        LogingResponse
-      >("login", request);
+      const registerWithBreaker =  createGrpcBreaker("login",(request)=> 
+         grpcCall("login", request)
+      )
+      await registerWithBreaker(request) as LogingResponse ;
+      // const response: LogingResponse = await grpcCall<
+      //   LogingRequest,
+      //   LogingResponse
+      // >("login", request);
+      const response = await registerWithBreaker(request) as LogingResponse;
       if (response) {
         await setAuthToken(response.jwtpayload!, res);
       }
