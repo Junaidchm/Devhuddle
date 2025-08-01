@@ -10,22 +10,12 @@ import {
   TokenResponse,
 } from "../../types/auth";
 import { CustomError, sendErrorResponse } from "../../utils/error.util";
-import { HttpStatus } from "../../constents/httpStatus";
 import logger from "../../utils/logger.util";
 import passport from "../../config/passport.config";
-import { User } from "../../generated/prisma";
 import {
-  clearCookies,
-  setAccesToken,
   setAuthToken,
 } from "../../utils/jwtHandler";
 import { Messages } from "../../constents/reqresMessages";
-import redisClient from "../../utils/redis.util";
-import { generateUuid4 } from "../../utils/uuid.util";
-import { setJtiAsBlackListed } from "../../utils/redis.actions";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { s3Client } from "../../config/s3.config";
 import { IAuthService } from "../../services/interface/IauthService";
 import { IAuthController } from "../interface/IauthController";
 import {
@@ -191,7 +181,6 @@ export class AuthController implements IAuthController {
   }
 
   async getProfile(req: GetProfileRequest): Promise<GetProfileResponse> {
-    console.log("user id is comming .................:", req);
     const { userId } = req;
 
     if (!userId) {
@@ -219,40 +208,6 @@ export class AuthController implements IAuthController {
 
     return { url: result.url, key: result.key!, expiresAt: result.expiresAt };
   }
-
-  // // generate presigned url
-  // async generatePresignedUrl(req: Request, res: Response, next: NextFunction) {
-  //   try {
-  //     const user = req.user as OAuthUser;
-  //     const { operation, fileName, fileType, key } = req.body;
-
-  //     if (!["PUT", "GET"].includes(operation)) {
-  //       throw new CustomError(
-  //         HttpStatus.BAD_REQUEST,
-  //         Messages.PRESIGNED_URL_GETPUT_ERROR
-  //       );
-  //     }
-
-  //     const result = await this.authService.generatePresignedUrl(
-  //       user.id,
-  //       operation,
-  //       fileName,
-  //       fileType,
-  //       key
-  //     );
-
-  //     const { url, key: presignedKey, expiresAt } = result;
-  //     res.status(200).json({ url, key: presignedKey, expiresAt });
-  //   } catch (err: any) {
-  //     logger.error("Generate presigned URL error", { error: err.message });
-  //     sendErrorResponse(
-  //       res,
-  //       err instanceof CustomError
-  //         ? err
-  //         : { status: 500, message: "Failed to generate presigned URL" }
-  //     );
-  //   }
-  // }
 
   // google authentication
   googleAuth(req: Request, res: Response, next: NextFunction) {

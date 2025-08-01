@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { ApiError } from "../types/auth";
+import { ApiError } from "../types/error";
 import logger from "./logger.util";
 
 

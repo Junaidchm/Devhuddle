@@ -23,6 +23,6 @@ RUN npm run build
 # RUN adduser --system --uid 1001 nodejs
 # USER nodejs
 
-EXPOSE 8080
+EXPOSE 3002
 
 CMD [ "npm","run","dev" ]

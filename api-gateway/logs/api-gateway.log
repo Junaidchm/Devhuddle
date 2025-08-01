@@ -8328,3 +8328,292 @@
 {"level":"info","message":"GET /auth/admin/users?page=3&limit=5","timestamp":"2025-07-15T13:02:17.810Z"}
 {"error":"Socket closed unexpectedly","level":"error","message":"Redis Client Error","timestamp":"2025-07-15T13:03:40.147Z"}
 {"error":"connect ECONNREFUSED 172.18.0.2:6379","level":"error","message":"Redis Client Error","timestamp":"2025-07-15T13:03:40.181Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-07-17T10:15:03.929Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-07-17T10:15:03.933Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-17T10:15:03.934Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-17T10:15:35.413Z"}
+{"level":"error","message":"No JWT token provided","timestamp":"2025-07-17T10:15:35.434Z"}
+{"error":"Token not found ! Please Try to login again!","level":"error","message":"JWT verification error ................., 401","timestamp":"2025-07-17T10:15:35.436Z"}
+{"level":"error","message":"Error: Token not found ! Please Try to login again! (Status: 401)","timestamp":"2025-07-17T10:15:35.437Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-17T10:15:35.449Z"}
+{"level":"error","message":"No JWT token provided","timestamp":"2025-07-17T10:15:35.453Z"}
+{"error":"Token not found ! Please Try to login again!","level":"error","message":"JWT verification error ................., 401","timestamp":"2025-07-17T10:15:35.455Z"}
+{"level":"error","message":"Error: Token not found ! Please Try to login again! (Status: 401)","timestamp":"2025-07-17T10:15:35.455Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-17T10:15:35.458Z"}
+{"level":"info","message":"Checked revoked status for jti: 2316ff3c-a281-4bc7-82d8-63999866f3ce → false","timestamp":"2025-07-17T10:15:35.472Z"}
+{"level":"info","message":"Received /auth/verify-refresh-token request","timestamp":"2025-07-17T10:15:35.472Z"}
+{"level":"info","message":"Initiating gRPC call to method: verifyRefreshToken","request":{"email":"popc88776@gmail.com"},"timestamp":"2025-07-17T10:15:35.472Z"}
+{"level":"info","message":"gRPC call to verifyRefreshToken succeeded","response":{"jwtpayload":{"email":"popc88776@gmail.com","id":"90d50d69-2727-47e5-88ca-d6c95844f928","role":"superAdmin","username":"admin_adminhhhh"},"message":"OK"},"timestamp":"2025-07-17T10:15:35.534Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-17T10:15:35.541Z"}
+{"level":"info","message":"Checked revoked status for jti: 2316ff3c-a281-4bc7-82d8-63999866f3ce → false","timestamp":"2025-07-17T10:15:35.543Z"}
+{"level":"info","message":"Received /auth/verify-refresh-token request","timestamp":"2025-07-17T10:15:35.544Z"}
+{"level":"info","message":"Initiating gRPC call to method: verifyRefreshToken","request":{"email":"popc88776@gmail.com"},"timestamp":"2025-07-17T10:15:35.544Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-17T10:15:35.550Z"}
+{"level":"info","message":"Checked revoked status for jti: a30dcbf5-3fda-42b6-87cc-2b7d64cb4548 → false","timestamp":"2025-07-17T10:15:35.552Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-17T10:15:35.552Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-17T10:15:35.553Z"}
+{"level":"info","message":"gRPC call to verifyRefreshToken succeeded","response":{"jwtpayload":{"email":"popc88776@gmail.com","id":"90d50d69-2727-47e5-88ca-d6c95844f928","role":"superAdmin","username":"admin_adminhhhh"},"message":"OK"},"timestamp":"2025-07-17T10:15:35.554Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1752747635583,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250717%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250717T101535Z&X-Amz-Expires=300&X-Amz-Signature=d80fb38a43e55c5ecc1f94938db89e9db7f2e4faa4910b4b0fe584d2006138a8&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-17T10:15:35.586Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-17T10:15:35.593Z"}
+{"level":"info","message":"Checked revoked status for jti: 086f7dd7-f53b-49bf-b83b-6b0a10b99b22 → false","timestamp":"2025-07-17T10:15:35.596Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-17T10:15:35.596Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-17T10:15:35.597Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1752747635608,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250717%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250717T101535Z&X-Amz-Expires=300&X-Amz-Signature=d80fb38a43e55c5ecc1f94938db89e9db7f2e4faa4910b4b0fe584d2006138a8&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-17T10:15:35.611Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-17T10:15:46.629Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-17T10:15:46.637Z"}
+{"level":"info","message":"Checked revoked status for jti: 086f7dd7-f53b-49bf-b83b-6b0a10b99b22 → false","timestamp":"2025-07-17T10:15:46.638Z"}
+{"level":"info","message":"Checked revoked status for jti: 086f7dd7-f53b-49bf-b83b-6b0a10b99b22 → false","timestamp":"2025-07-17T10:15:46.639Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-17T10:15:46.639Z"}
+{"level":"info","message":"Checked revoked status for jti: 086f7dd7-f53b-49bf-b83b-6b0a10b99b22 → false","timestamp":"2025-07-17T10:15:46.640Z"}
+{"level":"info","message":"Received /auth/profile request","timestamp":"2025-07-17T10:15:46.641Z"}
+{"level":"info","message":"Initiating gRPC call to method: getProfile","request":{"userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-17T10:15:46.641Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-17T10:15:46.642Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-17T10:15:46.642Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-17T10:15:46.645Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-17T10:15:46.646Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1752747646671,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250717%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250717T101546Z&X-Amz-Expires=300&X-Amz-Signature=14b1b39c4d043257df7d86aa30d1d960eef6cc7f3f9a8e7d57c26a04b78dd9f1&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-17T10:15:46.676Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1752747646675,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250717%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250717T101546Z&X-Amz-Expires=300&X-Amz-Signature=14b1b39c4d043257df7d86aa30d1d960eef6cc7f3f9a8e7d57c26a04b78dd9f1&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-17T10:15:46.677Z"}
+{"level":"info","message":"gRPC call to getProfile succeeded","response":{"bio":"hahahaa","email":"popc88776@gmail.com","id":"90d50d69-2727-47e5-88ca-d6c95844f928","location":"kuthuparamba","name":"admingggg","role":"superAdmin","username":"admin_adminhhhh"},"timestamp":"2025-07-17T10:15:46.678Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-17T10:16:03.288Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-17T10:16:03.294Z"}
+{"level":"info","message":"Checked revoked status for jti: 086f7dd7-f53b-49bf-b83b-6b0a10b99b22 → false","timestamp":"2025-07-17T10:16:03.299Z"}
+{"level":"info","message":"Checked revoked status for jti: 086f7dd7-f53b-49bf-b83b-6b0a10b99b22 → false","timestamp":"2025-07-17T10:16:03.300Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-17T10:16:03.301Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-17T10:16:03.302Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-17T10:16:03.306Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-17T10:16:03.306Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1752747663322,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250717%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250717T101603Z&X-Amz-Expires=300&X-Amz-Signature=f32253a52f897924ad94fc961265b5c82134d0cea5e246ebd1107eaf0fcf15e3&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-17T10:16:03.336Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1752747663332,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250717%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250717T101603Z&X-Amz-Expires=300&X-Amz-Signature=f32253a52f897924ad94fc961265b5c82134d0cea5e246ebd1107eaf0fcf15e3&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-17T10:16:03.340Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-17T10:16:07.899Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-17T10:16:07.910Z"}
+{"level":"info","message":"Checked revoked status for jti: 086f7dd7-f53b-49bf-b83b-6b0a10b99b22 → false","timestamp":"2025-07-17T10:16:07.917Z"}
+{"level":"info","message":"Checked revoked status for jti: 086f7dd7-f53b-49bf-b83b-6b0a10b99b22 → false","timestamp":"2025-07-17T10:16:07.917Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-17T10:16:07.917Z"}
+{"level":"info","message":"Checked revoked status for jti: 086f7dd7-f53b-49bf-b83b-6b0a10b99b22 → false","timestamp":"2025-07-17T10:16:07.919Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-17T10:16:07.920Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-17T10:16:07.920Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-17T10:16:07.921Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-17T10:16:07.921Z"}
+{"level":"info","message":"Received /auth/profile request","timestamp":"2025-07-17T10:16:07.923Z"}
+{"level":"info","message":"Initiating gRPC call to method: getProfile","request":{"userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-17T10:16:07.923Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1752747667926,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250717%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250717T101607Z&X-Amz-Expires=300&X-Amz-Signature=67900fc8890758d6e74a6fcd7e71bd24b2ad18ea234d337bda28231135b89bcf&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-17T10:16:07.933Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1752747667928,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250717%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250717T101607Z&X-Amz-Expires=300&X-Amz-Signature=67900fc8890758d6e74a6fcd7e71bd24b2ad18ea234d337bda28231135b89bcf&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-17T10:16:07.934Z"}
+{"level":"info","message":"gRPC call to getProfile succeeded","response":{"bio":"hahahaa","email":"popc88776@gmail.com","id":"90d50d69-2727-47e5-88ca-d6c95844f928","location":"kuthuparamba","name":"admingggg","role":"superAdmin","username":"admin_adminhhhh"},"timestamp":"2025-07-17T10:16:07.938Z"}
+{"level":"info","message":"POST /auth/logout","timestamp":"2025-07-17T10:16:13.827Z"}
+{"level":"info","message":"Checked revoked status for jti: 086f7dd7-f53b-49bf-b83b-6b0a10b99b22 → false","timestamp":"2025-07-17T10:16:13.831Z"}
+{"level":"info","message":"Received /auth/logout request","timestamp":"2025-07-17T10:16:13.833Z"}
+{"level":"info","message":"Access token jti 086f7dd7-f53b-49bf-b83b-6b0a10b99b22 blacklisted for 1 hour","timestamp":"2025-07-17T10:16:13.837Z"}
+{"level":"info","message":"Refresh token jti 2316ff3c-a281-4bc7-82d8-63999866f3ce blacklisted for 7 days","timestamp":"2025-07-17T10:16:13.837Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-17T10:16:26.064Z"}
+{"level":"info","message":"Setting up circuit breaker for method: login","timestamp":"2025-07-17T10:16:26.079Z"}
+{"level":"info","message":"[FIRE] Firing circuit breaker for login","timestamp":"2025-07-17T10:16:26.081Z"}
+{"level":"info","message":"Initiating gRPC call to method: login","request":{"email":"popc88776@gmail.com","password":"123asd@"},"timestamp":"2025-07-17T10:16:26.085Z"}
+{"level":"info","message":"gRPC call to login succeeded","response":{"jwtpayload":{"email":"popc88776@gmail.com","id":"90d50d69-2727-47e5-88ca-d6c95844f928","role":"superAdmin","username":"admin_adminhhhh"},"message":"Login was successfull !"},"timestamp":"2025-07-17T10:16:26.184Z"}
+{"level":"info","message":"[FIRE] Firing circuit breaker for login","timestamp":"2025-07-17T10:16:26.184Z"}
+{"level":"info","message":"Initiating gRPC call to method: login","request":{"email":"popc88776@gmail.com","password":"123asd@"},"timestamp":"2025-07-17T10:16:26.184Z"}
+{"level":"info","message":"gRPC call to login succeeded","response":{"jwtpayload":{"email":"popc88776@gmail.com","id":"90d50d69-2727-47e5-88ca-d6c95844f928","role":"superAdmin","username":"admin_adminhhhh"},"message":"Login was successfull !"},"timestamp":"2025-07-17T10:16:26.242Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-17T10:16:26.252Z"}
+{"level":"info","message":"Checked revoked status for jti: 1bc6e5a0-3031-43a4-8f6a-f7bb37102dbb → false","timestamp":"2025-07-17T10:16:26.253Z"}
+{"level":"info","message":"Initiating gRPC call to method: getJwtUser","request":{"userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-17T10:16:26.254Z"}
+{"level":"info","message":"gRPC call to getJwtUser succeeded","response":{"email":"popc88776@gmail.com","emailVerified":true,"id":"90d50d69-2727-47e5-88ca-d6c95844f928","name":"admingggg","profilePicture":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","role":"superAdmin","username":"admin_adminhhhh"},"timestamp":"2025-07-17T10:16:26.256Z"}
+{"level":"info","message":"GET /auth/admin/users?page=1&limit=5","timestamp":"2025-07-17T10:16:29.948Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-07-19T12:39:54.149Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-07-19T12:39:54.151Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-19T12:39:54.153Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-07-19T12:39:54.865Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-07-19T12:39:54.867Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-19T12:39:54.868Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-07-19T12:42:10.858Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-07-19T12:42:10.860Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-19T12:42:10.861Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-07-19T13:00:19.926Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-07-19T13:00:19.929Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-19T13:00:19.930Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-07-19T13:59:31.559Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-07-19T13:59:31.566Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-19T13:59:31.569Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-07-19T17:44:30.503Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-07-19T17:44:30.508Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-19T17:44:30.509Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-07-19T17:46:48.239Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-07-19T17:46:48.241Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-19T17:46:48.243Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-07-19T17:52:45.601Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-07-19T17:52:45.605Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-19T17:52:45.607Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-07-25T16:22:11.154Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-07-25T16:22:11.160Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-25T16:22:11.162Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-25T16:22:20.028Z"}
+{"level":"error","message":"No JWT token provided","timestamp":"2025-07-25T16:22:20.073Z"}
+{"error":"Token not found ! Please Try to login again!","level":"error","message":"JWT verification error ................., 401","timestamp":"2025-07-25T16:22:20.081Z"}
+{"level":"error","message":"Error: Token not found ! Please Try to login again! (Status: 401)","timestamp":"2025-07-25T16:22:20.084Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-25T16:22:20.211Z"}
+{"level":"error","message":"No JWT token provided","timestamp":"2025-07-25T16:22:20.214Z"}
+{"error":"No token provided","level":"error","message":"refresh token verification failed","timestamp":"2025-07-25T16:22:20.215Z"}
+{"level":"error","message":"Error: No token provided (Status: 403)","timestamp":"2025-07-25T16:22:20.218Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-25T16:22:20.223Z"}
+{"level":"error","message":"No JWT token provided","timestamp":"2025-07-25T16:22:20.280Z"}
+{"error":"Token not found ! Please Try to login again!","level":"error","message":"JWT verification error ................., 401","timestamp":"2025-07-25T16:22:20.281Z"}
+{"level":"error","message":"Error: Token not found ! Please Try to login again! (Status: 401)","timestamp":"2025-07-25T16:22:20.281Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-25T16:22:20.289Z"}
+{"level":"error","message":"No JWT token provided","timestamp":"2025-07-25T16:22:20.293Z"}
+{"error":"Token not found ! Please Try to login again!","level":"error","message":"JWT verification error ................., 401","timestamp":"2025-07-25T16:22:20.294Z"}
+{"level":"error","message":"Error: Token not found ! Please Try to login again! (Status: 401)","timestamp":"2025-07-25T16:22:20.294Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-25T16:22:20.298Z"}
+{"level":"error","message":"No JWT token provided","timestamp":"2025-07-25T16:22:20.299Z"}
+{"error":"No token provided","level":"error","message":"refresh token verification failed","timestamp":"2025-07-25T16:22:20.299Z"}
+{"level":"error","message":"Error: No token provided (Status: 403)","timestamp":"2025-07-25T16:22:20.300Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-25T16:22:20.313Z"}
+{"level":"error","message":"No JWT token provided","timestamp":"2025-07-25T16:22:20.313Z"}
+{"error":"No token provided","level":"error","message":"refresh token verification failed","timestamp":"2025-07-25T16:22:20.314Z"}
+{"level":"error","message":"Error: No token provided (Status: 403)","timestamp":"2025-07-25T16:22:20.315Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-25T16:22:21.257Z"}
+{"level":"error","message":"No JWT token provided","timestamp":"2025-07-25T16:22:21.266Z"}
+{"error":"Token not found ! Please Try to login again!","level":"error","message":"JWT verification error ................., 401","timestamp":"2025-07-25T16:22:21.272Z"}
+{"level":"error","message":"Error: Token not found ! Please Try to login again! (Status: 401)","timestamp":"2025-07-25T16:22:21.272Z"}
+{"level":"info","message":"GET /auth/refresh","timestamp":"2025-07-25T16:22:21.295Z"}
+{"level":"error","message":"No JWT token provided","timestamp":"2025-07-25T16:22:21.295Z"}
+{"error":"No token provided","level":"error","message":"refresh token verification failed","timestamp":"2025-07-25T16:22:21.295Z"}
+{"level":"error","message":"Error: No token provided (Status: 403)","timestamp":"2025-07-25T16:22:21.295Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-25T16:22:23.318Z"}
+{"level":"error","message":"No JWT token provided","timestamp":"2025-07-25T16:22:23.328Z"}
+{"error":"Token not found ! Please Try to login again!","level":"error","message":"JWT verification error ................., 401","timestamp":"2025-07-25T16:22:23.329Z"}
+{"level":"error","message":"Error: Token not found ! Please Try to login again! (Status: 401)","timestamp":"2025-07-25T16:22:23.330Z"}
+{"level":"info","message":"GET /auth/google","timestamp":"2025-07-25T16:22:27.775Z"}
+{"level":"info","message":"GET /auth/google/callback?code=4%2F0AVMBsJhITtHUn6ULVFj_j6E1hj3HE48YirddcX4RxkB98iENkFu-uo-dtVorqbLkNYohCg&scope=email+profile+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&authuser=0&prompt=none","timestamp":"2025-07-25T16:22:30.801Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-25T16:22:32.631Z"}
+{"level":"info","message":"Checked revoked status for jti: 38088a1c-f721-46d7-a78f-418dd738c4b2 → false","timestamp":"2025-07-25T16:22:32.672Z"}
+{"level":"info","message":"Initiating gRPC call to method: getJwtUser","request":{"userId":"80922465-c281-4331-b931-7932da62c316"},"timestamp":"2025-07-25T16:22:32.674Z"}
+{"level":"info","message":"gRPC call to getJwtUser succeeded","response":{"email":"junuchammayil@gmail.com","emailVerified":true,"id":"80922465-c281-4331-b931-7932da62c316","name":"junaid","profilePicture":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","role":"user","username":"junaid__cham"},"timestamp":"2025-07-25T16:22:32.797Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-25T16:22:32.801Z"}
+{"level":"info","message":"Checked revoked status for jti: 38088a1c-f721-46d7-a78f-418dd738c4b2 → false","timestamp":"2025-07-25T16:22:32.803Z"}
+{"level":"info","message":"Initiating gRPC call to method: getJwtUser","request":{"userId":"80922465-c281-4331-b931-7932da62c316"},"timestamp":"2025-07-25T16:22:32.803Z"}
+{"level":"info","message":"gRPC call to getJwtUser succeeded","response":{"email":"junuchammayil@gmail.com","emailVerified":true,"id":"80922465-c281-4331-b931-7932da62c316","name":"junaid","profilePicture":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","role":"user","username":"junaid__cham"},"timestamp":"2025-07-25T16:22:32.810Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-25T16:22:35.514Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-25T16:22:35.528Z"}
+{"level":"info","message":"Checked revoked status for jti: 38088a1c-f721-46d7-a78f-418dd738c4b2 → false","timestamp":"2025-07-25T16:22:35.532Z"}
+{"level":"info","message":"Checked revoked status for jti: 38088a1c-f721-46d7-a78f-418dd738c4b2 → false","timestamp":"2025-07-25T16:22:35.538Z"}
+{"body":{"key":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-25T16:22:35.539Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","operation":"GET","userId":"80922465-c281-4331-b931-7932da62c316"},"timestamp":"2025-07-25T16:22:35.540Z"}
+{"body":{"key":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-25T16:22:35.550Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","operation":"GET","userId":"80922465-c281-4331-b931-7932da62c316"},"timestamp":"2025-07-25T16:22:35.550Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753460855601,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250725%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250725T162235Z&X-Amz-Expires=300&X-Amz-Signature=72877ae80996af69cb273cd9a6ad3e629cda5db4c7e2e022a7019a8e9f260f43&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-25T16:22:35.613Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753460855610,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250725%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250725T162235Z&X-Amz-Expires=300&X-Amz-Signature=72877ae80996af69cb273cd9a6ad3e629cda5db4c7e2e022a7019a8e9f260f43&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-25T16:22:35.616Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-25T16:22:37.500Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-25T16:22:37.511Z"}
+{"level":"info","message":"Checked revoked status for jti: 38088a1c-f721-46d7-a78f-418dd738c4b2 → false","timestamp":"2025-07-25T16:22:37.516Z"}
+{"level":"info","message":"Checked revoked status for jti: 38088a1c-f721-46d7-a78f-418dd738c4b2 → false","timestamp":"2025-07-25T16:22:37.516Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-25T16:22:37.517Z"}
+{"level":"info","message":"Checked revoked status for jti: 38088a1c-f721-46d7-a78f-418dd738c4b2 → false","timestamp":"2025-07-25T16:22:37.527Z"}
+{"level":"info","message":"Received /auth/profile request","timestamp":"2025-07-25T16:22:37.528Z"}
+{"level":"info","message":"Initiating gRPC call to method: getProfile","request":{"userId":"80922465-c281-4331-b931-7932da62c316"},"timestamp":"2025-07-25T16:22:37.529Z"}
+{"body":{"key":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-25T16:22:37.531Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","operation":"GET","userId":"80922465-c281-4331-b931-7932da62c316"},"timestamp":"2025-07-25T16:22:37.531Z"}
+{"body":{"key":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-25T16:22:37.535Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","operation":"GET","userId":"80922465-c281-4331-b931-7932da62c316"},"timestamp":"2025-07-25T16:22:37.535Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753460857567,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250725%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250725T162237Z&X-Amz-Expires=300&X-Amz-Signature=611a61426b31ecd6a45bc5080fa19c8f1bded8881fdc74543f11dd28bf08b398&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-25T16:22:37.575Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753460857573,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250725%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250725T162237Z&X-Amz-Expires=300&X-Amz-Signature=611a61426b31ecd6a45bc5080fa19c8f1bded8881fdc74543f11dd28bf08b398&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-25T16:22:37.580Z"}
+{"level":"info","message":"gRPC call to getProfile succeeded","response":{"bio":"","email":"junuchammayil@gmail.com","id":"80922465-c281-4331-b931-7932da62c316","location":"San Francisco, CA","name":"junaid","role":"user","username":"junaid__cham"},"timestamp":"2025-07-25T16:22:37.583Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-25T16:23:20.070Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-25T16:23:20.084Z"}
+{"level":"info","message":"Checked revoked status for jti: 38088a1c-f721-46d7-a78f-418dd738c4b2 → false","timestamp":"2025-07-25T16:23:20.092Z"}
+{"level":"info","message":"Checked revoked status for jti: 38088a1c-f721-46d7-a78f-418dd738c4b2 → false","timestamp":"2025-07-25T16:23:20.093Z"}
+{"body":{"key":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-25T16:23:20.094Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","operation":"GET","userId":"80922465-c281-4331-b931-7932da62c316"},"timestamp":"2025-07-25T16:23:20.094Z"}
+{"body":{"key":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-25T16:23:20.099Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","operation":"GET","userId":"80922465-c281-4331-b931-7932da62c316"},"timestamp":"2025-07-25T16:23:20.100Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753460900156,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250725%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250725T162320Z&X-Amz-Expires=300&X-Amz-Signature=71276046d18666253739afdb3b55488a91cf6323a3d0ea7ce4c06a57f219f681&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-25T16:23:20.163Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753460900160,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250725%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250725T162320Z&X-Amz-Expires=300&X-Amz-Signature=71276046d18666253739afdb3b55488a91cf6323a3d0ea7ce4c06a57f219f681&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-25T16:23:20.167Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-25T16:25:40.271Z"}
+{"level":"info","message":"Checked revoked status for jti: 38088a1c-f721-46d7-a78f-418dd738c4b2 → false","timestamp":"2025-07-25T16:25:40.305Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-25T16:25:40.307Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-25T16:25:40.318Z"}
+{"level":"info","message":"Checked revoked status for jti: 38088a1c-f721-46d7-a78f-418dd738c4b2 → false","timestamp":"2025-07-25T16:25:40.335Z"}
+{"level":"info","message":"Checked revoked status for jti: 38088a1c-f721-46d7-a78f-418dd738c4b2 → false","timestamp":"2025-07-25T16:25:40.335Z"}
+{"level":"info","message":"Received /auth/profile request","timestamp":"2025-07-25T16:25:40.335Z"}
+{"level":"info","message":"Initiating gRPC call to method: getProfile","request":{"userId":"80922465-c281-4331-b931-7932da62c316"},"timestamp":"2025-07-25T16:25:40.335Z"}
+{"body":{"key":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-25T16:25:40.350Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","operation":"GET","userId":"80922465-c281-4331-b931-7932da62c316"},"timestamp":"2025-07-25T16:25:40.350Z"}
+{"body":{"key":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-25T16:25:40.351Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg","operation":"GET","userId":"80922465-c281-4331-b931-7932da62c316"},"timestamp":"2025-07-25T16:25:40.351Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753461040446,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250725%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250725T162540Z&X-Amz-Expires=300&X-Amz-Signature=73a2951465cea5edef3caf101d21c3601ede3f242d55febd0349500e8bfc4db2&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-25T16:25:40.457Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753461040451,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/80922465-c281-4331-b931-7932da62c316-1752544604571.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250725%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250725T162540Z&X-Amz-Expires=300&X-Amz-Signature=73a2951465cea5edef3caf101d21c3601ede3f242d55febd0349500e8bfc4db2&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-25T16:25:40.459Z"}
+{"level":"info","message":"gRPC call to getProfile succeeded","response":{"bio":"","email":"junuchammayil@gmail.com","id":"80922465-c281-4331-b931-7932da62c316","location":"San Francisco, CA","name":"junaid","role":"user","username":"junaid__cham"},"timestamp":"2025-07-25T16:25:40.460Z"}
+{"level":"info","message":"POST /auth/logout","timestamp":"2025-07-25T16:25:43.198Z"}
+{"level":"info","message":"Checked revoked status for jti: 38088a1c-f721-46d7-a78f-418dd738c4b2 → false","timestamp":"2025-07-25T16:25:43.204Z"}
+{"level":"info","message":"Received /auth/logout request","timestamp":"2025-07-25T16:25:43.207Z"}
+{"level":"info","message":"Access token jti 38088a1c-f721-46d7-a78f-418dd738c4b2 blacklisted for 1 hour","timestamp":"2025-07-25T16:25:43.217Z"}
+{"level":"info","message":"Refresh token jti 41b8aab5-af3a-413e-bd7c-47c3b407a7ea blacklisted for 7 days","timestamp":"2025-07-25T16:25:43.218Z"}
+{"error":"Socket closed unexpectedly","level":"error","message":"Redis Client Error","timestamp":"2025-07-25T16:37:10.081Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-07-30T10:15:57.478Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-07-30T10:15:57.482Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-30T10:15:57.483Z"}
+{"level":"info","message":"POST /auth/login","timestamp":"2025-07-30T10:16:39.621Z"}
+{"level":"info","message":"Setting up circuit breaker for method: login","timestamp":"2025-07-30T10:16:39.641Z"}
+{"level":"info","message":"[FIRE] Firing circuit breaker for login","timestamp":"2025-07-30T10:16:39.642Z"}
+{"level":"info","message":"Initiating gRPC call to method: login","request":{"email":"popc88776@gmail.com","password":"123asd@"},"timestamp":"2025-07-30T10:16:39.645Z"}
+{"level":"info","message":"gRPC call to login succeeded","response":{"jwtpayload":{"email":"popc88776@gmail.com","id":"90d50d69-2727-47e5-88ca-d6c95844f928","role":"superAdmin","username":"admin_adminhhhh"},"message":"Login was successfull !"},"timestamp":"2025-07-30T10:16:39.779Z"}
+{"level":"info","message":"[FIRE] Firing circuit breaker for login","timestamp":"2025-07-30T10:16:39.779Z"}
+{"level":"info","message":"Initiating gRPC call to method: login","request":{"email":"popc88776@gmail.com","password":"123asd@"},"timestamp":"2025-07-30T10:16:39.780Z"}
+{"level":"info","message":"gRPC call to login succeeded","response":{"jwtpayload":{"email":"popc88776@gmail.com","id":"90d50d69-2727-47e5-88ca-d6c95844f928","role":"superAdmin","username":"admin_adminhhhh"},"message":"Login was successfull !"},"timestamp":"2025-07-30T10:16:39.852Z"}
+{"level":"info","message":"GET /auth/me","timestamp":"2025-07-30T10:16:39.871Z"}
+{"level":"info","message":"Checked revoked status for jti: c82762da-f971-4cd1-a2f4-472a95086e15 → false","timestamp":"2025-07-30T10:16:39.874Z"}
+{"level":"info","message":"Initiating gRPC call to method: getJwtUser","request":{"userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-30T10:16:39.874Z"}
+{"level":"info","message":"gRPC call to getJwtUser succeeded","response":{"email":"popc88776@gmail.com","emailVerified":true,"id":"90d50d69-2727-47e5-88ca-d6c95844f928","name":"admingggg","profilePicture":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","role":"superAdmin","username":"admin_adminhhhh"},"timestamp":"2025-07-30T10:16:39.878Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-30T10:16:40.163Z"}
+{"level":"info","message":"Checked revoked status for jti: c82762da-f971-4cd1-a2f4-472a95086e15 → false","timestamp":"2025-07-30T10:16:40.169Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-30T10:16:40.172Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-30T10:16:40.172Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-30T10:16:40.174Z"}
+{"level":"info","message":"Checked revoked status for jti: c82762da-f971-4cd1-a2f4-472a95086e15 → false","timestamp":"2025-07-30T10:16:40.176Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-30T10:16:40.176Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-30T10:16:40.177Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753870900212,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250730%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250730T101640Z&X-Amz-Expires=300&X-Amz-Signature=a28be206d2e441b3419fa0269eaf25beab470cb36b9a460e32cf13d68aeb8398&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-30T10:16:40.221Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753870900218,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250730%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250730T101640Z&X-Amz-Expires=300&X-Amz-Signature=a28be206d2e441b3419fa0269eaf25beab470cb36b9a460e32cf13d68aeb8398&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-30T10:16:40.227Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-30T10:16:48.300Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-30T10:16:48.318Z"}
+{"level":"info","message":"Checked revoked status for jti: c82762da-f971-4cd1-a2f4-472a95086e15 → false","timestamp":"2025-07-30T10:16:48.320Z"}
+{"level":"info","message":"Checked revoked status for jti: c82762da-f971-4cd1-a2f4-472a95086e15 → false","timestamp":"2025-07-30T10:16:48.320Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-30T10:16:48.322Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-30T10:16:48.322Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-30T10:16:48.324Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-30T10:16:48.324Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753870908366,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250730%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250730T101648Z&X-Amz-Expires=300&X-Amz-Signature=6336e0cc6bc89eae8ebe4cd51c7bc6490eb92a9ecb3c94da068eedafe22c0ad8&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-30T10:16:48.376Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753870908372,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250730%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250730T101648Z&X-Amz-Expires=300&X-Amz-Signature=6336e0cc6bc89eae8ebe4cd51c7bc6490eb92a9ecb3c94da068eedafe22c0ad8&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-30T10:16:48.379Z"}
+{"level":"info","message":"GET /auth/profile","timestamp":"2025-07-30T10:19:32.511Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-30T10:19:32.525Z"}
+{"level":"info","message":"Checked revoked status for jti: c82762da-f971-4cd1-a2f4-472a95086e15 → false","timestamp":"2025-07-30T10:19:32.527Z"}
+{"level":"info","message":"Checked revoked status for jti: c82762da-f971-4cd1-a2f4-472a95086e15 → false","timestamp":"2025-07-30T10:19:32.528Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-30T10:19:32.528Z"}
+{"level":"info","message":"Checked revoked status for jti: c82762da-f971-4cd1-a2f4-472a95086e15 → false","timestamp":"2025-07-30T10:19:32.530Z"}
+{"level":"info","message":"Received /auth/profile request","timestamp":"2025-07-30T10:19:32.531Z"}
+{"level":"info","message":"Initiating gRPC call to method: getProfile","request":{"userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-30T10:19:32.531Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-30T10:19:32.535Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-30T10:19:32.538Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-30T10:19:32.544Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-30T10:19:32.544Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753871072568,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250730%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250730T101932Z&X-Amz-Expires=300&X-Amz-Signature=04c7b2d21788be856b7b19bb4d4d248d40bb5271e18f542e39c4cc53c7d93c37&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-30T10:19:32.594Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753871072579,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250730%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250730T101932Z&X-Amz-Expires=300&X-Amz-Signature=04c7b2d21788be856b7b19bb4d4d248d40bb5271e18f542e39c4cc53c7d93c37&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-30T10:19:32.596Z"}
+{"level":"info","message":"gRPC call to getProfile succeeded","response":{"bio":"hahahaa","email":"popc88776@gmail.com","id":"90d50d69-2727-47e5-88ca-d6c95844f928","location":"kuthuparamba","name":"admingggg","role":"superAdmin","username":"admin_adminhhhh"},"timestamp":"2025-07-30T10:19:32.597Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-30T10:21:38.370Z"}
+{"level":"info","message":"Checked revoked status for jti: c82762da-f971-4cd1-a2f4-472a95086e15 → false","timestamp":"2025-07-30T10:21:38.383Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-30T10:21:38.384Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-30T10:21:38.384Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753871198411,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250730%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250730T102138Z&X-Amz-Expires=300&X-Amz-Signature=35cceb2f0cc6d0d5b48ebb41c976ba7eb05ed5259bf649cd0972b5b51d305a35&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-30T10:21:38.414Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-30T10:26:28.744Z"}
+{"level":"info","message":"Checked revoked status for jti: c82762da-f971-4cd1-a2f4-472a95086e15 → false","timestamp":"2025-07-30T10:26:28.755Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-30T10:26:28.756Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-30T10:26:28.757Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753871488787,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250730%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250730T102628Z&X-Amz-Expires=300&X-Amz-Signature=f444e4e6d1c50aa759b86b0611cbb4544c1f507e9b0fbdc22441f5934fa99913&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-30T10:26:28.790Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-07-30T10:27:02.160Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-07-30T10:27:02.163Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-30T10:27:02.164Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-07-30T10:27:13.305Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-07-30T10:27:13.307Z"}
+{"level":"info","message":"API Gateway running on port 8080","timestamp":"2025-07-30T10:27:13.309Z"}
+{"level":"info","message":"POST /auth/generate-presigned-url","timestamp":"2025-07-30T10:31:19.745Z"}
+{"level":"info","message":"Checked revoked status for jti: c82762da-f971-4cd1-a2f4-472a95086e15 → false","timestamp":"2025-07-30T10:31:19.767Z"}
+{"body":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET"},"level":"info","message":"Received /auth/generate-presigned-url request","timestamp":"2025-07-30T10:31:19.768Z"}
+{"level":"info","message":"Initiating gRPC call to method: generatePresignedUrl","request":{"key":"profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg","operation":"GET","userId":"90d50d69-2727-47e5-88ca-d6c95844f928"},"timestamp":"2025-07-30T10:31:19.769Z"}
+{"level":"info","message":"gRPC call to generatePresignedUrl succeeded","response":{"expiresAt":1753871779815,"key":"","url":"https://devhuddle-bucket-junaid.s3.ap-south-1.amazonaws.com/profiles/90d50d69-2727-47e5-88ca-d6c95844f928-1752223320543.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3Q4JION2JAPCIVAV%2F20250730%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250730T103119Z&X-Amz-Expires=300&X-Amz-Signature=1b17a9d2e0696a42ea458b1d59a1d26eca0d302c6de739c83f6f7fb41e706302&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"},"timestamp":"2025-07-30T10:31:19.822Z"}

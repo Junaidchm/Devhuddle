@@ -45,6 +45,18 @@ services:
       - shared
     command: sh -c "npx ts-node generate.ts && npx prisma migrate dev --name init && npm run dev"
 
+  # post-service:
+  #   build:
+  #     context: ./post-service
+  #     dockerfile: Dockerfile
+  #   depends_on:
+  #     - auth-service
+  #   volumes:
+  #    - ./post-service/src:/app/src
+  #    - ./post-service/node_modules:/app/node
+  #   networks:
+  #     - shared
+
   auth-db:
     image: postgres:alpine
     container_name: auth-db

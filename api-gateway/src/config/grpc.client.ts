@@ -6,3 +6,4 @@ export const authClient = new AuthServiceClient(
   grpc.credentials.createInsecure(),
   { "grpc.keepalive_time_ms": 10000, "grpc.keepalive_timeout_ms": 5000 }
 );
+
