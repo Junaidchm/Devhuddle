@@ -28,7 +28,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-app.get("/health", (req, res) => {
+app.get("/health", (req:Request, res:Response) => {
   res.status(200).json({ status: "Auth Service is running" });
 });
 

@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package post;
+
+service PostServic {
+    rpc CreatePost(CreatePostRequest) returns (CreatePostResponse);
+}
+
+message CreatePostRequest {
+  string userId = 1;
+  string type = 2; // "text", "article", "poll"
+  string content = 3;
+  repeated string tags = 4;
+  repeated string mentions = 5;
+  string imageLocation = 6;
+  Location location = 7;
+  string visibility = 8; // "public", "connections", "group:<groupId>"
+  string commentControl = 9; // "anyone", "connections", "none"
+  string scheduledAt = 10; // ISO timestamp
+}
+
+message CreatePostResponse {
+  string id = 1;
+  string message = 2;
+}
+
+message Location {
+  double latitude = 1;
+  double longitude = 2;
+}
