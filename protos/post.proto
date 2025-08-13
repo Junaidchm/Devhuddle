@@ -1,30 +1,113 @@
 syntax = "proto3";
 
-package post;
+package social.post.v1;;
 
-service PostServic {
-    rpc CreatePost(CreatePostRequest) returns (CreatePostResponse);
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+
+
+// Enums definition
+
+enum Visibility {
+  PUBLIC = 0;
+  CONNECTIONS = 1;
 }
+
+enum CommentControl {
+  ANYONE = 0;
+  CONNECTIONS = 1;
+  NOBODY = 2
+}
+
+enum MediaType {
+  IMAGE = 0;
+  VIDEO = 1;
+}
+
+// message definition
+
+message User {
+  string id = 0;
+  string name  = 1;
+  string avatar = 2;
+  optional string title = 4;
+  google.protobuf.Int32Value points = 5; 
+}
+
+message ImageTransform {
+  double rotation = 1;
+  bool flip_h = 2;
+  bool flip_v = 3;
+  double zoom = 4;
+  double straighten = 5;
+  string aspect_ratio = 6;
+  string filter = 7;
+  double brightness = 8;
+  double contrast = 9;
+  double saturation = 10;
+  double temperature = 11;
+  double highlights = 12;
+  double shadows = 13;
+  string alt_text = 14;
+}
+
+message VideoTransform {
+
+}
+
+message Poll {
+
+}
+
+string id = 1;
+  MediaType type = 2;
+  string url = 3;
+  string name = 4;
+  repeated User tagged_users = 6;
+
+  oneof transform {
+    ImageTransform image_transform = 7;
+    VideoTransform video_transform = 8;
+  }
+
+message Media {
+  string id = 1;
+  MediaType type = 2;
+  string url = 3;
+  string name = 4;
+  string alt_text = 5;
+  repeated User tagged_users = 6;
+
+  oneof transform {
+    ImageTransform image_transform = 7;
+    VideoTransform video_transform = 8;
+  }
+}
+
+message Post {
+  string content = 1;
+  repeated Media media = 2;
+  optional Poll poll = 3;
+  Visibility visibility = 4;
+  CommentControl comment_control = 5;
+}
+
+
+// request & response 
 
 message CreatePostRequest {
-  string userId = 1;
-  string type = 2; // "text", "article", "poll"
-  string content = 3;
-  repeated string tags = 4;
-  repeated string mentions = 5;
-  string imageLocation = 6;
-  Location location = 7;
-  string visibility = 8; // "public", "connections", "group:<groupId>"
-  string commentControl = 9; // "anyone", "connections", "none"
-  string scheduledAt = 10; // ISO timestamp
+  Post post = 1;
 }
 
-message CreatePostResponse {
-  string id = 1;
-  string message = 2;
+
+// Service definition
+
+service PostServic {
+ createPost (CreatePostRequest) returns (google.protobuf.Empty)
 }
 
-message Location {
-  double latitude = 1;
-  double longitude = 2;
-}
+
+
+
+
+

@@ -9,6 +9,7 @@ import { ApiError } from "./types/auth";
 import cors from "cors";
 import { authServiceProxy } from "./middleware/authserver.proxy.middleware";
 import authRouter from "./routes/authservice/auth.routes";
+import feedRouter from "./routes/feedService/feed.routes";
 import { connectRedis } from "./utils/redis.util";
 
 dotenv.config();
@@ -40,12 +41,13 @@ app.get("/health", (req: Request, res: Response) => {
 });
 
 // HTTP proxy for Google OAuth routes
-app.use('/auth/google', authServiceProxy);
-app.use("/auth/google/callback",authServiceProxy)
-app.use("/auth/admin",authServiceProxy)
+app.use("/auth/google", authServiceProxy);
+app.use("/auth/google/callback", authServiceProxy);
+app.use("/auth/admin", authServiceProxy);
 
 // grpc rpc routing
 app.use("/auth", authRouter);
+app.use("/feed", feedRouter);
 
 // Handle favicon to prevent unhandled requests
 app.get("/favicon.ico", (req: Request, res: Response) => {

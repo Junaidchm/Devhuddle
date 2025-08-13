@@ -47,27 +47,28 @@ enum TargetType {
 }
 
 model Post {
-  id              String       @id @default(uuid())
-  userId          String
-  type            PostType
-  content         String?
-  tags            String[]     @default([])
-  mentions        String[]     @default([])
-  imageLocation   String?
-  location        Json?
-  visibility      Visibility
-  commentControl  CommentControl
-  scheduledAt     DateTime?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  impressions     Int          @default(0)
+  id             String         @id @default(uuid())
+  userId         String
+  type           PostType
+  content        String?
+  tags           String[]       @default([])
+  mentions       String[]       @default([])
+  // imageLocation   String?
+  // location        Json?
+  imageUrls      String[]
+  videoUrl       String
+  visibility     Visibility
+  commentControl CommentControl
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  impressions    Int            @default(0)
 
   // Relations
-  UserFeed        UserFeed[]
-  Comments        Comment[]
-  Shares          Share[]
-  Reactions       Reaction[]
-  Poll            Poll?
+  UserFeed  UserFeed[]
+  Comments  Comment[]
+  Shares    Share[]
+  Reactions Reaction[]
+  Poll      Poll?
 
   @@index([userId])
   @@index([createdAt])
@@ -75,33 +76,31 @@ model Post {
   @@index([mentions])
 }
 
-
-
 model UserFeed {
   userId    String
   postId    String
   createdAt DateTime @default(now())
 
-  Post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  Post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@id([userId, postId])
   @@index([createdAt])
 }
 
 model Comment {
-  id              String    @id @default(uuid())
+  id              String  @id @default(uuid())
   postId          String
   userId          String
   content         String
   parentCommentId String?
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  Post            Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  ParentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id])
-  Replies         Comment[] @relation("CommentReplies")
+  Post          Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  ParentComment Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id])
+  Replies       Comment[] @relation("CommentReplies")
 
   @@index([postId])
   @@index([userId])
@@ -118,7 +117,7 @@ model Share {
   comment    String?
   createdAt  DateTime   @default(now())
 
-  Post       Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  Post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId])
   @@index([userId])
@@ -133,7 +132,7 @@ model Reaction {
   type      ReactionType
   createdAt DateTime     @default(now())
 
-  Post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  Post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId, type])
   @@index([postId])
@@ -142,12 +141,12 @@ model Reaction {
 }
 
 model Poll {
-  id         String   @id @default(uuid())
-  postId     String   @unique
-  question   String
-  options    Json[]   // [{ id: string, text: string, votes: number }]
-  duration   Int      // Duration in days
-  createdAt  DateTime @default(now())
+  id        String   @id @default(uuid())
+  postId    String   @unique
+  question  String
+  options   Json[] // [{ id: string, text: string, votes: number }]
+  duration  Int // Duration in days
+  createdAt DateTime @default(now())
 
-  Post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  Post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 }

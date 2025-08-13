@@ -44,7 +44,6 @@ import cookieParser from "cookie-parser";
 import compression from "compression";
 import { grpcToHttp } from "../../constants/http.status";
 import jwtMiddleware from "../../middleware/jwt.middleware";
-// import { jwtPayload } from "types/auth";
 import { setJtiAsBlackListed } from "../../utils/redis.actions";
 import { Messages } from "../../constants/reqresMessages";
 import { generateUuid4 } from "../../utils/uuid.util";

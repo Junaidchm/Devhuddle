@@ -10,7 +10,7 @@ export abstract class BaseRepository<
   },
   Entity,
   CreateInput,
-  UpdateInput,
+  UpdateInput,  
   WhereUniqueInput
 > {
   protected model: TModel;
