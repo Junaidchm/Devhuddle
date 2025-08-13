@@ -19,5 +19,6 @@ export const sendErrorResponse = (res: Response, error: ApiError): void => {
 };
 
 export function filterError(err:Error) {
+  console.log(err.message)
   return err.message.split(':')[1]
 }
