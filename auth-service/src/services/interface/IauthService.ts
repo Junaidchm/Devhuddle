@@ -10,7 +10,7 @@ import {
   VerifyOTPRequest, 
   jwtUserFilter 
 } from "../../types/auth";
-import { GetJwtUserRequest, GetJwtUserResponse, GetProfileResponse, JwtPayload, LogingRequest, UpdateProfileResponse } from "../../grpc/generated/auth";
+import {  GetJwtUserResponse, GetProfileResponse, JwtPayload, LogingRequest, UpdateProfileResponse } from "../../grpc/generated/auth";
 
 export interface IAuthService {
   register(registerData: RegisterRequest): Promise<void>;

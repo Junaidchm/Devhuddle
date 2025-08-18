@@ -178,7 +178,10 @@ export class AuthService implements IAuthService {
       }
 
       if (user.isBlocked) {
-        throw new CustomError(grpc.status.PERMISSION_DENIED, Messages.USER_BLOCKED);
+        throw new CustomError(
+          grpc.status.PERMISSION_DENIED,
+          Messages.USER_BLOCKED
+        );
       }
 
       return filterUserJwtPayload(user);
@@ -424,7 +427,10 @@ export class AuthService implements IAuthService {
         };
       } else if (operation === "GET") {
         if (!key) {
-          throw new CustomError(grpc.status.INVALID_ARGUMENT, "key is required for GET operation");
+          throw new CustomError(
+            grpc.status.INVALID_ARGUMENT,
+            "key is required for GET operation"
+          );
         }
         const command = new GetObjectCommand({
           Bucket: process.env.AWS_S3_BUCKET,
@@ -440,7 +446,10 @@ export class AuthService implements IAuthService {
           expiresAt: Date.now() + EXPIRES_IN_SECONDS * 1000,
         };
       } else {
-        throw new CustomError(grpc.status.INVALID_ARGUMENT, "Invalid operation. Use PUT or GET");
+        throw new CustomError(
+          grpc.status.INVALID_ARGUMENT,
+          "Invalid operation. Use PUT or GET"
+        );
       }
     } catch (error: any) {
       logger.error("Failed to generate presigned URL", {
@@ -448,7 +457,10 @@ export class AuthService implements IAuthService {
       });
       throw error instanceof CustomError
         ? error
-        : new CustomError(grpc.status.INTERNAL, "Failed to generate presigned URL");
+        : new CustomError(
+            grpc.status.INTERNAL,
+            "Failed to generate presigned URL"
+          );
     }
   }
 }

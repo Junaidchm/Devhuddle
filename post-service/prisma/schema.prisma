@@ -6,13 +6,13 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 
 enum PostType {
   TEXT
@@ -49,7 +49,7 @@ enum TargetType {
 model Post {
   id             String         @id @default(uuid())
   userId         String
-  type           PostType
+  type           PostType?      
   content        String?
   tags           String[]       @default([])
   mentions       String[]       @default([])
@@ -150,3 +150,5 @@ model Poll {
 
   Post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 }
+
+

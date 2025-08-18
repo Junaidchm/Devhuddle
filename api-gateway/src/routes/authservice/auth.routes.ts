@@ -29,7 +29,7 @@ import {
   VerifyOTPResponse,
   VerifyRefreshTokenRequest,
   VerifyRefreshTokenResponse,
-} from "grpc/generated/auth";
+} from "../../grpc/generated/auth";
 import { HttpStatus } from "../../utils/constents";
 import { filterError, sendErrorResponse } from "../../utils/error.util";
 import { grpcCall } from "../../utils/grpc.helper";

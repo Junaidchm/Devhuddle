@@ -6,7 +6,7 @@ import { Messages } from "../constants/reqresMessages";
 import { verifyAccessToken } from "../utils/jwt.util";
 import { checkUserBlockBlackList } from "../utils/redis.actions";
 import { clearCookies } from "../utils/jwtHandler";
-import { jwtPayload } from "types/auth";
+import { jwtPayload } from "../types/auth";
 
 // Extend Express Request interface to include 'user'
 declare global {
@@ -40,7 +40,6 @@ export default async function jwtMiddleware(
       throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.USER_BLOCKED);
     }
     req.user = decoded;
-
     next();
   } catch (err: any) {
     logger.error(`JWT verification error ................., ${err.status}`, {
