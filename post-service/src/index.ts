@@ -25,13 +25,13 @@ app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({ status: "Post service is running" });
 });
 
-// app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-//   sendErrorResponse(
-//     res,
-//     err instanceof CustomError
-//       ? err
-//       : { status: 500, message: "Internal server error" }
-//   );
-// });
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  sendErrorResponse(
+    res,
+    err instanceof CustomError
+      ? err
+      : { status: 500, message: "Internal server error" }
+  );
+});
 
 startServer();

@@ -3,8 +3,8 @@ import { execSync } from "child_process";
 import fs from "fs";
 
 // Paths
-const PROTO_DIR = path.resolve(__dirname,"../", "protos");
-const OUT_DIR = path.resolve(__dirname, "src", "grpc", "generated");
+const PROTO_DIR = path.resolve(__dirname,"../","./protos");
+const OUT_DIR = path.resolve(__dirname, "grpc", "generated");
 const PROTO_FILE = path.resolve(PROTO_DIR, "post.proto");
 
 // Ensure output directory exists

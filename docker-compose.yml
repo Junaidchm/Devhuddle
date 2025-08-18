@@ -13,6 +13,7 @@ services:
     depends_on:
       - redis
       - auth-service
+      - post-service
     volumes:
       - ./api-gateway/src:/app/src
       - ./api-gateway/protos:/app/protos
@@ -20,7 +21,7 @@ services:
       - ./api-gateway/logs:/app/logs
     networks:
       - shared
-    command: sh -c "npx ts-node generate.ts && npm run dev"
+    command: sh -c "npx ts-node src/generate.ts && npm run dev"
 
   auth-service:
     build:
@@ -45,17 +46,22 @@ services:
       - shared
     command: sh -c "npx ts-node generate.ts && npx prisma migrate dev --name init && npm run dev"
 
-  # post-service:
-  #   build:
-  #     context: ./post-service
-  #     dockerfile: Dockerfile
-  #   depends_on:
-  #     - auth-service
-  #   volumes:
-  #    - ./post-service/src:/app/src
-  #    - ./post-service/node_modules:/app/node
-  #   networks:
-  #     - shared
+  post-service:
+    build:
+      context: ./post-service
+      dockerfile: Dockerfile
+    container_name: post-service
+    env_file:
+      - ./post-service/.env
+    volumes:
+      - ./post-service/src:/app/src 
+      # - ./post-service/dist:/app/dist 
+      - ./post-service/protos:/app/protos
+      - ./post-service/prisma:/app/prisma
+      - /app/node_modules
+    networks:
+      - shared
+    command: sh -c "npx ts-node src/generate.ts && npx prisma migrate dev --name init && npm run dev"
 
   auth-db:
     image: postgres:alpine

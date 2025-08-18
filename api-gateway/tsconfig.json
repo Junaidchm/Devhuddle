@@ -11,9 +11,9 @@
     "skipLibCheck": true,
     "baseUrl": "./",
     "paths": {
-      "*": ["node_modules/*", "src/*", "grpc-generated/*"]
+      "*": ["node_modules/*", "src/*", "grpc/*"]
     }
   },
-  "include": ["src/**/*", "grpc-generated/**/*"],
+  "include": ["src/**/*", "grpc**/*"],
   "exclude": ["node_modules"]
 }

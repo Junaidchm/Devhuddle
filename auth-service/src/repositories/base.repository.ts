@@ -46,7 +46,7 @@ export abstract class BaseRepository<
       logger.error("Error creating entity", {
         error: (error as Error).message,
       });
-      throw new Error("Database error");
+      throw new Error("Database error");  
     }
   }
 
