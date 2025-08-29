@@ -24,6 +24,9 @@ import {
   VerifyRefreshTokenResponse,
   GeneratePresignedUrlRequest,
   GeneratePresignedUrlResponse,
+  GetUserProfileByNameRequest,
+  ListFollowersRequest,
+  ListFollowersResponse,
 } from "./grpc/generated/auth";
 
 import logger from "./utils/logger.util";
@@ -31,12 +34,19 @@ import { UserRepository } from "./repositories/user.repository";
 import { AuthService } from "./services/impliments/auth.service";
 import { AuthController } from "./controllers/implimentation/auth.controller";
 import { CustomError } from "./utils/error.util";
+import { UserFollowController } from "./controllers/implimentation/user.Follows.controller";
+import { UserFollowService } from "./services/impliments/user.Follow.service";
 
 const userRepository: UserRepository = new UserRepository();
+
 const authenticationService: AuthService = new AuthService(userRepository);
 const authController: AuthController = new AuthController(
   authenticationService
 );
+
+const userFollowService : UserFollowService =  new UserFollowService(userRepository)
+const userFollowController : UserFollowController = new UserFollowController(userFollowService)
+
 
 //  Implementing the server interface
 const authService: AuthServiceServer = {
@@ -126,15 +136,15 @@ const authService: AuthServiceServer = {
   },
   requestPasswordReset: async (
     call: grpc.ServerUnaryCall<PasswordResetRequest, PasswordResetResponse>,
-    callback:grpc.sendUnaryData<PasswordResetResponse>
+    callback: grpc.sendUnaryData<PasswordResetResponse>
   ) => {
     try {
       logger.info("Received gRPC requestPasswordReset request", {
         request: call,
       });
-      const request = call.request
+      const request = call.request;
       const response = await authController.requestPasswordReset(request);
-      callback(null,response)
+      callback(null, response);
     } catch (err: any) {
       logger.error("gRPC requestPasswordReset error", {
         error: err.message,
@@ -147,16 +157,19 @@ const authService: AuthServiceServer = {
     }
   },
   resetPassword: async (
-    call: grpc.ServerUnaryCall<PasswordResetConfirmRequest, PasswordResetResponse>,
-    callback:grpc.sendUnaryData<PasswordResetResponse>
+    call: grpc.ServerUnaryCall<
+      PasswordResetConfirmRequest,
+      PasswordResetResponse
+    >,
+    callback: grpc.sendUnaryData<PasswordResetResponse>
   ) => {
     try {
       logger.info("Received gRPC requestPasswordReset request", {
         request: call,
       });
-      const request = call.request
+      const request = call.request;
       const response = await authController.resetPassword(request);
-      callback(null,response)
+      callback(null, response);
     } catch (err: any) {
       logger.error("gRPC requestPasswordReset error", {
         error: err.message,
@@ -168,17 +181,17 @@ const authService: AuthServiceServer = {
       });
     }
   },
-  getProfile:async (
+  getProfile: async (
     call: grpc.ServerUnaryCall<GetProfileRequest, GetProfileResponse>,
-    callback:grpc.sendUnaryData<GetProfileResponse>
+    callback: grpc.sendUnaryData<GetProfileResponse>
   ) => {
     try {
       logger.info("Received gRPC getProfile request", {
         request: call,
       });
-      const request = call.request
+      const request = call.request;
       const response = await authController.getProfile(request);
-      callback(null,response)
+      callback(null, response);
     } catch (err: any) {
       logger.error("gRPC getProfile error", {
         error: err.message,
@@ -190,17 +203,17 @@ const authService: AuthServiceServer = {
       });
     }
   },
-  updateProfile:async (
+  updateProfile: async (
     call: grpc.ServerUnaryCall<UpdateProfileRequest, UpdateProfileResponse>,
-    callback:grpc.sendUnaryData<UpdateProfileResponse>
+    callback: grpc.sendUnaryData<UpdateProfileResponse>
   ) => {
     try {
       logger.info("Received gRPC updateProfile request", {
         request: call,
       });
-      const request = call.request
+      const request = call.request;
       const response = await authController.updateProfile(request);
-      callback(null,response)
+      callback(null, response);
     } catch (err: any) {
       logger.error("gRPC getProfile error", {
         error: err.message,
@@ -212,17 +225,20 @@ const authService: AuthServiceServer = {
       });
     }
   },
-  verifyRefreshToken:async (
-    call: grpc.ServerUnaryCall<VerifyRefreshTokenRequest, VerifyRefreshTokenResponse>,
-    callback:grpc.sendUnaryData<VerifyRefreshTokenResponse>
+  verifyRefreshToken: async (
+    call: grpc.ServerUnaryCall<
+      VerifyRefreshTokenRequest,
+      VerifyRefreshTokenResponse
+    >,
+    callback: grpc.sendUnaryData<VerifyRefreshTokenResponse>
   ) => {
     try {
       logger.info("Received gRPC updateProfile request", {
         request: call,
       });
-      const request = call.request
+      const request = call.request;
       const response = await authController.verifyRefreshToken(request);
-      callback(null,response)
+      callback(null, response);
     } catch (err: any) {
       logger.error("gRPC getProfile error", {
         error: err.message,
@@ -234,16 +250,60 @@ const authService: AuthServiceServer = {
       });
     }
   },
-  generatePresignedUrl:async (
-    call: grpc.ServerUnaryCall<GeneratePresignedUrlRequest, GeneratePresignedUrlResponse>,
-    callback:grpc.sendUnaryData<GeneratePresignedUrlResponse>
+  getUserProfileByName: async (
+    call: grpc.ServerUnaryCall<GetUserProfileByNameRequest, GetProfileResponse>,
+    callback: grpc.sendUnaryData<GetProfileResponse>
   ) => {
     try {
-      logger.info("Received gRPC updateProfile request", {
+      logger.info("Received gRPC getProfile request", {
+        request: call,
+      });
+      const request = call.request;
+      const response = await authController.getProfileByName(request);
+      callback(null, response);
+    } catch (err: any) {
+      logger.error("gRPC getProfile error", {
+        error: err.message,
+        stack: err.stack,
+      });
+      callback({
+        code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,
+        message: err.message || "Internal server error",
+      });
+    }
+  },
+  generatePresignedUrl: async (
+    call: grpc.ServerUnaryCall<
+      GeneratePresignedUrlRequest,
+      GeneratePresignedUrlResponse
+    >,
+    callback: grpc.sendUnaryData<GeneratePresignedUrlResponse>
+  ) => {
+    try {
+      const request = call.request;
+      const response = await authController.generatePresignedUrl(request);
+      callback(null, response);
+    } catch (err: any) {
+      logger.error("gRPC getProfile error", {
+        error: err.message,
+        stack: err.stack,
+      });
+      callback({
+        code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,
+        message: err.message || "Internal server error",
+      });
+    }
+  },
+  listFollowers: async (
+    call: grpc.ServerUnaryCall<ListFollowersRequest, ListFollowersResponse>,
+    callback: grpc.sendUnaryData<ListFollowersResponse>
+  ) => {
+     try {
+      logger.info("Received gRPC listFollowers request", {
         request: call,
       });
       const request = call.request
-      const response = await authController.generatePresignedUrl(request);
+      const response = await userFollowController.getUserFollowersList(request)
       callback(null,response)
     } catch (err: any) {
       logger.error("gRPC getProfile error", {
@@ -256,6 +316,7 @@ const authService: AuthServiceServer = {
       });
     }
   },
+  listFollowing: async () => {},
 };
 
 const server = new grpc.Server();

@@ -14,22 +14,24 @@ datasource db {
 }
 
 model User {
-  id                String    @id @default(uuid())
-  email             String    @unique
-  username          String    @unique
+  id                String   @id @default(uuid())
+  email             String   @unique
+  username          String   @unique
   name              String
   password          String
-  role              String    @default("user")
-  emailVerified     Boolean   @default(false)
+  role              String   @default("user")
+  emailVerified     Boolean  @default(false)
   profilePicture    String? // URL to profile picture
   location          String?
   bio               String?
-  skills            String[]  @default([]) // Array of skills
+  skills            String[] @default([]) // Array of skills
   yearsOfExperience String?
   jobTitle          String?
   company           String?
-  isBlocked         Boolean   @default(false) 
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
+  following         User[]   @relation("Follows")
+  followers         User[]   @relation("Follows")
+  isBlocked         Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
+

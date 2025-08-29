@@ -2,6 +2,7 @@ import { success, ZodTypeAny } from "zod";
 import {
   CreatePostRequest,
   CreatePostResponse,
+  GeneratePresignedUrlResponse,
 } from "../../grpc/generated/post";
 import { IfeedController } from "../interfaces/IfeedController";
 import { partial } from "zod/v4/core/util.cjs";
@@ -20,4 +21,13 @@ export class PostController implements IfeedController {
       message: "hello ",
     };
   }
+  
+  async generatePresignedUrl():Promise<GeneratePresignedUrlResponse> {
+    try {
+        
+    } catch (err:any) {
+      
+    }
+  }
+
 }

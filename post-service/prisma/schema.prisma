@@ -53,8 +53,6 @@ model Post {
   content        String?
   tags           String[]       @default([])
   mentions       String[]       @default([])
-  // imageLocation   String?
-  // location        Json?
   imageUrls      String[]
   videoUrl       String
   visibility     Visibility

@@ -86,6 +86,30 @@ export interface CreatePostResponse {
   message: string;
 }
 
+export interface GeneratePresignedUrlRequestForPut {
+  userId: string;
+  operation: string;
+  fileName: string;
+  fileType: string;
+}
+
+export interface GeneratePresignedUrlRequestForGet {
+  userId: string;
+  operation: string;
+  key: string;
+}
+
+export interface GeneratePresignedUrlRequest {
+  generatePresignedUrlRequestForPut?: GeneratePresignedUrlRequestForPut | undefined;
+  generatePresignedUrlRequestForGet?: GeneratePresignedUrlRequestForGet | undefined;
+}
+
+export interface GeneratePresignedUrlResponse {
+  url: string;
+  key: string;
+  expiresAt: number;
+}
+
 function createBaseUser(): User {
   return { id: "", name: "", avatar: "", title: undefined };
 }
@@ -1094,6 +1118,398 @@ export const CreatePostResponse: MessageFns<CreatePostResponse> = {
   },
 };
 
+function createBaseGeneratePresignedUrlRequestForPut(): GeneratePresignedUrlRequestForPut {
+  return { userId: "", operation: "", fileName: "", fileType: "" };
+}
+
+export const GeneratePresignedUrlRequestForPut: MessageFns<GeneratePresignedUrlRequestForPut> = {
+  encode(message: GeneratePresignedUrlRequestForPut, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userId !== "") {
+      writer.uint32(10).string(message.userId);
+    }
+    if (message.operation !== "") {
+      writer.uint32(18).string(message.operation);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(26).string(message.fileName);
+    }
+    if (message.fileType !== "") {
+      writer.uint32(34).string(message.fileType);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GeneratePresignedUrlRequestForPut {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGeneratePresignedUrlRequestForPut();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.operation = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.fileType = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GeneratePresignedUrlRequestForPut {
+    return {
+      userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
+      operation: isSet(object.operation) ? globalThis.String(object.operation) : "",
+      fileName: isSet(object.fileName) ? globalThis.String(object.fileName) : "",
+      fileType: isSet(object.fileType) ? globalThis.String(object.fileType) : "",
+    };
+  },
+
+  toJSON(message: GeneratePresignedUrlRequestForPut): unknown {
+    const obj: any = {};
+    if (message.userId !== "") {
+      obj.userId = message.userId;
+    }
+    if (message.operation !== "") {
+      obj.operation = message.operation;
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    if (message.fileType !== "") {
+      obj.fileType = message.fileType;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GeneratePresignedUrlRequestForPut>, I>>(
+    base?: I,
+  ): GeneratePresignedUrlRequestForPut {
+    return GeneratePresignedUrlRequestForPut.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GeneratePresignedUrlRequestForPut>, I>>(
+    object: I,
+  ): GeneratePresignedUrlRequestForPut {
+    const message = createBaseGeneratePresignedUrlRequestForPut();
+    message.userId = object.userId ?? "";
+    message.operation = object.operation ?? "";
+    message.fileName = object.fileName ?? "";
+    message.fileType = object.fileType ?? "";
+    return message;
+  },
+};
+
+function createBaseGeneratePresignedUrlRequestForGet(): GeneratePresignedUrlRequestForGet {
+  return { userId: "", operation: "", key: "" };
+}
+
+export const GeneratePresignedUrlRequestForGet: MessageFns<GeneratePresignedUrlRequestForGet> = {
+  encode(message: GeneratePresignedUrlRequestForGet, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userId !== "") {
+      writer.uint32(10).string(message.userId);
+    }
+    if (message.operation !== "") {
+      writer.uint32(18).string(message.operation);
+    }
+    if (message.key !== "") {
+      writer.uint32(42).string(message.key);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GeneratePresignedUrlRequestForGet {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGeneratePresignedUrlRequestForGet();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.operation = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GeneratePresignedUrlRequestForGet {
+    return {
+      userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
+      operation: isSet(object.operation) ? globalThis.String(object.operation) : "",
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+    };
+  },
+
+  toJSON(message: GeneratePresignedUrlRequestForGet): unknown {
+    const obj: any = {};
+    if (message.userId !== "") {
+      obj.userId = message.userId;
+    }
+    if (message.operation !== "") {
+      obj.operation = message.operation;
+    }
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GeneratePresignedUrlRequestForGet>, I>>(
+    base?: I,
+  ): GeneratePresignedUrlRequestForGet {
+    return GeneratePresignedUrlRequestForGet.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GeneratePresignedUrlRequestForGet>, I>>(
+    object: I,
+  ): GeneratePresignedUrlRequestForGet {
+    const message = createBaseGeneratePresignedUrlRequestForGet();
+    message.userId = object.userId ?? "";
+    message.operation = object.operation ?? "";
+    message.key = object.key ?? "";
+    return message;
+  },
+};
+
+function createBaseGeneratePresignedUrlRequest(): GeneratePresignedUrlRequest {
+  return { generatePresignedUrlRequestForPut: undefined, generatePresignedUrlRequestForGet: undefined };
+}
+
+export const GeneratePresignedUrlRequest: MessageFns<GeneratePresignedUrlRequest> = {
+  encode(message: GeneratePresignedUrlRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.generatePresignedUrlRequestForPut !== undefined) {
+      GeneratePresignedUrlRequestForPut.encode(message.generatePresignedUrlRequestForPut, writer.uint32(10).fork())
+        .join();
+    }
+    if (message.generatePresignedUrlRequestForGet !== undefined) {
+      GeneratePresignedUrlRequestForGet.encode(message.generatePresignedUrlRequestForGet, writer.uint32(18).fork())
+        .join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GeneratePresignedUrlRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGeneratePresignedUrlRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.generatePresignedUrlRequestForPut = GeneratePresignedUrlRequestForPut.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.generatePresignedUrlRequestForGet = GeneratePresignedUrlRequestForGet.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GeneratePresignedUrlRequest {
+    return {
+      generatePresignedUrlRequestForPut: isSet(object.generatePresignedUrlRequestForPut)
+        ? GeneratePresignedUrlRequestForPut.fromJSON(object.generatePresignedUrlRequestForPut)
+        : undefined,
+      generatePresignedUrlRequestForGet: isSet(object.generatePresignedUrlRequestForGet)
+        ? GeneratePresignedUrlRequestForGet.fromJSON(object.generatePresignedUrlRequestForGet)
+        : undefined,
+    };
+  },
+
+  toJSON(message: GeneratePresignedUrlRequest): unknown {
+    const obj: any = {};
+    if (message.generatePresignedUrlRequestForPut !== undefined) {
+      obj.generatePresignedUrlRequestForPut = GeneratePresignedUrlRequestForPut.toJSON(
+        message.generatePresignedUrlRequestForPut,
+      );
+    }
+    if (message.generatePresignedUrlRequestForGet !== undefined) {
+      obj.generatePresignedUrlRequestForGet = GeneratePresignedUrlRequestForGet.toJSON(
+        message.generatePresignedUrlRequestForGet,
+      );
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GeneratePresignedUrlRequest>, I>>(base?: I): GeneratePresignedUrlRequest {
+    return GeneratePresignedUrlRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GeneratePresignedUrlRequest>, I>>(object: I): GeneratePresignedUrlRequest {
+    const message = createBaseGeneratePresignedUrlRequest();
+    message.generatePresignedUrlRequestForPut =
+      (object.generatePresignedUrlRequestForPut !== undefined && object.generatePresignedUrlRequestForPut !== null)
+        ? GeneratePresignedUrlRequestForPut.fromPartial(object.generatePresignedUrlRequestForPut)
+        : undefined;
+    message.generatePresignedUrlRequestForGet =
+      (object.generatePresignedUrlRequestForGet !== undefined && object.generatePresignedUrlRequestForGet !== null)
+        ? GeneratePresignedUrlRequestForGet.fromPartial(object.generatePresignedUrlRequestForGet)
+        : undefined;
+    return message;
+  },
+};
+
+function createBaseGeneratePresignedUrlResponse(): GeneratePresignedUrlResponse {
+  return { url: "", key: "", expiresAt: 0 };
+}
+
+export const GeneratePresignedUrlResponse: MessageFns<GeneratePresignedUrlResponse> = {
+  encode(message: GeneratePresignedUrlResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.url !== "") {
+      writer.uint32(10).string(message.url);
+    }
+    if (message.key !== "") {
+      writer.uint32(18).string(message.key);
+    }
+    if (message.expiresAt !== 0) {
+      writer.uint32(24).int64(message.expiresAt);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GeneratePresignedUrlResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGeneratePresignedUrlResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.url = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.expiresAt = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GeneratePresignedUrlResponse {
+    return {
+      url: isSet(object.url) ? globalThis.String(object.url) : "",
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      expiresAt: isSet(object.expiresAt) ? globalThis.Number(object.expiresAt) : 0,
+    };
+  },
+
+  toJSON(message: GeneratePresignedUrlResponse): unknown {
+    const obj: any = {};
+    if (message.url !== "") {
+      obj.url = message.url;
+    }
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.expiresAt !== 0) {
+      obj.expiresAt = Math.round(message.expiresAt);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GeneratePresignedUrlResponse>, I>>(base?: I): GeneratePresignedUrlResponse {
+    return GeneratePresignedUrlResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GeneratePresignedUrlResponse>, I>>(object: I): GeneratePresignedUrlResponse {
+    const message = createBaseGeneratePresignedUrlResponse();
+    message.url = object.url ?? "";
+    message.key = object.key ?? "";
+    message.expiresAt = object.expiresAt ?? 0;
+    return message;
+  },
+};
+
 export type PostServiceService = typeof PostServiceService;
 export const PostServiceService = {
   createPost: {
@@ -1105,10 +1521,22 @@ export const PostServiceService = {
     responseSerialize: (value: CreatePostResponse): Buffer => Buffer.from(CreatePostResponse.encode(value).finish()),
     responseDeserialize: (value: Buffer): CreatePostResponse => CreatePostResponse.decode(value),
   },
+  generatePresignedUrl: {
+    path: "/social.post.v1.PostService/GeneratePresignedUrl",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: GeneratePresignedUrlRequest): Buffer =>
+      Buffer.from(GeneratePresignedUrlRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): GeneratePresignedUrlRequest => GeneratePresignedUrlRequest.decode(value),
+    responseSerialize: (value: GeneratePresignedUrlResponse): Buffer =>
+      Buffer.from(GeneratePresignedUrlResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer): GeneratePresignedUrlResponse => GeneratePresignedUrlResponse.decode(value),
+  },
 } as const;
 
 export interface PostServiceServer extends UntypedServiceImplementation {
   createPost: handleUnaryCall<CreatePostRequest, CreatePostResponse>;
+  generatePresignedUrl: handleUnaryCall<GeneratePresignedUrlRequest, GeneratePresignedUrlResponse>;
 }
 
 export interface PostServiceClient extends Client {
@@ -1126,6 +1554,21 @@ export interface PostServiceClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: CreatePostResponse) => void,
+  ): ClientUnaryCall;
+  generatePresignedUrl(
+    request: GeneratePresignedUrlRequest,
+    callback: (error: ServiceError | null, response: GeneratePresignedUrlResponse) => void,
+  ): ClientUnaryCall;
+  generatePresignedUrl(
+    request: GeneratePresignedUrlRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: GeneratePresignedUrlResponse) => void,
+  ): ClientUnaryCall;
+  generatePresignedUrl(
+    request: GeneratePresignedUrlRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: GeneratePresignedUrlResponse) => void,
   ): ClientUnaryCall;
 }
 
@@ -1149,6 +1592,17 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+
+function longToNumber(int64: { toString(): string }): number {
+  const num = globalThis.Number(int64.toString());
+  if (num > globalThis.Number.MAX_SAFE_INTEGER) {
+    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  if (num < globalThis.Number.MIN_SAFE_INTEGER) {
+    throw new globalThis.Error("Value is smaller than Number.MIN_SAFE_INTEGER");
+  }
+  return num;
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

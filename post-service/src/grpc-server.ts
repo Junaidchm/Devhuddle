@@ -3,6 +3,8 @@ import logger from "./utils/logger.util";
 import {
   CreatePostRequest,
   CreatePostResponse,
+  GeneratePresignedUrlRequest,
+  GeneratePresignedUrlResponse,
   PostServiceServer,
   PostServiceService,
 } from "./grpc/generated/post";
@@ -21,8 +23,6 @@ const postServiceActions: PostServiceServer = {
     callback: grpc.sendUnaryData<CreatePostResponse>
   ) => {
     try {
-
-      console.log('request is comming without any problem .......', call.request)
       const response = await postController.feedPosting(call.request);
       callback(null,response)
     } catch (err: any) {
@@ -35,6 +35,16 @@ const postServiceActions: PostServiceServer = {
       );
     }
   },
+  generatePresignedUrl: async(
+    call:grpc.ServerUnaryCall<GeneratePresignedUrlRequest,GeneratePresignedUrlResponse>,
+    callback:grpc.sendUnaryData<GeneratePresignedUrlResponse>
+  ) => {
+    try {
+       
+    } catch (err:any) {
+      
+    }
+  }
 };
 
 export const grpcServer = new grpc.Server();

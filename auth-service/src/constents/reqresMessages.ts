@@ -4,6 +4,7 @@ export const Messages = {
     USER_EXIST: "User already exist",
     USER_BLOCKED: "Your are blocked from DevHuddle, Please contact support",
     USER_NOT_FOUND: "User not found !",
+    UUSER_NAME_REQUIRED:"User name is required",
     OTP_ERROR: "Error while sending OTP, Try again later",
     OTP_RESENT: "OTP has been resent successfully",
     OTP_EXPIRED: "Your OTP has been expired, try again",
@@ -59,6 +60,7 @@ export const Messages = {
     LOGING_USING_GOOGLE_MESSAGE:"This account was created using Google. Please login using Google.",
     LOGING_FAILD:"Login failed",
     PASSWORD_RESET_TOKEN_PASSWORD:"Token and new password are required",
-    USER_ID_REQUIRED : 'User ID is required'
+    USER_ID_REQUIRED : 'User ID is required',
+    INTERNALSERVERERROR : 'Internal server error'
   };
   

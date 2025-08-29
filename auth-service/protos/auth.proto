@@ -12,12 +12,47 @@ service AuthService {
   rpc RequestPasswordReset (PasswordResetRequest) returns (PasswordResetResponse);
   rpc ResetPassword (PasswordResetConfirmRequest) returns (PasswordResetResponse);
   rpc GetProfile (GetProfileRequest) returns (GetProfileResponse);
+  rpc GetUserProfileByName (GetUserProfileByNameRequest) returns (GetProfileResponse);
   rpc UpdateProfile (UpdateProfileRequest) returns (UpdateProfileResponse);
   rpc VerifyRefreshToken (VerifyRefreshTokenRequest) returns (VerifyRefreshTokenResponse);
   rpc GeneratePresignedUrl (GeneratePresignedUrlRequest) returns (GeneratePresignedUrlResponse);
+  rpc ListFollowers (ListFollowersRequest) returns (ListFollowersResponse);
+  rpc ListFollowing (ListFollowingRequest) returns (ListFollowingResponse);
 }
 
 // User-related messages
+message ListFollowersRequest {
+  string userName = 1;
+  int32 page = 2;
+  int32 pageSize = 3;
+}
+
+message ListFollowersResponse {
+  repeated User users = 1;
+  int32 total = 2;
+}
+
+message ListFollowingRequest {
+  string userName = 1;
+  int32 page = 2;
+  int32 pageSize = 3;
+}
+
+message ListFollowingResponse {
+  repeated User users = 1;
+  int32 total = 2;
+}
+
+message User {
+  string id = 1;
+  string email = 2;
+  string createdAt = 3;
+}
+
+message GetUserProfileByNameRequest {
+  string username = 1;
+}
+
 message RegisterRequest {
   string email = 1;
   string username = 2;

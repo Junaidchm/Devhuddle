@@ -6,6 +6,9 @@ import {
   GetJwtUserResponse,
   GetProfileRequest,
   GetProfileResponse,
+  GetUserProfileByNameRequest,
+  ListFollowersRequest,
+  ListFollowersResponse,
   LogingRequest,
   LogingResponse,
   PasswordResetConfirmRequest,
@@ -37,4 +40,5 @@ export interface IAuthController {
   generatePresignedUrl(req:GeneratePresignedUrlRequest): Promise<GeneratePresignedUrlResponse>;
   googleAuth(req: Request, res: Response, next: NextFunction): void;
   googleCallback(req: Request, res: Response, next: NextFunction): void;
+  getProfileByName(req:GetUserProfileByNameRequest) : Promise<GetProfileResponse>;
 }

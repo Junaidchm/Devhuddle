@@ -310,6 +310,23 @@ export class AuthService implements IAuthService {
     }
   }
 
+    ///////// get user profile
+  async getUserProfileByName(username: string): Promise<GetProfileResponse> {
+    try {
+      const user = await this.userRepository.findByUsername(username);
+      if (!user) {
+        throw new CustomError(grpc.status.NOT_FOUND, Messages.USER_NOT_FOUND);
+      }
+
+      console.log("user already founded : ..........................",user)
+      return filterUserProfileData(user, "profile") as GetProfileResponse;
+    } catch (err: any) {
+      throw err instanceof CustomError
+        ? err
+        : new CustomError(grpc.status.INTERNAL, Messages.FAILD_TO_FETCH_USER);
+    }
+  }
+
   ///////// update profile
   async updateProfile(
     userId: string,

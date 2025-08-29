@@ -22,6 +22,38 @@ import {
 export const protobufPackage = "auth";
 
 /** User-related messages */
+export interface ListFollowersRequest {
+  userName: string;
+  page: number;
+  pageSize: number;
+}
+
+export interface ListFollowersResponse {
+  users: User[];
+  total: number;
+}
+
+export interface ListFollowingRequest {
+  userName: string;
+  page: number;
+  pageSize: number;
+}
+
+export interface ListFollowingResponse {
+  users: User[];
+  total: number;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  createdAt: string;
+}
+
+export interface GetUserProfileByNameRequest {
+  username: string;
+}
+
 export interface RegisterRequest {
   email: string;
   username: string;
@@ -150,6 +182,492 @@ export interface GeneratePresignedUrlResponse {
   key: string;
   expiresAt: number;
 }
+
+function createBaseListFollowersRequest(): ListFollowersRequest {
+  return { userName: "", page: 0, pageSize: 0 };
+}
+
+export const ListFollowersRequest: MessageFns<ListFollowersRequest> = {
+  encode(message: ListFollowersRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userName !== "") {
+      writer.uint32(10).string(message.userName);
+    }
+    if (message.page !== 0) {
+      writer.uint32(16).int32(message.page);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(24).int32(message.pageSize);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListFollowersRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListFollowersRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.userName = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.page = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListFollowersRequest {
+    return {
+      userName: isSet(object.userName) ? globalThis.String(object.userName) : "",
+      page: isSet(object.page) ? globalThis.Number(object.page) : 0,
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+    };
+  },
+
+  toJSON(message: ListFollowersRequest): unknown {
+    const obj: any = {};
+    if (message.userName !== "") {
+      obj.userName = message.userName;
+    }
+    if (message.page !== 0) {
+      obj.page = Math.round(message.page);
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ListFollowersRequest>, I>>(base?: I): ListFollowersRequest {
+    return ListFollowersRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ListFollowersRequest>, I>>(object: I): ListFollowersRequest {
+    const message = createBaseListFollowersRequest();
+    message.userName = object.userName ?? "";
+    message.page = object.page ?? 0;
+    message.pageSize = object.pageSize ?? 0;
+    return message;
+  },
+};
+
+function createBaseListFollowersResponse(): ListFollowersResponse {
+  return { users: [], total: 0 };
+}
+
+export const ListFollowersResponse: MessageFns<ListFollowersResponse> = {
+  encode(message: ListFollowersResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.users) {
+      User.encode(v!, writer.uint32(10).fork()).join();
+    }
+    if (message.total !== 0) {
+      writer.uint32(16).int32(message.total);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListFollowersResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListFollowersResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.users.push(User.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.total = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListFollowersResponse {
+    return {
+      users: globalThis.Array.isArray(object?.users) ? object.users.map((e: any) => User.fromJSON(e)) : [],
+      total: isSet(object.total) ? globalThis.Number(object.total) : 0,
+    };
+  },
+
+  toJSON(message: ListFollowersResponse): unknown {
+    const obj: any = {};
+    if (message.users?.length) {
+      obj.users = message.users.map((e) => User.toJSON(e));
+    }
+    if (message.total !== 0) {
+      obj.total = Math.round(message.total);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ListFollowersResponse>, I>>(base?: I): ListFollowersResponse {
+    return ListFollowersResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ListFollowersResponse>, I>>(object: I): ListFollowersResponse {
+    const message = createBaseListFollowersResponse();
+    message.users = object.users?.map((e) => User.fromPartial(e)) || [];
+    message.total = object.total ?? 0;
+    return message;
+  },
+};
+
+function createBaseListFollowingRequest(): ListFollowingRequest {
+  return { userName: "", page: 0, pageSize: 0 };
+}
+
+export const ListFollowingRequest: MessageFns<ListFollowingRequest> = {
+  encode(message: ListFollowingRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userName !== "") {
+      writer.uint32(10).string(message.userName);
+    }
+    if (message.page !== 0) {
+      writer.uint32(16).int32(message.page);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(24).int32(message.pageSize);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListFollowingRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListFollowingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.userName = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.page = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListFollowingRequest {
+    return {
+      userName: isSet(object.userName) ? globalThis.String(object.userName) : "",
+      page: isSet(object.page) ? globalThis.Number(object.page) : 0,
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+    };
+  },
+
+  toJSON(message: ListFollowingRequest): unknown {
+    const obj: any = {};
+    if (message.userName !== "") {
+      obj.userName = message.userName;
+    }
+    if (message.page !== 0) {
+      obj.page = Math.round(message.page);
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ListFollowingRequest>, I>>(base?: I): ListFollowingRequest {
+    return ListFollowingRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ListFollowingRequest>, I>>(object: I): ListFollowingRequest {
+    const message = createBaseListFollowingRequest();
+    message.userName = object.userName ?? "";
+    message.page = object.page ?? 0;
+    message.pageSize = object.pageSize ?? 0;
+    return message;
+  },
+};
+
+function createBaseListFollowingResponse(): ListFollowingResponse {
+  return { users: [], total: 0 };
+}
+
+export const ListFollowingResponse: MessageFns<ListFollowingResponse> = {
+  encode(message: ListFollowingResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.users) {
+      User.encode(v!, writer.uint32(10).fork()).join();
+    }
+    if (message.total !== 0) {
+      writer.uint32(16).int32(message.total);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListFollowingResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListFollowingResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.users.push(User.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.total = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListFollowingResponse {
+    return {
+      users: globalThis.Array.isArray(object?.users) ? object.users.map((e: any) => User.fromJSON(e)) : [],
+      total: isSet(object.total) ? globalThis.Number(object.total) : 0,
+    };
+  },
+
+  toJSON(message: ListFollowingResponse): unknown {
+    const obj: any = {};
+    if (message.users?.length) {
+      obj.users = message.users.map((e) => User.toJSON(e));
+    }
+    if (message.total !== 0) {
+      obj.total = Math.round(message.total);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ListFollowingResponse>, I>>(base?: I): ListFollowingResponse {
+    return ListFollowingResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ListFollowingResponse>, I>>(object: I): ListFollowingResponse {
+    const message = createBaseListFollowingResponse();
+    message.users = object.users?.map((e) => User.fromPartial(e)) || [];
+    message.total = object.total ?? 0;
+    return message;
+  },
+};
+
+function createBaseUser(): User {
+  return { id: "", email: "", createdAt: "" };
+}
+
+export const User: MessageFns<User> = {
+  encode(message: User, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.email !== "") {
+      writer.uint32(18).string(message.email);
+    }
+    if (message.createdAt !== "") {
+      writer.uint32(26).string(message.createdAt);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): User {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUser();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.email = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.createdAt = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): User {
+    return {
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      email: isSet(object.email) ? globalThis.String(object.email) : "",
+      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : "",
+    };
+  },
+
+  toJSON(message: User): unknown {
+    const obj: any = {};
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.email !== "") {
+      obj.email = message.email;
+    }
+    if (message.createdAt !== "") {
+      obj.createdAt = message.createdAt;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<User>, I>>(base?: I): User {
+    return User.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<User>, I>>(object: I): User {
+    const message = createBaseUser();
+    message.id = object.id ?? "";
+    message.email = object.email ?? "";
+    message.createdAt = object.createdAt ?? "";
+    return message;
+  },
+};
+
+function createBaseGetUserProfileByNameRequest(): GetUserProfileByNameRequest {
+  return { username: "" };
+}
+
+export const GetUserProfileByNameRequest: MessageFns<GetUserProfileByNameRequest> = {
+  encode(message: GetUserProfileByNameRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.username !== "") {
+      writer.uint32(10).string(message.username);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetUserProfileByNameRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetUserProfileByNameRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetUserProfileByNameRequest {
+    return { username: isSet(object.username) ? globalThis.String(object.username) : "" };
+  },
+
+  toJSON(message: GetUserProfileByNameRequest): unknown {
+    const obj: any = {};
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetUserProfileByNameRequest>, I>>(base?: I): GetUserProfileByNameRequest {
+    return GetUserProfileByNameRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetUserProfileByNameRequest>, I>>(object: I): GetUserProfileByNameRequest {
+    const message = createBaseGetUserProfileByNameRequest();
+    message.username = object.username ?? "";
+    return message;
+  },
+};
 
 function createBaseRegisterRequest(): RegisterRequest {
   return { email: "", username: "", name: "", password: "" };
@@ -2195,6 +2713,16 @@ export const AuthServiceService = {
     responseSerialize: (value: GetProfileResponse): Buffer => Buffer.from(GetProfileResponse.encode(value).finish()),
     responseDeserialize: (value: Buffer): GetProfileResponse => GetProfileResponse.decode(value),
   },
+  getUserProfileByName: {
+    path: "/auth.AuthService/GetUserProfileByName",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: GetUserProfileByNameRequest): Buffer =>
+      Buffer.from(GetUserProfileByNameRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): GetUserProfileByNameRequest => GetUserProfileByNameRequest.decode(value),
+    responseSerialize: (value: GetProfileResponse): Buffer => Buffer.from(GetProfileResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer): GetProfileResponse => GetProfileResponse.decode(value),
+  },
   updateProfile: {
     path: "/auth.AuthService/UpdateProfile",
     requestStream: false,
@@ -2227,6 +2755,26 @@ export const AuthServiceService = {
       Buffer.from(GeneratePresignedUrlResponse.encode(value).finish()),
     responseDeserialize: (value: Buffer): GeneratePresignedUrlResponse => GeneratePresignedUrlResponse.decode(value),
   },
+  listFollowers: {
+    path: "/auth.AuthService/ListFollowers",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: ListFollowersRequest): Buffer => Buffer.from(ListFollowersRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): ListFollowersRequest => ListFollowersRequest.decode(value),
+    responseSerialize: (value: ListFollowersResponse): Buffer =>
+      Buffer.from(ListFollowersResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer): ListFollowersResponse => ListFollowersResponse.decode(value),
+  },
+  listFollowing: {
+    path: "/auth.AuthService/ListFollowing",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: ListFollowingRequest): Buffer => Buffer.from(ListFollowingRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): ListFollowingRequest => ListFollowingRequest.decode(value),
+    responseSerialize: (value: ListFollowingResponse): Buffer =>
+      Buffer.from(ListFollowingResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer): ListFollowingResponse => ListFollowingResponse.decode(value),
+  },
 } as const;
 
 export interface AuthServiceServer extends UntypedServiceImplementation {
@@ -2239,9 +2787,12 @@ export interface AuthServiceServer extends UntypedServiceImplementation {
   requestPasswordReset: handleUnaryCall<PasswordResetRequest, PasswordResetResponse>;
   resetPassword: handleUnaryCall<PasswordResetConfirmRequest, PasswordResetResponse>;
   getProfile: handleUnaryCall<GetProfileRequest, GetProfileResponse>;
+  getUserProfileByName: handleUnaryCall<GetUserProfileByNameRequest, GetProfileResponse>;
   updateProfile: handleUnaryCall<UpdateProfileRequest, UpdateProfileResponse>;
   verifyRefreshToken: handleUnaryCall<VerifyRefreshTokenRequest, VerifyRefreshTokenResponse>;
   generatePresignedUrl: handleUnaryCall<GeneratePresignedUrlRequest, GeneratePresignedUrlResponse>;
+  listFollowers: handleUnaryCall<ListFollowersRequest, ListFollowersResponse>;
+  listFollowing: handleUnaryCall<ListFollowingRequest, ListFollowingResponse>;
 }
 
 export interface AuthServiceClient extends Client {
@@ -2366,6 +2917,21 @@ export interface AuthServiceClient extends Client {
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: GetProfileResponse) => void,
   ): ClientUnaryCall;
+  getUserProfileByName(
+    request: GetUserProfileByNameRequest,
+    callback: (error: ServiceError | null, response: GetProfileResponse) => void,
+  ): ClientUnaryCall;
+  getUserProfileByName(
+    request: GetUserProfileByNameRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: GetProfileResponse) => void,
+  ): ClientUnaryCall;
+  getUserProfileByName(
+    request: GetUserProfileByNameRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: GetProfileResponse) => void,
+  ): ClientUnaryCall;
   updateProfile(
     request: UpdateProfileRequest,
     callback: (error: ServiceError | null, response: UpdateProfileResponse) => void,
@@ -2410,6 +2976,36 @@ export interface AuthServiceClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: GeneratePresignedUrlResponse) => void,
+  ): ClientUnaryCall;
+  listFollowers(
+    request: ListFollowersRequest,
+    callback: (error: ServiceError | null, response: ListFollowersResponse) => void,
+  ): ClientUnaryCall;
+  listFollowers(
+    request: ListFollowersRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ListFollowersResponse) => void,
+  ): ClientUnaryCall;
+  listFollowers(
+    request: ListFollowersRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: ListFollowersResponse) => void,
+  ): ClientUnaryCall;
+  listFollowing(
+    request: ListFollowingRequest,
+    callback: (error: ServiceError | null, response: ListFollowingResponse) => void,
+  ): ClientUnaryCall;
+  listFollowing(
+    request: ListFollowingRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ListFollowingResponse) => void,
+  ): ClientUnaryCall;
+  listFollowing(
+    request: ListFollowingRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: ListFollowingResponse) => void,
   ): ClientUnaryCall;
 }
 

@@ -74,8 +74,35 @@ message CreatePostResponse {
   string message = 2;
 }
 
+message GeneratePresignedUrlRequestForPut{
+  string userId = 1;
+  string operation = 2;
+  string fileName = 3;
+  string fileType = 4;
+}
+
+message GeneratePresignedUrlRequestForGet {
+  string userId = 1;
+  string operation = 2;
+  string key = 5;
+}
+
+message GeneratePresignedUrlRequest {
+  oneof presigneUrlRequestdData {
+    GeneratePresignedUrlRequestForPut generatePresignedUrlRequestForPut = 1;
+    GeneratePresignedUrlRequestForGet generatePresignedUrlRequestForGet = 2;
+  }
+}
+
+message GeneratePresignedUrlResponse {
+  string url = 1;
+  string key = 2;
+  int64 expiresAt = 3;
+}
+
 // Service definition
 
 service PostService {
   rpc CreatePost (CreatePostRequest) returns (CreatePostResponse);
+  rpc GeneratePresignedUrl (GeneratePresignedUrlRequest) returns (GeneratePresignedUrlResponse);
 }

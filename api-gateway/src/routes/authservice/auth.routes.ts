@@ -13,6 +13,7 @@ import {
   GetJwtUserResponse,
   GetProfileRequest,
   GetProfileResponse,
+  GetUserProfileByNameRequest,
   JwtPayload,
   LogingRequest,
   LogingResponse,
@@ -31,7 +32,11 @@ import {
   VerifyRefreshTokenResponse,
 } from "../../grpc/generated/auth";
 import { HttpStatus } from "../../utils/constents";
-import { filterError, sendErrorResponse } from "../../utils/error.util";
+import {
+  CustomError,
+  filterError,
+  sendErrorResponse,
+} from "../../utils/error.util";
 import { grpcCall } from "../../utils/grpc.helper";
 import { logger } from "../../utils/logger";
 import * as grpc from "@grpc/grpc-js";
@@ -44,11 +49,16 @@ import cookieParser from "cookie-parser";
 import compression from "compression";
 import { grpcToHttp } from "../../constants/http.status";
 import jwtMiddleware from "../../middleware/jwt.middleware";
-import { setJtiAsBlackListed } from "../../utils/redis.actions";
+import {
+  checkUserBlockBlackList,
+  setJtiAsBlackListed,
+} from "../../utils/redis.actions";
 import { Messages } from "../../constants/reqresMessages";
 import { generateUuid4 } from "../../utils/uuid.util";
 import refreshTokenMiddleware from "../../middleware/refreshToken";
 import { createGrpcBreaker } from "../../utils/grpcResilience.util";
+import { verifyAccessToken } from "../../utils/jwt.util";
+import { ListFollowers } from "../../controller/user.profile.ts/user.profile.follow";
 
 const router = Router();
 router.use(compression());
@@ -57,9 +67,50 @@ router.use(urlencoded({ extended: true }));
 router.use(cookieParser());
 
 router
+  .post("/validate", async (req: Request, res: Response) => {
+    try {
+      const token = req.headers.authorization?.split(' ')[1]
+
+      if (!token) {
+        throw new CustomError(
+          HttpStatus.UNAUTHORIZED,
+          Messages.TOKEN_NOT_FOUND
+        );
+      }
+
+      const decoded = await verifyAccessToken(token);
+
+      if (!decoded || !decoded.id || !decoded.username) {
+        throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.TOKEN_INVALID);
+      }
+
+      const isBlackListed = await checkUserBlockBlackList(decoded.id);
+      if (isBlackListed) {
+        clearCookies(res);
+        throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.USER_BLOCKED);
+      }
+
+      return res.status(200).json({
+        userId: decoded.id,
+        userName: decoded.username,
+        userRole: decoded.role,
+      });
+    } catch (err: any) {
+      logger.error("JWT verification error .................", {
+        error: err.message,
+        status: err.status,
+      });
+
+      sendErrorResponse(
+        res,
+        err instanceof CustomError
+          ? err
+          : { status: HttpStatus.UNAUTHORIZED, message: Messages.TOKEN_INVALID }
+      );
+    }
+  })
   .post("/signup", async (req: Request, res: Response) => {
     try {
-      console.log("Received /auth/signup request", { body: req.body });
       const { name, email, password, username } = req.body as RegisterRequest;
       const request: RegisterRequest = {
         name,
@@ -67,8 +118,8 @@ router
         password,
         username,
       };
-  
-      const response: RegisterResponse = await grpcCall("register",request);
+
+      const response: RegisterResponse = await grpcCall("register", request);
       res.status(HttpStatus.CREATED).json({ message: response.message });
     } catch (err: any) {
       logger.error("Error in /auth/signup", {
@@ -85,7 +136,6 @@ router
   })
   .post("/verify-otp", async (req: Request, res: Response) => {
     try {
-      console.log("Received /auth/verify-otp request", { body: req.body });
       const { email, otp } = req.body as VerifyOTPRequest;
       const request: VerifyOTPRequest = {
         email,
@@ -112,7 +162,6 @@ router
   })
   .post("/resend", async (req: Request, res: Response) => {
     try {
-      console.log("Received /auth/resend-otp request", { body: req.body });
       const request = {
         email: req.body.email,
       };
@@ -133,7 +182,6 @@ router
   })
   .get("/me", jwtMiddleware, async (req: Request, res: Response) => {
     try {
-      console.log("Received /auth/me request", { body: req.body });
       const request = {
         userId: req.user?.id!,
       };
@@ -154,21 +202,20 @@ router
   })
   .post("/login", async (req: Request, res: Response) => {
     try {
-      console.log("Received /auth/login request", { body: req.body });
       const { email, password } = req.body as LogingRequest;
       const request: LogingRequest = {
         email,
         password,
       };
-      const registerWithBreaker =  createGrpcBreaker("login",(request)=> 
-         grpcCall("login", request)
-      )
-      await registerWithBreaker(request) as LogingResponse ;
+      const registerWithBreaker = createGrpcBreaker("login", (request) =>
+        grpcCall("login", request)
+      );
+      (await registerWithBreaker(request)) as LogingResponse;
       // const response: LogingResponse = await grpcCall<
       //   LogingRequest,
       //   LogingResponse
       // >("login", request);
-      const response = await registerWithBreaker(request) as LogingResponse;
+      const response = (await registerWithBreaker(request)) as LogingResponse;
       if (response) {
         await setAuthToken(response.jwtpayload!, res);
       }
@@ -210,7 +257,6 @@ router
   })
   .post("/password-reset", async (req: Request, res: Response) => {
     try {
-      logger.info("Received /auth/password-reset request", { body: req.body });
       const request: PasswordResetRequest = {
         email: req.body.email,
       };
@@ -234,7 +280,6 @@ router
   })
   .post("/password-reset/confirm", async (req: Request, res: Response) => {
     try {
-      logger.info("Received /auth/password-reset/confirm", { body: req.body });
       const { token, newPassword } = req.body;
       const request: PasswordResetConfirmRequest = {
         token,
@@ -260,7 +305,6 @@ router
   })
   .get("/profile", jwtMiddleware, async (req: Request, res: Response) => {
     try {
-      logger.info("Received /auth/profile request");
       const decoded = req.user as JwtPayload;
       const request: GetProfileRequest = {
         userId: decoded.id,
@@ -285,7 +329,6 @@ router
   })
   .patch("/profile", jwtMiddleware, async (req: Request, res: Response) => {
     try {
-      logger.info("Received /auth/profile request", { body: req.body });
       const { id: userId } = req.user as JwtPayload;
       const { name, username, location, bio, profilePicture } = req.body;
       const request: UpdateProfileRequest = {
@@ -314,14 +357,37 @@ router
       });
     }
   })
+  .get("/user_profile/:username",async(req:Request,res:Response)=> {
+    try {
+      console.log('request is actually comming here ................. fro profile by user name ', )
+      const request: GetUserProfileByNameRequest= {
+        username:req.params.username
+      };
+
+      console.log('this is the requesting data , : ...................................' , request)
+      const response = await grpcCall<GetUserProfileByNameRequest, GetProfileResponse>(
+        "getUserProfileByName",
+        request
+      );
+      res.status(HttpStatus.OK).json(response);
+    } catch (err: any) {
+      logger.error("Error in /auth/profile/", {
+        error: err.message,
+        stack: err.stack,
+      });
+      const statusCode =
+        grpcToHttp[err.code] || HttpStatus.INTERNAL_SERVER_ERROR;
+      sendErrorResponse(res, {
+        status: statusCode,
+        message: filterError(err) || "Server error",
+      });
+    }
+  })
   .get(
     "/refresh",
     refreshTokenMiddleware,
     async (req: Request, res: Response) => {
       try {
-        logger.info("Received /auth/verify-refresh-token request", {
-          body: req.body,
-        });
         const decoded = req.user as JwtPayload;
         const request: VerifyRefreshTokenRequest = {
           email: decoded.email,
@@ -348,44 +414,48 @@ router
       }
     }
   )
-  .post("/generate-presigned-url",jwtMiddleware, async (req: Request, res: Response) => {
-    try { 
-      console.log('request is comming ..................')
-      logger.info("Received /auth/generate-presigned-url request", {
-        body: req.body,
-      });
-      const decoded = req.user as JwtPayload;
-      const {userId, operation, fileName, fileType, key } =
-        req.body as GeneratePresignedUrlRequest;
-        console.log('user id checking ...............',userId)
-      const request: GeneratePresignedUrlRequest = {
-        userId:decoded.id,
-        operation,
-        fileName,
-        fileType,
-        key,
-      };
-      const response = await grpcCall<
-        GeneratePresignedUrlRequest,
-        GeneratePresignedUrlResponse
-      >("generatePresignedUrl", request);
-      res.status(HttpStatus.OK).json({
-        url: response.url,
-        key: response.key,
-        expiresAt: response.expiresAt,
-      });
-    } catch (err: any) {
-      logger.error("Error in /auth/generate-presigned-url", {
-        error: err.message,
-        stack: err.stack,
-      });
-      const statusCode =
-        grpcToHttp[err.code] || HttpStatus.INTERNAL_SERVER_ERROR;
-      sendErrorResponse(res, {
-        status: statusCode,
-        message: filterError(err) || "Server error",
-      });
+  .post(
+    "/generate-presigned-url",
+    jwtMiddleware,
+    async (req: Request, res: Response) => {
+      try {
+        const decoded = req.user as JwtPayload;
+        const { userId, operation, fileName, fileType, key } =
+          req.body as GeneratePresignedUrlRequest;
+        console.log("user id checking ...............", userId);
+        const request: GeneratePresignedUrlRequest = {
+          userId: decoded.id,
+          operation,
+          fileName,
+          fileType,
+          key,
+        };
+        const response = await grpcCall<
+          GeneratePresignedUrlRequest,
+          GeneratePresignedUrlResponse
+        >("generatePresignedUrl", request);
+        res.status(HttpStatus.OK).json({
+          url: response.url,
+          key: response.key,
+          expiresAt: response.expiresAt,
+        });
+      } catch (err: any) {
+        logger.error("Error in /auth/generate-presigned-url", {
+          error: err.message,
+          stack: err.stack,
+        });
+        const statusCode =
+          grpcToHttp[err.code] || HttpStatus.INTERNAL_SERVER_ERROR;
+        sendErrorResponse(res, {
+          status: statusCode,
+          message: filterError(err) || "Server error",
+        });
+      }
     }
-  });
+  )
+
+  // profile following routes 
+  .get('/followers/:username',jwtMiddleware,ListFollowers)
+  
 
 export default router;

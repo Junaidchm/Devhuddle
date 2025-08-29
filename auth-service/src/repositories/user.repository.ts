@@ -1,9 +1,10 @@
-import prisma from "../config/prisma.config";
+
 import { Prisma, User as PrismaUser } from "@prisma/client";
 import logger from "../utils/logger.util";
 import { BaseRepository } from "./base.repository";
 import bcrypt from "bcrypt";
 import { User } from "../types/auth";
+import { prisma } from "../config/prisma.config";
 
 export interface IUserRepository {
   findByEmail(email: string): Promise<User | null>;

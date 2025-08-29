@@ -39,6 +39,7 @@ import {
   VerifyRefreshTokenResponse,
   GeneratePresignedUrlRequest,
   GeneratePresignedUrlResponse,
+  GetUserProfileByNameRequest,
 } from "../../grpc/generated/auth";
 import * as grpc from "@grpc/grpc-js";
 
@@ -189,6 +190,18 @@ export class AuthController implements IAuthController {
 
     const userProfile: GetProfileResponse =
       await this.authService.getUserProfile(userId);
+
+    return userProfile;
+  }
+  async getProfileByName(req: GetUserProfileByNameRequest): Promise<GetProfileResponse> {
+    const { username } = req;
+
+    if (!username) {
+      throw new CustomError(400, "User name is required");
+    }
+
+    const userProfile: GetProfileResponse =
+      await this.authService.getUserProfileByName(username);
 
     return userProfile;
   }

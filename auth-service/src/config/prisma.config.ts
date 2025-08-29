@@ -1,7 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import logger from "../utils/logger.util";
 
-const prisma = new PrismaClient();
+export const prisma = new PrismaClient();
+
 
 export const connectPrisma = async () => {
   try {
@@ -12,5 +13,3 @@ export const connectPrisma = async () => {
     throw error;
   }
 };
-
-export default prisma;

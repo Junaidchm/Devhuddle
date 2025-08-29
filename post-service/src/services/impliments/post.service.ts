@@ -1,5 +1,5 @@
 
-import { PostMapper } from "../../mapper/post.mapper";
+import { PostMapper } from "../../mapper/feed.mapper";
 import { CreatePostSchema } from "../../dto/create.post.dto";
 import {
   CreatePostRequest,

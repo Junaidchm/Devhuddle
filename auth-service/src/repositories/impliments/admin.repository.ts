@@ -1,4 +1,4 @@
-import prisma from "../../config/prisma.config";
+import { prisma } from "../../config/prisma.config";
 import logger from "../../utils/logger.util";
 import { BaseRepository } from "../base.repository";
 import { Prisma, User } from "@prisma/client";

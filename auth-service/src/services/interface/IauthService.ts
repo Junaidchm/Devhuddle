@@ -10,7 +10,7 @@ import {
   VerifyOTPRequest, 
   jwtUserFilter 
 } from "../../types/auth";
-import {  GetJwtUserResponse, GetProfileResponse, JwtPayload, LogingRequest, UpdateProfileResponse } from "../../grpc/generated/auth";
+import {  GetJwtUserResponse, GetProfileResponse, GetUserProfileByNameRequest, JwtPayload, LogingRequest, UpdateProfileResponse } from "../../grpc/generated/auth";
 
 export interface IAuthService {
   register(registerData: RegisterRequest): Promise<void>;
@@ -24,6 +24,7 @@ export interface IAuthService {
   handleOAuthLogin(oauthUser: OAuthUser, res: Response): Promise<jwtUserFilter>;
   verifyUser(email: string): Promise<JwtPayload>;
   updateProfile(userId: string, data: ProfileUpdatePayload): Promise<UpdateProfileResponse>;
+  getUserProfileByName(username:string) : Promise<GetProfileResponse>;
   generatePresignedUrl(
     userId: string,
     operation: string,
