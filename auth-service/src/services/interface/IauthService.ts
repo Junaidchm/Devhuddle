@@ -11,6 +11,7 @@ import {
   jwtUserFilter 
 } from "../../types/auth";
 import {  GetJwtUserResponse, GetProfileResponse, JwtPayload, LogingRequest, UpdateProfileResponse } from "../../grpc/generated/auth";
+import { getUserForFeedListingResponse } from "../../grpc/generated/user";
 
 export interface IAuthService {
   register(registerData: RegisterRequest): Promise<void>;
@@ -24,6 +25,7 @@ export interface IAuthService {
   handleOAuthLogin(oauthUser: OAuthUser, res: Response): Promise<jwtUserFilter>;
   verifyUser(email: string): Promise<JwtPayload>;
   updateProfile(userId: string, data: ProfileUpdatePayload): Promise<UpdateProfileResponse>;
+  getUserForFeedPostServic(userId:string):Promise<getUserForFeedListingResponse>
   generatePresignedUrl(
     userId: string,
     operation: string,

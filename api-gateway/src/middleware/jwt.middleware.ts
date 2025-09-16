@@ -13,6 +13,7 @@ declare global {
   namespace Express {
     interface Request {
       user?: jwtPayload;
+      
     }
   }
 }
@@ -26,7 +27,6 @@ export default async function jwtMiddleware(
     const token = req.cookies.access_token;
 
     if (!token) {
-      console.log("this is the checking for jwt token : .............", token);
       logger.error("No JWT token provided");
       throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.TOKEN_NOT_FOUND);
     }

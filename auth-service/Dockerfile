@@ -12,7 +12,6 @@ COPY tsconfig.json ./
 RUN npm install
 
 # Copy source files
-COPY generate.ts ./
 COPY protos/ ./protos/
 COPY src ./src
 COPY logs ./logs
@@ -20,7 +19,7 @@ COPY logs ./logs
 # Generate Prisma client
 RUN npx prisma generate
 
-RUN npx ts-node generate.ts
+RUN npx ts-node src/generate.ts
 # Build the app
 RUN npm run build
 

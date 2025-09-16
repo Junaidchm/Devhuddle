@@ -11,8 +11,6 @@ const generateRefresTTL = (days: number): Date => {
   return new Date(new Date().getTime() + days * 24 * 60 * 60 * 1000);
 };
 
-
-
 export const setCookies = (
   accessToken: string,
   refreshToken: string,
@@ -38,6 +36,11 @@ export const setCookies = (
     path: "/",
     expires: expiryAccessToken,
     sameSite: "lax",
+    // httpOnly: true,
+    // path: "/",
+    // expires: expiryAccessToken,
+    // sameSite: "none", // allow cross-origin
+    // secure: true,
   });
 
   res.cookie("refresh_token", refreshToken, {
@@ -46,6 +49,11 @@ export const setCookies = (
     path: "/",
     expires: expiryRefreshToken,
     sameSite: "lax",
+    // httpOnly: true,
+    // path: "/",
+    // expires: expiryRefreshToken,
+    // sameSite: "none", // allow cross-origin
+    // secure: true,
   });
 
   return;
@@ -64,12 +72,17 @@ export const setAccesToken = async (
     path: "/",
     expires: expiryAccessToken,
     sameSite: "lax",
+    // httpOnly: true,
+    // path: "/",
+    // expires: expiryAccessToken,
+    // sameSite: "none",
+    // secure: true,
   });
 };
 
 export const setAuthToken = async (userData: jwtUserFilter, res: Response) => {
   try {
-    console.log('this is the jwt payload:', userData)
+    console.log("this is the jwt payload:", userData);
     const accessToken = generateAccessToken(userData, generateUuid4());
     const refreshToken = GenerateRefreshToken(userData, generateUuid4());
     setCookies(accessToken, refreshToken, res);

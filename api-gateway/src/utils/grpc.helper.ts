@@ -25,7 +25,7 @@ ResponseType
         reject(error)
       }
       else {
-         logger.info(`gRPC call to ${method as string} succeeded`, { response });
+        //  logger.info(`gRPC call to ${method as string} succeeded`, { response });
          resolve(response)
       }
     })

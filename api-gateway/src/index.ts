@@ -10,6 +10,7 @@ import cors from "cors";
 import { authServiceProxy } from "./middleware/authserver.proxy.middleware";
 import authRouter from "./routes/authservice/auth.routes";
 import feedRouter from "./routes/feedService/feed.routes";
+import generalRouter  from "./routes/generalservice/general.routes";
 import { connectRedis } from "./utils/redis.util";
 
 dotenv.config();
@@ -46,6 +47,7 @@ app.use("/auth/google/callback", authServiceProxy);
 app.use("/auth/admin", authServiceProxy);
 
 // grpc rpc routing
+app.use("/general",generalRouter);
 app.use("/auth", authRouter);
 app.use("/feed", feedRouter);
 
