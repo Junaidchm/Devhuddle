@@ -47,6 +47,7 @@ import {
   UpdateProfileResponse,
 } from "../../grpc/generated/auth";
 import * as grpc from "@grpc/grpc-js";
+import { getUserForFeedListingResponse } from "../../grpc/generated/user";
 
 export class AuthService implements IAuthService {
   constructor(private userRepository: IUserRepository) {}
@@ -308,6 +309,24 @@ export class AuthService implements IAuthService {
         ? err
         : new CustomError(grpc.status.INTERNAL, Messages.FAILD_TO_FETCH_USER);
     }
+  }
+
+  async getUserForFeedPostServic(userId: string): Promise<getUserForFeedListingResponse> {
+      try {
+        const user = await this.userRepository.findByIdUser(userId);
+        if (!user) {
+          throw new CustomError(grpc.status.NOT_FOUND, Messages.USER_NOT_FOUND);
+        }
+        return {
+          name: user.name,
+          username: user.username,
+          avatar: user.profilePicture || "",
+        };
+      } catch (err: any) {
+        throw err instanceof CustomError
+          ? err
+          : new CustomError(grpc.status.INTERNAL, Messages.FAILD_TO_FETCH_USER);
+      }
   }
 
   ///////// update profile

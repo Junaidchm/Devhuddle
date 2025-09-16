@@ -12,9 +12,7 @@ import {
 import { CustomError, sendErrorResponse } from "../../utils/error.util";
 import logger from "../../utils/logger.util";
 import passport from "../../config/passport.config";
-import {
-  setAuthToken,
-} from "../../utils/jwtHandler";
+import { setAuthToken } from "../../utils/jwtHandler";
 import { Messages } from "../../constents/reqresMessages";
 import { IAuthService } from "../../services/interface/IauthService";
 import { IAuthController } from "../interface/IauthController";
@@ -41,6 +39,10 @@ import {
   GeneratePresignedUrlResponse,
 } from "../../grpc/generated/auth";
 import * as grpc from "@grpc/grpc-js";
+import {
+  getUserForFeedListingRequest,
+  getUserForFeedListingResponse,
+} from "../../grpc/generated/user";
 
 export class AuthController implements IAuthController {
   constructor(private authService: IAuthService) {}
@@ -169,7 +171,7 @@ export class AuthController implements IAuthController {
     const { email } = call;
 
     if (!email) {
-      throw new CustomError( grpc.status.INVALID_ARGUMENT, "Email is required");
+      throw new CustomError(grpc.status.INVALID_ARGUMENT, "Email is required");
     }
 
     const jwtpayload: JwtPayload = await this.authService.verifyUser(email);
@@ -193,18 +195,32 @@ export class AuthController implements IAuthController {
     return userProfile;
   }
 
-  async generatePresignedUrl(call: GeneratePresignedUrlRequest): Promise<GeneratePresignedUrlResponse> {
+  async generatePresignedUrl(
+    call: GeneratePresignedUrlRequest
+  ): Promise<GeneratePresignedUrlResponse> {
     const { userId, operation, fileName, fileType, key } = call;
 
-    if (!['PUT', 'GET'].includes(operation)) {
-      throw new CustomError(grpc.status.INVALID_ARGUMENT, Messages.PRESIGNED_URL_GETPUT_ERROR);
+    if (!["PUT", "GET"].includes(operation)) {
+      throw new CustomError(
+        grpc.status.INVALID_ARGUMENT,
+        Messages.PRESIGNED_URL_GETPUT_ERROR
+      );
     }
 
     if (!userId) {
-      throw new CustomError(grpc.status.INVALID_ARGUMENT, 'User ID is required');
+      throw new CustomError(
+        grpc.status.INVALID_ARGUMENT,
+        "User ID is required"
+      );
     }
 
-    const result = await this.authService.generatePresignedUrl(userId, operation, fileName, fileType, key);
+    const result = await this.authService.generatePresignedUrl(
+      userId,
+      operation,
+      fileName,
+      fileType,
+      key
+    );
 
     return { url: result.url, key: result.key!, expiresAt: result.expiresAt };
   }
@@ -259,5 +275,20 @@ export class AuthController implements IAuthController {
         }
       }
     )(req, res, next);
+  }
+
+  async getUserForFeedPost(
+    req: getUserForFeedListingRequest
+  ): Promise<getUserForFeedListingResponse> {
+    const { userId } = req;
+
+    if (!userId) {
+      throw new CustomError(grpc.status.INVALID_ARGUMENT, "userId is required");
+    }
+
+    const userFeedDetails: getUserForFeedListingResponse =
+      await this.authService.getUserForFeedPostServic(userId);
+
+    return userFeedDetails;
   }
 }

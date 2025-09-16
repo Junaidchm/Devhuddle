@@ -12,22 +12,3 @@
   "include": ["src/**/*","node_modules/@prisma/client","grpc-generated/**/*"],
   "exclude": ["node_modules"]
 }
-
-// {
-//   "compilerOptions": {
-//     "target": "ES2020",
-//     "module": "commonjs",
-//     "outDir": "./dist",
-//     "rootDir": "./src",
-//     "strict": true,
-//     "esModuleInterop": true,
-//     "skipLibCheck": true,
-//     "forceConsistentCasingInFileNames": true,
-//     "baseUrl": ".",
-//     "paths": {
-//       "*": ["node_modules/*", "src/*", "grpc-generated/*"]
-//     }
-//   },
-//   "include": ["src/**/*", "grpc-generated/**/*"],
-//   "exclude": ["node_modules", "prisma/generated", "dist"]
-// }

@@ -26,11 +26,14 @@ import {
   GeneratePresignedUrlResponse,
 } from "./grpc/generated/auth";
 
+import { UserServiceService} from "./grpc/generated/user"
+
 import logger from "./utils/logger.util";
 import { UserRepository } from "./repositories/user.repository";
 import { AuthService } from "./services/impliments/auth.service";
 import { AuthController } from "./controllers/implimentation/auth.controller";
 import { CustomError } from "./utils/error.util";
+import { userServic } from "./serviceDefinition/userService";
 
 const userRepository: UserRepository = new UserRepository();
 const authenticationService: AuthService = new AuthService(userRepository);
@@ -258,8 +261,11 @@ const authService: AuthServiceServer = {
   },
 };
 
+
+
 const server = new grpc.Server();
 server.addService(AuthServiceService, authService);
+server.addService(UserServiceService, userServic )
 
 const GRPC_PORT = process.env.GRPC_PORT || "50051";
 server.bindAsync(

@@ -22,6 +22,7 @@ import {
   VerifyRefreshTokenRequest,
   VerifyRefreshTokenResponse,
 } from "../../grpc/generated/auth";
+import { getUserForFeedListingRequest, getUserForFeedListingResponse } from "../../grpc/generated/user";
 
 export interface IAuthController {
   register(req: RegisterRequest): Promise<RegisterResponse>;
@@ -37,4 +38,5 @@ export interface IAuthController {
   generatePresignedUrl(req:GeneratePresignedUrlRequest): Promise<GeneratePresignedUrlResponse>;
   googleAuth(req: Request, res: Response, next: NextFunction): void;
   googleCallback(req: Request, res: Response, next: NextFunction): void;
+  getUserForFeedPost(req:getUserForFeedListingRequest):Promise<getUserForFeedListingResponse>
 }
