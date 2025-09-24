@@ -26,6 +26,8 @@ export default async function jwtMiddleware(
   try {
     const token = req.cookies.access_token;
 
+    console.log('this is the token ...................============================', token)
+
     if (!token) {
       logger.error("No JWT token provided");
       throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.TOKEN_NOT_FOUND);
