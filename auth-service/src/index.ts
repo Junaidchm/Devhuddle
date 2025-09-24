@@ -23,10 +23,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(passport.initialize());
 
-app.use((req: Request, res: Response, next: NextFunction) => {
-  logger.info(`${req.method} ${req.url}`);
-  next();
-});
+// app.use((req: Request, res: Response, next: NextFunction) => {
+//   logger.info(`${req.method} ${req.url}`);
+//   next();
+// });
+
+console.log('this is my world how are you gu==========================')
 
 app.get("/health", (req:Request, res:Response) => {
   res.status(200).json({ status: "Auth Service is running" });

@@ -1,4 +1,8 @@
-import { getUserForFeedListingRequest, getUserForFeedListingResponse, UserServiceServer } from "../grpc/generated/user";
+import {
+  getUserForFeedListingRequest,
+  getUserForFeedListingResponse,
+  UserServiceServer,
+} from "../grpc/generated/user";
 import * as grpc from "@grpc/grpc-js";
 import logger from "../utils/logger.util";
 import { AuthController } from "../controllers/implimentation/auth.controller";
@@ -12,20 +16,20 @@ const authController: AuthController = new AuthController(
   authenticationService
 );
 
-export const userServic : UserServiceServer = {
-  getUserForFeedListing : async (
-    call: grpc.ServerUnaryCall<getUserForFeedListingRequest, getUserForFeedListingResponse>,
-    callback:grpc.sendUnaryData<getUserForFeedListingResponse>
+export const userServic: UserServiceServer = {
+  getUserForFeedListing: async (
+    call: grpc.ServerUnaryCall<
+      getUserForFeedListingRequest,
+      getUserForFeedListingResponse
+    >,
+    callback: grpc.sendUnaryData<getUserForFeedListingResponse>
   ) => {
     try {
-      logger.info("Received gRPC updateProfile request", {
-        request: call,
-      });
-      const request = call.request
+      const request = call.request;
 
-      const response = await authController.getUserForFeedPost(request)
-      
-      callback(null,response)
+      const response = await authController.getUserForFeedPost(request);
+
+      callback(null, response);
     } catch (err: any) {
       logger.error("gRPC getProfile error", {
         error: err.message,
@@ -37,4 +41,4 @@ export const userServic : UserServiceServer = {
       });
     }
   },
-}
+};
