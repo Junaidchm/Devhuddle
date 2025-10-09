@@ -155,7 +155,7 @@ export class AuthService implements IAuthService {
 
   //////////// user login
 
-  async login({ email, password }: LoginRequest): Promise<JwtPayload> {
+  async login({ email, password }: LoginRequest): Promise<GetJwtUserResponse> {
     try {
       const user = await this.userRepository.findByEmail(email);
 
@@ -253,7 +253,7 @@ export class AuthService implements IAuthService {
   async handleOAuthLogin(
     oauthUser: OAuthUser,
     res: Response
-  ): Promise<jwtUserFilter> {
+  ): Promise<GetJwtUserResponse> {
     try {
       let user = await this.userRepository.findByEmail(oauthUser.email);
       if (!user) {

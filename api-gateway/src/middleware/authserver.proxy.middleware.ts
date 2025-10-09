@@ -1,3 +1,5 @@
+
+import { app_config } from "../config/app.config";
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 export const authServiceProxy = createProxyMiddleware({
@@ -24,3 +26,14 @@ export const authServiceProxy = createProxyMiddleware({
     }
   },
 });
+
+
+createProxyMiddleware({
+  target: app_config.authServiceUrl, // User Service URL
+  changeOrigin: true,
+  pathRewrite: { '^/users': '/users' }, // Keep path
+  onError: (err, req, res) => {
+    console.error('Proxy error:', err);
+    res.status(500).json({ error: 'Gateway proxy failed' });
+  },
+})

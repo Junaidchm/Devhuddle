@@ -151,12 +151,15 @@ export const verifyPasswordResetToken = async (
   }
 };
 
-export const filterUserJwtPayload = (user: User): JwtPayload => {
+export const filterUserJwtPayload = (user: User): GetJwtUserResponse => {
   return {
     id: user.id,
     username: user.username,
     email: user.email,
     role: user.role,
+    emailVerified:user.emailVerified,
+    name:user.name,
+    profilePicture:user.profilePicture as string
   };
 };
 

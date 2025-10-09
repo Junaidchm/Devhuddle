@@ -79,7 +79,7 @@ export interface LogingRequest {
 
 export interface LogingResponse {
   message: string;
-  jwtpayload: JwtPayload | undefined;
+  jwtpayload: GetJwtUserResponse | undefined;
 }
 
 export interface PasswordResetRequest {
@@ -995,7 +995,7 @@ export const LogingResponse: MessageFns<LogingResponse> = {
       writer.uint32(10).string(message.message);
     }
     if (message.jwtpayload !== undefined) {
-      JwtPayload.encode(message.jwtpayload, writer.uint32(18).fork()).join();
+      GetJwtUserResponse.encode(message.jwtpayload, writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -1020,7 +1020,7 @@ export const LogingResponse: MessageFns<LogingResponse> = {
             break;
           }
 
-          message.jwtpayload = JwtPayload.decode(reader, reader.uint32());
+          message.jwtpayload = GetJwtUserResponse.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -1035,7 +1035,7 @@ export const LogingResponse: MessageFns<LogingResponse> = {
   fromJSON(object: any): LogingResponse {
     return {
       message: isSet(object.message) ? globalThis.String(object.message) : "",
-      jwtpayload: isSet(object.jwtpayload) ? JwtPayload.fromJSON(object.jwtpayload) : undefined,
+      jwtpayload: isSet(object.jwtpayload) ? GetJwtUserResponse.fromJSON(object.jwtpayload) : undefined,
     };
   },
 
@@ -1045,7 +1045,7 @@ export const LogingResponse: MessageFns<LogingResponse> = {
       obj.message = message.message;
     }
     if (message.jwtpayload !== undefined) {
-      obj.jwtpayload = JwtPayload.toJSON(message.jwtpayload);
+      obj.jwtpayload = GetJwtUserResponse.toJSON(message.jwtpayload);
     }
     return obj;
   },
@@ -1057,7 +1057,7 @@ export const LogingResponse: MessageFns<LogingResponse> = {
     const message = createBaseLogingResponse();
     message.message = object.message ?? "";
     message.jwtpayload = (object.jwtpayload !== undefined && object.jwtpayload !== null)
-      ? JwtPayload.fromPartial(object.jwtpayload)
+      ? GetJwtUserResponse.fromPartial(object.jwtpayload)
       : undefined;
     return message;
   },

@@ -14,22 +14,39 @@ datasource db {
 }
 
 model User {
-  id                String    @id @default(uuid())
-  email             String    @unique
-  username          String    @unique
+  id                String   @id @default(uuid())
+  email             String   @unique
+  username          String   @unique
   name              String
   password          String
-  role              String    @default("user")
-  emailVerified     Boolean   @default(false)
+  role              String   @default("user")
+  emailVerified     Boolean  @default(false)
   profilePicture    String? // URL to profile picture
   location          String?
   bio               String?
-  skills            String[]  @default([]) // Array of skills
+  skills            String[] @default([]) // Array of skills
   yearsOfExperience String?
   jobTitle          String?
   company           String?
-  isBlocked         Boolean   @default(false) 
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  isBlocked         Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
+  // relations 
+  following Follow[] @relation("Following")
+  followers Follow[] @relation("Followers")
+}
+
+model Follow {
+  followerId  String
+  follower    User      @relation(name: "Followers", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User      @relation(name: "Following", fields: [followingId], references: [id], onDelete: Cascade)
+  deletedAt   DateTime?
+  version     Int       @default(0)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("follows")
 }

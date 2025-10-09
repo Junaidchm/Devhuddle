@@ -43,7 +43,8 @@ services:
       - /app/node_modules
     networks:
       - shared
-    command: sh -c "npx ts-node src/generate.ts && npx prisma migrate deploy && npm run dev"
+    # command: sh -c "npx ts-node src/generate.ts && npx prisma migrate deploy && npm run dev"
+    command: sh -c "npx ts-node src/generate.ts && npx prisma db push && npm run dev"
 
   post-service:
     build:

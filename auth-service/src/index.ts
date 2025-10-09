@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import logger from "./utils/logger.util";
 import authRoutes from "./routes/auth.routes";
 import adminRoutes from "./routes/admin.routes";
+import followRoutes from "./routes/follow.routes"
 import { CustomError, sendErrorResponse } from "./utils/error.util";
 import { connectPrisma } from "./config/prisma.config";
 import { connectRedis } from "./utils/redis.util";
@@ -23,12 +24,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(passport.initialize());
 
-// app.use((req: Request, res: Response, next: NextFunction) => {
-//   logger.info(`${req.method} ${req.url}`);
-//   next();
-// });
-
-console.log('this is my world how are you gu==========================')
+app.use((req: Request, res: Response, next: NextFunction) => {
+  logger.info(`${req.method} ${req.url}`);
+  next();
+});
 
 app.get("/health", (req:Request, res:Response) => {
   res.status(200).json({ status: "Auth Service is running" });
@@ -36,6 +35,8 @@ app.get("/health", (req:Request, res:Response) => {
 
 app.use("/", authRoutes);
 app.use("/admin", adminRoutes);
+
+app.use("/follows",followRoutes)
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   sendErrorResponse(
