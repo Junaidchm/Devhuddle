@@ -94,10 +94,25 @@ export interface jwtUserFilter {
   email?: string;
   username?: string;
   role?: string;
+  name?:string;
+  emailVerified?:boolean
+  profilePicture?:string | null
 }
+
 
 export interface ApiError {
   status: number;
   message: string;
   success?: boolean;
+}
+
+
+export interface SuggestedUser {
+  id: string;
+  username: string;
+  name: string;
+  profilePicture: string | null;
+  _count: {
+    followers: number;
+  };
 }

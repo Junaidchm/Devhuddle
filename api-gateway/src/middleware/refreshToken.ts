@@ -13,8 +13,9 @@ export default async function refreshTokenMiddleware(
   next: NextFunction
 ) {
   try {
-    console.log('genereate refresh token : ....................')
-    const token = req.cookies.refresh_token;
+    
+    const token  = req.body?.refreshToken;
+    console.log('this is the token ....................' , token)
     if (!token) {
       logger.error("No JWT token provided");
       throw new CustomError(403, "No token provided");

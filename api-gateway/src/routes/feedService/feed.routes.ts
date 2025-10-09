@@ -17,7 +17,7 @@ router
     .post('/post',jwtMiddleware,submitPost)
     .post('/submit',jwtMiddleware,createPost)
     .get('/list',jwtMiddleware,listPost)
-    .post('/media',uploadMedia)
+    .post('/media',jwtMiddleware,uploadMedia)
 
     // deleting the post
     .delete('/delete',jwtMiddleware,deletePost)

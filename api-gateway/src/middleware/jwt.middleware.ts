@@ -13,7 +13,6 @@ declare global {
   namespace Express {
     interface Request {
       user?: jwtPayload;
-      
     }
   }
 }
@@ -24,10 +23,13 @@ export default async function jwtMiddleware(
   next: NextFunction
 ) {
   try {
-    const token = req.cookies.access_token;
+    const authHeader = req.headers["authorization"];
+    // console.log('this is the auth header ...................----------------------------->' , authHeader)
+    const token = authHeader?.startsWith("Bearer ")
+      ? authHeader.split(" ")[1]
+      : null;
 
-    console.log('this is the token ...................============================', token)
-
+   
     if (!token) {
       logger.error("No JWT token provided");
       throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.TOKEN_NOT_FOUND);
@@ -41,7 +43,10 @@ export default async function jwtMiddleware(
       clearCookies(res);
       throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.USER_BLOCKED);
     }
+    
     req.user = decoded;
+    //Forward the user data in custom header
+    req.headers["x-user-data"] = JSON.stringify(decoded);
     next();
   } catch (err: any) {
     logger.error(`JWT verification error ................., ${err.status}`, {

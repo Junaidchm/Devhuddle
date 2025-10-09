@@ -19,10 +19,10 @@ export interface IAuthService {
   resendOTP(email: string): Promise<void>;
   getJwtPayload(id: string): Promise<GetJwtUserResponse>;
   getUserProfile(id:string):Promise<GetProfileResponse>;
-  login(loginData: LogingRequest): Promise<JwtPayload>;
+  login(loginData: LogingRequest): Promise<GetJwtUserResponse>;
   requestPasswordReset(resetRequest: PasswordResetRequest): Promise<void>;
   resetPassword(resetData: PasswordResetConfirmRequest): Promise<void>;
-  handleOAuthLogin(oauthUser: OAuthUser, res: Response): Promise<jwtUserFilter>;
+  handleOAuthLogin(oauthUser: OAuthUser, res: Response): Promise<GetJwtUserResponse>;
   verifyUser(email: string): Promise<JwtPayload>;
   updateProfile(userId: string, data: ProfileUpdatePayload): Promise<UpdateProfileResponse>;
   getUserForFeedPostServic(userId:string):Promise<getUserForFeedListingResponse>

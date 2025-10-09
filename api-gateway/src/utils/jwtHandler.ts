@@ -78,6 +78,8 @@ export const setAccesToken = async (
     // sameSite: "none",
     // secure: true,
   });
+
+  return accessToken
 };
 
 export const setAuthToken = async (userData: jwtUserFilter, res: Response) => {
@@ -86,10 +88,11 @@ export const setAuthToken = async (userData: jwtUserFilter, res: Response) => {
     const accessToken = generateAccessToken(userData, generateUuid4());
     const refreshToken = GenerateRefreshToken(userData, generateUuid4());
     setCookies(accessToken, refreshToken, res);
+    return {accessToken,refreshToken}
   } catch (error) {
     console.log("Error while setting auth tokens");
     throw error;
-  }
+  } 
 };
 
 export const clearCookies = (res: Response): void => {

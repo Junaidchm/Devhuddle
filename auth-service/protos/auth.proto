@@ -46,6 +46,7 @@ message JwtPayload {
   string email = 2;
   string username = 3;
   string role = 4;
+  
 }
 
 message ResentOTPRequest {
@@ -77,7 +78,7 @@ message LogingRequest {
 
 message LogingResponse {
   string message = 1;
-  JwtPayload jwtpayload = 2;
+  GetJwtUserResponse jwtpayload = 2;
 }
 
 message PasswordResetRequest {

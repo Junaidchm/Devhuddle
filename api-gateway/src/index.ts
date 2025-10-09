@@ -12,6 +12,12 @@ import authRouter from "./routes/authservice/auth.routes";
 import feedRouter from "./routes/feedService/feed.routes";
 import generalRouter  from "./routes/generalservice/general.routes";
 import { connectRedis } from "./utils/redis.util";
+import { app_config } from "./config/app.config";
+import { cacheMiddleware } from "./middleware/cache.middleware";
+import proxy from "express-http-proxy"
+import jwtMiddleware from "./middleware/jwt.middleware";
+import commonMiddleware from "./middleware/common.middleware";
+
 
 dotenv.config();
 
@@ -20,7 +26,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: [process.env.frontend_URL!],
+    origin: [app_config.frontend_URL!],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -29,6 +35,9 @@ app.use(
 
 // Rate Limiting
 // app.use(rateLimiter);
+
+// cache Middleware
+app.use(cacheMiddleware)
 
 // Log all requests
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -46,10 +55,13 @@ app.use("/auth/google", authServiceProxy);
 app.use("/auth/google/callback", authServiceProxy);
 app.use("/auth/admin", authServiceProxy);
 
+// http proxy for Follow route
+app.use("/users",commonMiddleware,jwtMiddleware,proxy(app_config.authServiceUrl,{ parseReqBody: false }));
+
 // grpc rpc routing
 app.use("/general",generalRouter);
 app.use("/auth", authRouter);
-app.use("/feed", feedRouter);
+// app.use("/feed", feedRouter);
 
 // Handle favicon to prevent unhandled requests
 app.get("/favicon.ico", (req: Request, res: Response) => {
@@ -70,7 +82,7 @@ const startServer = async () => {
     await connectRedis();
     logger.info("Redis connection established");
 
-    const PORT = process.env.PORT || 8080;
+    const PORT = app_config;
     app.listen(PORT, () => {
       logger.info(`API Gateway running on port ${PORT}`);
     });

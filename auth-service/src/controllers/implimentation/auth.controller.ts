@@ -86,7 +86,7 @@ export class AuthController implements IAuthController {
       );
     }
 
-    const jwtpayload: JwtPayload = await this.authService.login({
+    const jwtpayload: GetJwtUserResponse = await this.authService.login({
       email,
       password,
     });
@@ -255,7 +255,7 @@ export class AuthController implements IAuthController {
             throw new CustomError(500, "No user data received");
           }
           logger.info("Google OAuth user", { email: oauthUser.email });
-          const user: jwtUserFilter = await this.authService.handleOAuthLogin(
+          const user: GetJwtUserResponse = await this.authService.handleOAuthLogin(
             oauthUser,
             res
           );
