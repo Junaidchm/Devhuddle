@@ -61,7 +61,7 @@ app.use("/users",commonMiddleware,jwtMiddleware,proxy(app_config.authServiceUrl,
 // grpc rpc routing
 app.use("/general",generalRouter);
 app.use("/auth", authRouter);
-// app.use("/feed", feedRouter);
+app.use("/feed", feedRouter);
 
 // Handle favicon to prevent unhandled requests
 app.get("/favicon.ico", (req: Request, res: Response) => {

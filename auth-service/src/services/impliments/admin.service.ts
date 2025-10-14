@@ -51,7 +51,7 @@ export class AdminService implements IAdminService {
         ? error
         : new CustomError(500, "Server error");
     }
-  }
+  } 
 
   async toogleUserState(userId: string): Promise<void> {
     try {
