@@ -1,0 +1,32 @@
+{
+  "name": "notification-service",
+  "version": "1.0.0",
+  "description": "\"Notification service for DevHuddle\",",
+  "main": "ist/index.js\",",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc-watch --onSuccess \"node dist/index.js\""
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/express": "^4.17.23",
+    "@types/kafkajs": "^1.9.0",
+    "@types/node": "^20.19.20",
+    "prisma": "^5.22.0",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.14.0",
+    "@prisma/client": "^5.22.0",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "kafkajs": "^2.2.4",
+    "tsc-watch": "^7.2.0",
+    "winston": "^3.18.3",
+    "zod": "^3.25.76"
+  }
+}

@@ -3,6 +3,7 @@ import { BaseRepository } from "../base.repository";
 import { Prisma, Follow } from "@prisma/client";
 import { IFollowsRepository } from "../interfaces/IFollowsRepository";
 import { SuggestedUser } from "../../types/auth";
+import logger from "../../utils/logger.util";
 
 export class FollowsRepository
   extends BaseRepository<
@@ -35,7 +36,7 @@ export class FollowsRepository
 
     if (!followings || followings.following.length === 0) {
       // Fallback: Query top popular users (exclude self)
-      return (users = await this.getFallbackSuggestions(userId, limit));
+      return (users = await this._getFallbackSuggestions(userId, limit));
     } else {
       const followingIds = followings.following.map((f) => f.followingId);
 
@@ -78,7 +79,7 @@ export class FollowsRepository
   }
 
   // Helper for fallback (top popular users, exclude self)
-  private async getFallbackSuggestions(
+  private async _getFallbackSuggestions(
     userId: string,
     limit: number
   ): Promise<SuggestedUser[]> {
@@ -96,5 +97,52 @@ export class FollowsRepository
       take: limit,
       orderBy: { followers: { _count: "desc" } },
     });
+  }
+
+  async follow(followerId: string, followingId: string): Promise<void> {
+    try {
+      await prisma.follow.upsert({
+        where: { followerId_followingId: { followerId, followingId } },
+        create: { followerId, followingId, version: 1 },
+        update: { deletedAt: null, version: { increment: 1 } },
+      });
+    } catch (error) {
+      logger.error("Error following users", {
+        error: (error as Error).message,
+      });
+      throw new Error("Database error");
+    }
+  }
+
+  async unfollow(followerId: string, followingId: string): Promise<void> {
+    try {
+      await prisma.follow.updateMany({
+        where: { followerId, followingId, deletedAt: null },
+        data: { deletedAt: new Date(), version: { increment: 1 } },
+      });
+    } catch (error) {
+      logger.error("Error unfollowing users", {
+        error: (error as Error).message,
+      });
+      throw new Error("Database error");
+    }
+  }
+
+  async getVersion(followerId: string, followingId: string): Promise<number> {
+    try {
+      const follow = await prisma.follow.findUnique({
+        where: { followerId_followingId: { followerId, followingId } },
+        select: {
+          version: true,
+        },
+      });
+
+      return follow?.version || 0;
+    } catch (error) {
+      logger.error("Error selecting the follow version", {
+        error: (error as Error).message,
+      });
+      throw new Error("Database error");
+    }
   }
 }

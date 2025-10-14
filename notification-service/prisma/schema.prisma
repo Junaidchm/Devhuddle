@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum NotificationType {
+  FOLLOW
+  LIKE
+  COMMENT
+  MENTION
+  NEW_MESSAGE
+  ROOM_REMINDER
+  // Expand as needed (e.g., EVENT_START)
+}
+
+enum EntityType {
+  POST
+  COMMENT
+  MESSAGE
+  EVENT
+  // Polymorphic: Add for new (e.g., REMINDER)
+}
+
+model NotificationObject {
+  id              String           @id @default(cuid())
+  type            NotificationType
+  entityType      EntityType
+  entityId        String 
+  contextId       String? 
+  aggregatedCount Int              @default(1) 
+  summary         Json? 
+  metadata        Json? 
+  version         Int              @default(0)
+  createdAt       DateTime         @default(now())
+
+  // realtions
+  actors          NotificationActor[]
+  recipients      NotificationRecipient[]
+
+  @@map("notification_objects")
+  @@index([type])
+  @@index([entityType,entityId])
+}
+
+model NotificationActor {
+  id                   String             @id @default(cuid())
+  notificationObjectId String
+  actorId              String             // Issuer ID (standalone)
+  createdAt            DateTime           @default(now())
+
+  notificationObject   NotificationObject @relation(fields: [notificationObjectId], references: [id], onDelete: Cascade)
+
+  @@map("notification_actors")
+  @@index([notificationObjectId])
+}
+
+model NotificationRecipient {
+  id                   String             @id @default(cuid())
+  notificationObjectId String
+  recipientId          String             // Recipient ID (standalone)
+  read                 Boolean            @default(false)
+  deletedAt            DateTime?
+  createdAt            DateTime           @default(now())
+
+  notificationObject   NotificationObject @relation(fields: [notificationObjectId], references: [id], onDelete: Cascade)
+
+  @@map("notification_recipients")
+  @@index([recipientId, read])
+  @@index([notificationObjectId])
+}
