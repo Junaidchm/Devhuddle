@@ -37,7 +37,7 @@ app.use(
 // app.use(rateLimiter);
 
 // cache Middleware
-app.use(cacheMiddleware)
+// app.use(cacheMiddleware)
 
 // Log all requests
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -56,7 +56,7 @@ app.use("/auth/google/callback", authServiceProxy);
 app.use("/auth/admin", authServiceProxy);
 
 // http proxy for Follow route
-app.use("/users",commonMiddleware,jwtMiddleware,proxy(app_config.authServiceUrl,{ parseReqBody: false }));
+app.use("/users",jwtMiddleware,proxy(app_config.authServiceUrl,{ parseReqBody: false }));
 
 // grpc rpc routing
 app.use("/general",generalRouter);

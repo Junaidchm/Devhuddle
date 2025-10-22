@@ -59,6 +59,11 @@ export const Messages = {
     LOGING_USING_GOOGLE_MESSAGE:"This account was created using Google. Please login using Google.",
     LOGING_FAILD:"Login failed",
     PASSWORD_RESET_TOKEN_PASSWORD:"Token and new password are required",
-    USER_ID_REQUIRED : 'User ID is required'
+    USER_ID_REQUIRED : 'User ID is required',
+    USER_FOLLOW_ERROR : 'Failed to follow user',
+    USER_UNFOLLOW_ERROR : 'Failed to unfollow user',
+    USER_FOLLOWED_SUCCESSFULLY : 'User followed successfully',
+    USER_UNFOLLOWED_SUCCESSFULLY : 'User unfollowed successfully',
+
   };
   

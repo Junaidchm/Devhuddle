@@ -23,6 +23,8 @@ export class FollowsRepository
     userId: string,
     limit: number
   ): Promise<SuggestedUser[]> {
+
+    console.log('this is the user id ------------------------>' , userId)
     let users: SuggestedUser[] = [];
     // gettign users which user follows
     const followings = await prisma.user.findUnique({
@@ -34,30 +36,50 @@ export class FollowsRepository
       },
     });
 
+    console.log('this is the following list of the user ----------------------->' , followings)
+
     if (!followings || followings.following.length === 0) {
       // Fallback: Query top popular users (exclude self)
-      return (users = await this._getFallbackSuggestions(userId, limit));
+      users = await this._getFallbackSuggestions(userId, limit );
+      console.log(
+        "these are the users suggested when followers not there ===========================> ",
+        users
+      );
+      return users;
     } else {
       const followingIds = followings.following.map((f) => f.followingId);
+      
+      console.log( 'this is the user following ids------------------------------->', followingIds)
 
       // getting users which user's followers follows , this called second degree users
+
       const secondDegree = await prisma.follow.groupBy({
-        by: ["followerId"],
+        by: ["followingId"],
         where: {
-          followingId: { in: followingIds },
-          followerId: { notIn: [userId, ...followingIds] },
+          followerId: { in: followingIds },
+          followingId: { notIn: [userId, ...followingIds] },
           deletedAt: null,
         },
-        _count: { followingId: true },
+        _count: { followerId: true },
         orderBy: {
           _count: {
-            followingId: "desc",
+            followerId: "desc",
           },
         },
         take: limit * 2,
       });
 
-      const candidateIds = secondDegree.map((g) => g.followerId);
+      console.log('this is the second degree result ----------------------=====================--------------> ' , secondDegree)
+      
+
+      if(secondDegree.length === 0) {
+        return await this._getFallbackSuggestions(userId, limit,followingIds);
+        console.log('hello guys how are you ------------>',await this._getFallbackSuggestions(userId, limit,followingIds))
+      }
+
+      const candidateIds = secondDegree.map((g) => g.followingId);
+      console.log('second degree connections found:', secondDegree);
+      console.log('candidate user IDs:', candidateIds);
 
       users = await prisma.user.findMany({
         where: { id: { in: candidateIds } },
@@ -72,7 +94,10 @@ export class FollowsRepository
         orderBy: { followers: { _count: "desc" } },
       });
 
-      console.log("these are the users i found");
+      console.log(
+        "these are the users suggested ===========================> ",
+        users
+      );
 
       return users;
     }
@@ -81,11 +106,14 @@ export class FollowsRepository
   // Helper for fallback (top popular users, exclude self)
   private async _getFallbackSuggestions(
     userId: string,
-    limit: number
+    limit: number,
+    followings: string[] = []
   ): Promise<SuggestedUser[]> {
+
+    
     return prisma.user.findMany({
       where: {
-        id: { not: userId },
+        id: { notIn: [userId, ...followings] },
       },
       select: {
         id: true,
