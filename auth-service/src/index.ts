@@ -36,7 +36,7 @@ app.get("/health", (req:Request, res:Response) => {
 app.use("/", authRoutes);
 app.use("/admin", adminRoutes);
 
-app.use("/follows",followRoutes)
+app.use("/follows", followRoutes)
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   sendErrorResponse(

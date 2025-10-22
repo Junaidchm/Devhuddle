@@ -22,6 +22,7 @@ enum EntityType {
   COMMENT
   MESSAGE
   EVENT
+  USER
   // Polymorphic: Add for new (e.g., REMINDER)
 }
 
@@ -49,7 +50,7 @@ model NotificationObject {
 model NotificationActor {
   id                   String             @id @default(cuid())
   notificationObjectId String
-  actorId              String             // Issuer ID (standalone)
+  actorId              String             
   createdAt            DateTime           @default(now())
 
   notificationObject   NotificationObject @relation(fields: [notificationObjectId], references: [id], onDelete: Cascade)
@@ -61,7 +62,7 @@ model NotificationActor {
 model NotificationRecipient {
   id                   String             @id @default(cuid())
   notificationObjectId String
-  recipientId          String             // Recipient ID (standalone)
+  recipientId          String            
   read                 Boolean            @default(false)
   deletedAt            DateTime?
   createdAt            DateTime           @default(now())

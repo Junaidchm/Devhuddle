@@ -47,6 +47,7 @@ export default async function jwtMiddleware(
     req.user = decoded;
     //Forward the user data in custom header
     req.headers["x-user-data"] = JSON.stringify(decoded);
+
     next();
   } catch (err: any) {
     logger.error(`JWT verification error ................., ${err.status}`, {

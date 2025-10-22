@@ -1,4 +1,3 @@
-
 services:
   api-gateway:
     build:
@@ -13,6 +12,9 @@ services:
       - redis
       - auth-service
       - post-service
+      - notification-service
+      - zookeeper
+      - kafka
     volumes:
       - ./api-gateway/src:/app/src
       - ./api-gateway/protos:/app/protos
@@ -21,6 +23,13 @@ services:
     networks:
       - shared
     command: sh -c "npx ts-node src/generate.ts && npm run dev"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
 
   auth-service:
     build:
@@ -33,6 +42,10 @@ services:
     # depends_on:
     #   auth-db:
     #     condition: service_healthy
+    depends_on:
+      - kafka
+      - zookeeper
+      - redis
     env_file:
       - ./auth-service/.env
     volumes:
@@ -45,6 +58,13 @@ services:
       - shared
     # command: sh -c "npx ts-node src/generate.ts && npx prisma migrate deploy && npm run dev"
     command: sh -c "npx ts-node src/generate.ts && npx prisma db push && npm run dev"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
   
   notification-service:
     build:
@@ -53,6 +73,10 @@ services:
     container_name: notification-service
     ports:
       - "4001:4001"
+    depends_on:
+      - kafka
+      - zookeeper
+      - redis
     env_file:
       - ./notification-service/.env
     volumes:
@@ -66,6 +90,13 @@ services:
     # command: sh -c "npx ts-node src/generate.ts && npx prisma migrate deploy && npm run dev"
     # command: sh -c "npx ts-node src/generate.ts && npx prisma db push && npm run dev"
     command: "npm run dev"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
 
   post-service:
     build:
@@ -75,6 +106,10 @@ services:
     # depends_on: 
     #   post-db:
     #     condition: service_healthy
+    depends_on:
+      - kafka
+      - zookeeper
+      - redis
     env_file:
       - ./post-service/.env
     volumes:
@@ -87,6 +122,13 @@ services:
       - shared
     # dns: 8.8.8.8
     command: sh -c "npx ts-node src/generate.ts && npx prisma migrate deploy && npm run dev"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
   
   # auth-db:
   #   image: postgres:alpine
@@ -129,8 +171,17 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - kafka_data:/var/lib/kafka/data
     networks:
       - shared
+    healthcheck:
+      test: ["CMD-SHELL", "echo srvr | nc localhost 2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
 
   kafka:
     image: confluentinc/cp-kafka:7.4.0
@@ -154,19 +205,13 @@ services:
 
     networks:
       - shared
-  
-  # kafka-ui:
-  #   image: provectuslabs/kafka-ui:latest
-  #   container_name: kafka-ui
-  #   ports:
-  #     - "8081:8080"
-  #   environment:
-  #     - KAFKA_CLUSTERS_0_NAME=local
-  #     - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
-  #   depends_on:
-  #     - kafka
-  #   networks:
-  #     - shared
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
 
   redis:
     image: redis:alpine
@@ -175,13 +220,21 @@ services:
       - redis_data:/data
     networks:
       - shared
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
 
 volumes:
   auth_data:
   redis_data:
   post_data:
+  kafka_data:
+    driver: local 
 
 networks:
   shared:
     driver: bridge
-    
