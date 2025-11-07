@@ -20,6 +20,8 @@ export const cacheMiddleware = async (
       return res.json(JSON.parse(cached));
     }
 
+    console.log('request is going after the cash ============================> ')
+
     const originalJson = res.json.bind(res);
     res.json = (body) => {
       if (res.statusCode >= 2000 && res.statusCode < 300) {

@@ -1,4 +1,4 @@
-import logger from "../utils/logger.util";
+import logger from "../../utils/logger.util";
 
 export abstract class BaseRepository<
   TModel extends {

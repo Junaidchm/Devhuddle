@@ -1,9 +1,9 @@
 import jwt from "jsonwebtoken";
 import { jwtPayload, jwtUserFilter, User } from "../types/auth";
 import logger from "./logger.util";
-import redisClient from "./redis.util";
 import { checkIsRevoked } from "./redis.actions";
 import { GetJwtUserResponse, GetProfileResponse, JwtPayload } from "../grpc/generated/auth";
+import redisClient from "../config/redis.config";
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 const ACCESS_TOKEN_EXPIRY = "15m";

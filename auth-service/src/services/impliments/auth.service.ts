@@ -1,9 +1,5 @@
 import { Request, Response } from "express";
 import {
-  IUserRepository,
-  UserRepository,
-} from "../../repositories/user.repository";
-import {
   jwtUserFilter,
   LoginRequest,
   OAuthUser,
@@ -48,9 +44,19 @@ import {
 } from "../../grpc/generated/auth";
 import * as grpc from "@grpc/grpc-js";
 import { getUserForFeedListingResponse } from "../../grpc/generated/user";
+import { IUserRepository } from "../../repositories/interfaces/IUserRepository";
 
 export class AuthService implements IAuthService {
   constructor(private userRepository: IUserRepository) {}
+
+
+  async searchUsers(
+    query: string,
+    currentUserId: string
+  ): Promise<Partial<User>[]> {
+    // Delegate the search to the repository
+    return this.userRepository.searchUsers(query, currentUserId);
+  }
 
   ////////// user Signup
 

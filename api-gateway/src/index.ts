@@ -1,28 +1,53 @@
 import express, { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
-import helmet from "helmet";
+import { createServer } from "http";
 import { HttpStatus } from "./utils/constents";
 import { logger } from "./utils/logger";
-import { rateLimiter } from "./middleware/rate-limit.middleware";
 import { sendErrorResponse } from "./utils/error.util";
 import { ApiError } from "./types/auth";
 import cors from "cors";
-import { authServiceProxy } from "./middleware/authserver.proxy.middleware";
+import {
+  authServiceProxy,
+  userServiveProxy,
+} from "./middleware/authserver.proxy.middleware";
 import authRouter from "./routes/authservice/auth.routes";
 import feedRouter from "./routes/feedService/feed.routes";
-import generalRouter  from "./routes/generalservice/general.routes";
+import generalRouter from "./routes/generalservice/general.routes";
 import { connectRedis } from "./utils/redis.util";
 import { app_config } from "./config/app.config";
-import { cacheMiddleware } from "./middleware/cache.middleware";
-import proxy from "express-http-proxy"
 import jwtMiddleware from "./middleware/jwt.middleware";
-import commonMiddleware from "./middleware/common.middleware";
-
+import { createProxyMiddleware } from "http-proxy-middleware";
 
 dotenv.config();
 
 // create app
 const app = express();
+const server = createServer(app);
+
+// Proxy for Notification Service (with WebSocket support)
+const notificationProxy = createProxyMiddleware({
+  target: app_config.notificationServiceUrl,
+  changeOrigin: true,
+  ws: true, // Enable WebSocket proxying
+  // pathRewrite: { "^/notifications": "" }, // This rewrite is causing the 404s
+  onProxyReqWs: (proxyReq, req, socket, options, head) => {
+    let token = req.headers["authorization"];
+
+    // Fallback to checking the query parameter if the header is not present
+    if (!token && req.url) {
+      const url = new URL(req.url, `ws://${req.headers.host}`);
+      const tokenFromQuery = url.searchParams.get("token");
+      if (tokenFromQuery) {
+        // The downstream service likely expects the "Bearer " prefix
+        token = `Bearer ${tokenFromQuery}`;
+      }
+    }
+
+    if (token) {
+      proxyReq.setHeader("Authorization", token);
+    }
+  },
+});
 
 app.use(
   cors({
@@ -36,32 +61,34 @@ app.use(
 // Rate Limiting
 // app.use(rateLimiter);
 
-// cache Middleware
-// app.use(cacheMiddleware)
-
 // Log all requests
 app.use((req: Request, res: Response, next: NextFunction) => {
   logger.info(`${req.method} ${req.url}`);
   next();
 });
 
+// HTTP proxy for Google OAuth routes
+app.use("/auth/google", authServiceProxy);
+// app.use("/auth/google/callback", authServiceProxy);
+app.use("/auth/admin", authServiceProxy);
+
+// http proxy for Follow route
+app.use("/users", jwtMiddleware, userServiveProxy);
+
+// WebSocket proxy for notifications
+app.use("/notifications", jwtMiddleware, notificationProxy);
+
+// grpc rpc routing
+app.use("/general", generalRouter);
+app.use("/auth", authRouter);
+app.use("/feed", feedRouter);
+
+
+
 // Health check
 app.get("/health", (req: Request, res: Response) => {
   res.status(HttpStatus.OK).json({ status: "API Gateway is running" });
 });
-
-// HTTP proxy for Google OAuth routes
-app.use("/auth/google", authServiceProxy);
-app.use("/auth/google/callback", authServiceProxy);
-app.use("/auth/admin", authServiceProxy);
-
-// http proxy for Follow route
-app.use("/users",jwtMiddleware,proxy(app_config.authServiceUrl,{ parseReqBody: false }));
-
-// grpc rpc routing
-app.use("/general",generalRouter);
-app.use("/auth", authRouter);
-app.use("/feed", feedRouter);
 
 // Handle favicon to prevent unhandled requests
 app.get("/favicon.ico", (req: Request, res: Response) => {
@@ -82,8 +109,8 @@ const startServer = async () => {
     await connectRedis();
     logger.info("Redis connection established");
 
-    const PORT = app_config;
-    app.listen(PORT, () => {
+    const PORT = app_config.port || 3000;
+    server.listen(PORT, () => {
       logger.info(`API Gateway running on port ${PORT}`);
     });
   } catch (err: any) {

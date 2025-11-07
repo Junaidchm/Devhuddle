@@ -6,12 +6,14 @@ import cookieParser from "cookie-parser";
 import logger from "./utils/logger.util";
 import authRoutes from "./routes/auth.routes";
 import adminRoutes from "./routes/admin.routes";
-import followRoutes from "./routes/follow.routes"
+import followRoutes from "./routes/follow.routes";
 import { CustomError, sendErrorResponse } from "./utils/error.util";
 import { connectPrisma } from "./config/prisma.config";
-import { connectRedis } from "./utils/redis.util";
 import passport from "./config/passport.config";
-import grpcServer from './grpc-server';
+import grpcServer from "./grpc-server";
+import { connectRedis } from "./config/redis.config";
+import { startCompensationConsumer } from "./consumers/compensation.consumer";
+import userRoutes from "./routes/user.routes";
 
 dotenv.config();
 
@@ -29,14 +31,18 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-app.get("/health", (req:Request, res:Response) => {
+app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({ status: "Auth Service is running" });
 });
 
 app.use("/", authRoutes);
 app.use("/admin", adminRoutes);
 
-app.use("/follows", followRoutes)
+app.use("/profile",userRoutes);
+
+app.use("/follows", followRoutes);
+app.use("/search", authRoutes)
+
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   sendErrorResponse(
@@ -54,12 +60,14 @@ const startServer = async () => {
 
     await connectRedis();
     logger.info("Redis connection established");
+
+    await startCompensationConsumer();
+    logger.info("Compensation consumer started");
     const PORT = process.env.PORT || 3001;
     app.listen(PORT, () => {
       logger.info(`Auth Service running on port ${PORT}`);
     });
     grpcServer;
-    
   } catch (err: any) {
     logger.error("Failed to start server", {
       error: err.message,

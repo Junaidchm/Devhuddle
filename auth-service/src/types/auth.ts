@@ -107,7 +107,7 @@ export interface ApiError {
 }
 
 
-export interface SuggestedUser {
+export interface SuggestedUserFetching {
   id: string;
   username: string;
   name: string;
@@ -115,4 +115,14 @@ export interface SuggestedUser {
   _count: {
     followers: number;
   };
+}
+
+
+export interface SuggestedUser {
+  id: string;
+  username: string;
+  name: string;
+  profilePicture: string | null;
+  followersCount: number;
+  isFollowedByUser: boolean;
 }

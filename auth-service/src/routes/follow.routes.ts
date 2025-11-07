@@ -14,5 +14,6 @@ const router = Router();
 router
  .get("/suggestions", followsController.getSuggestions.bind(followsController))
  .post("/follow", followsController.follow.bind(followsController))
+ .post("/unfollow", followsController.unfollow.bind(followsController))
  
 export default router;

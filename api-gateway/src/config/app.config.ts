@@ -11,6 +11,7 @@ export interface Iconfig {
   communicationServiceUrl : string;
   subscription_service : string;
   frontend_production_url : string;
+  notificationServiceUrl:string;
   FRONTEND_PRODUCTION_URL2 : string;
 }
 
@@ -18,6 +19,7 @@ export const app_config: Iconfig = {
   port: process.env.PORT ? Number(process.env.PORT) : 8080,
   authServiceUrl: process.env.AUTH_SERVICE_URL as string,
   companyServiceUrl: process.env.COMPANY_SERVICE_URL as string,
+  notificationServiceUrl: process.env.NOTIFICATION_SERVICE_URL as string,
   jwtSecret: process.env.JWT_SECRET as string,
   frontend_URL: process.env.frontend_URL as string,
   ticketServiceUrl : process.env.TICKET_SERVICE_URL as string,

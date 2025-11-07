@@ -14,7 +14,6 @@ enum NotificationType {
   MENTION
   NEW_MESSAGE
   ROOM_REMINDER
-  // Expand as needed (e.g., EVENT_START)
 }
 
 enum EntityType {
@@ -23,53 +22,85 @@ enum EntityType {
   MESSAGE
   EVENT
   USER
-  // Polymorphic: Add for new (e.g., REMINDER)
+}
+
+enum DlqStatus {
+  PENDING
+  RETRYING
+  RESOLVED
+  FAILED
 }
 
 model NotificationObject {
   id              String           @id @default(cuid())
   type            NotificationType
   entityType      EntityType
-  entityId        String 
-  contextId       String? 
-  aggregatedCount Int              @default(1) 
-  summary         Json? 
-  metadata        Json? 
+  entityId        String
+  contextId       String?
+  aggregatedCount Int              @default(1)
+  summary         Json?
+  metadata        Json?
   version         Int              @default(0)
   createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @default(now())
 
-  // realtions
-  actors          NotificationActor[]
-  recipients      NotificationRecipient[]
+  // relations
+  actors     NotificationActor[]
+  recipients NotificationRecipient[]
 
-  @@map("notification_objects")
   @@index([type])
-  @@index([entityType,entityId])
+  @@index([entityType, entityId])
+  @@index([type, entityType, entityId, createdAt])
+  @@map("notification_objects")
 }
 
 model NotificationActor {
-  id                   String             @id @default(cuid())
+  id                   String   @id @default(cuid())
   notificationObjectId String
-  actorId              String             
-  createdAt            DateTime           @default(now())
+  actorId              String
+  createdAt            DateTime @default(now())
 
-  notificationObject   NotificationObject @relation(fields: [notificationObjectId], references: [id], onDelete: Cascade)
+  notificationObject NotificationObject @relation(fields: [notificationObjectId], references: [id], onDelete: Cascade)
 
-  @@map("notification_actors")
   @@index([notificationObjectId])
+  @@index([actorId, createdAt])
+  @@map("notification_actors")
 }
 
 model NotificationRecipient {
-  id                   String             @id @default(cuid())
+  id                   String    @id @default(cuid())
   notificationObjectId String
-  recipientId          String            
-  read                 Boolean            @default(false)
+  recipientId          String
+  read                 Boolean   @default(false)
+  readAt               DateTime?
   deletedAt            DateTime?
-  createdAt            DateTime           @default(now())
+  createdAt            DateTime  @default(now())
 
-  notificationObject   NotificationObject @relation(fields: [notificationObjectId], references: [id], onDelete: Cascade)
+  notificationObject NotificationObject @relation(fields: [notificationObjectId], references: [id], onDelete: Cascade)
 
-  @@map("notification_recipients")
+  @@index([recipientId, read, createdAt])
   @@index([recipientId, read])
   @@index([notificationObjectId])
+  @@index([recipientId, deletedAt])
+  @@map("notification_recipients")
+  @@unique([recipientId, notificationObjectId])
+}
+
+model DlqEvent {
+  id            String    @id @default(cuid())
+  originalTopic String
+  dlqTopic      String
+  eventData     Json
+  errorMessage  String
+  dlqReason     String
+  retryCount    Int       @default(0)
+  status        DlqStatus @default(PENDING) // PENDING, RETRYING, RESOLVED, FAILED
+  resolution    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([originalTopic])
+  @@index([status])
+  @@index([createdAt])
+  @@map("dlq_events")
 }
