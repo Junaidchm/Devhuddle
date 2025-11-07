@@ -1,0 +1,8 @@
+{"error":"getaddrinfo ENOTFOUND redis","level":"error","message":"Redis Client Error","timestamp":"2025-10-28T09:38:54.040Z"}
+{"error":"getaddrinfo ENOTFOUND redis","level":"error","message":"Redis Client Error","timestamp":"2025-10-28T09:38:54.150Z"}
+{"error":"getaddrinfo ENOTFOUND redis","level":"error","message":"Redis Client Error","timestamp":"2025-10-28T09:38:54.421Z"}
+{"error":"getaddrinfo ENOTFOUND redis","level":"error","message":"Redis Client Error","timestamp":"2025-10-28T09:38:54.672Z"}
+{"error":"getaddrinfo ENOTFOUND redis","level":"error","message":"Redis Client Error","timestamp":"2025-10-28T09:38:55.121Z"}
+{"error":"getaddrinfo ENOTFOUND redis","level":"error","message":"Redis Client Error","timestamp":"2025-10-28T09:38:55.997Z"}
+{"error":"getaddrinfo ENOTFOUND redis","level":"error","message":"Redis Client Error","timestamp":"2025-10-28T09:38:57.618Z"}
+{"error":"getaddrinfo ENOTFOUND redis","level":"error","message":"Redis Client Error","timestamp":"2025-10-28T09:38:59.657Z"}

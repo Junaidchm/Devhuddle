@@ -2,7 +2,6 @@ import { User } from "@prisma/client";
 import { AdminRepository } from "../../repositories/impliments/admin.repository";
 import logger from "../../utils/logger.util";
 import { CustomError } from "../../utils/error.util";
-import redisClient from "../../utils/redis.util";
 import { setUsertoBlockBlackList } from "../../utils/redis.actions";
 import { IAdminService } from "../interface/IadminService";
 

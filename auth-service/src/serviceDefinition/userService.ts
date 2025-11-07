@@ -7,7 +7,7 @@ import * as grpc from "@grpc/grpc-js";
 import logger from "../utils/logger.util";
 import { AuthController } from "../controllers/implimentation/auth.controller";
 import { CustomError } from "../utils/error.util";
-import { UserRepository } from "../repositories/user.repository";
+import { UserRepository } from "../repositories/impliments/user.repository";
 import { AuthService } from "../services/impliments/auth.service";
 
 const userRepository: UserRepository = new UserRepository();

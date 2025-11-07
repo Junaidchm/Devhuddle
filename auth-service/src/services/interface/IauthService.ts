@@ -38,4 +38,5 @@ export interface IAuthService {
     presignedKey?: string;
     expiresAt: number;
   }>;
+  searchUsers(query: string, currentUserId: string): Promise<Partial<User>[]>;
 }

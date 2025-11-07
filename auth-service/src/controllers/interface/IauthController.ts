@@ -38,5 +38,6 @@ export interface IAuthController {
   generatePresignedUrl(req:GeneratePresignedUrlRequest): Promise<GeneratePresignedUrlResponse>;
   googleAuth(req: Request, res: Response, next: NextFunction): void;
   googleCallback(req: Request, res: Response, next: NextFunction): void;
-  getUserForFeedPost(req:getUserForFeedListingRequest):Promise<getUserForFeedListingResponse>
+  getUserForFeedPost(req:getUserForFeedListingRequest):Promise<getUserForFeedListingResponse>;
+  searchUsers(req: Request, res: Response): Promise<void>;
 }

@@ -1,5 +1,5 @@
+import redisClient from "../config/redis.config";
 import logger from "./logger.util";
-import redisClient from "./redis.util";
 
 const OTP_EXPIRY_SECONDS = 60;
 

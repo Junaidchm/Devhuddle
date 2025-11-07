@@ -1,6 +1,6 @@
 import prisma from "../../config/prisma.config";
 import logger from "../../utils/logger.util";
-import { BaseRepository } from "../base.repository";
+import { BaseRepository } from "./base.repository";
 import { Prisma, User } from "@prisma/client";
 
 export class AdminRepository extends BaseRepository<

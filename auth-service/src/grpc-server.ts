@@ -29,7 +29,7 @@ import {
 import { UserServiceService } from "./grpc/generated/user";
 
 import logger from "./utils/logger.util";
-import { UserRepository } from "./repositories/user.repository";
+import { UserRepository } from "./repositories/impliments/user.repository";
 import { AuthService } from "./services/impliments/auth.service";
 import { AuthController } from "./controllers/implimentation/auth.controller";
 import { CustomError } from "./utils/error.util";

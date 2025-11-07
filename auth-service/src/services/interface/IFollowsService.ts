@@ -5,6 +5,6 @@ export interface IFollowsService {
     userId: string,
     limit: number
   ): Promise<{ suggestedUsers: SuggestedUser[]; error?: string }>;
-  follow(followerId: string, followingId: string): Promise<void>;
+  follow(followerId: string, followingId: string): Promise<{followingCount:number}>;
   unfollow(followerId: string, followingId: string): Promise<void>;
 }

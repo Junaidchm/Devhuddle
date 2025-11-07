@@ -1,5 +1,6 @@
+import redisClient from "../config/redis.config";
 import logger from "./logger.util";
-import redisClient, { generateBlockUserRedisKey } from "./redis.util";
+import  { generateBlockUserRedisKey } from "./redis.util";
 import jwt from "jsonwebtoken";
 
 export const checkIsRevoked = async (jti: string): Promise<boolean> => {
