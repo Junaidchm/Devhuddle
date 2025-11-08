@@ -13,6 +13,12 @@ const followsService = new FollowsService(followsRepository);
 const userService = new UserService(userRepository, followsService);
 const userController = new UserController(userService);
 
+// User search route (must come before /:username route to avoid conflict)
+router.get(
+  "/search",
+  userController.searchUsers.bind(userController)
+);
+
 // Profile routes
 router.get(
   "/:username",

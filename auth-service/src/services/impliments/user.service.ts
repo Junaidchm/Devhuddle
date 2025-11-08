@@ -54,5 +54,9 @@ export class UserService implements IUserService {
   async unfollowUser(followerId: string, followingId: string): Promise<void> {
     return this.followsService.unfollow(followerId, followingId);
   }
+
+  async searchUsers(query: string, currentUserId: string): Promise<Partial<User>[]> {
+    return this.userRepository.searchUsers(query, currentUserId);
+  }
 }
 

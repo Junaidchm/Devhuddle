@@ -7,5 +7,6 @@ export interface IUserService {
   ): Promise<Partial<User> | null>;
   getFollowers(username: string, currentUserId: string): Promise<Partial<User>[]>;
   getFollowing(username: string, currentUserId: string): Promise<Partial<User>[]>;
+  searchUsers(query: string, currentUserId: string): Promise<Partial<User>[]>;
 }
 
