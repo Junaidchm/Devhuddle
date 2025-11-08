@@ -35,13 +35,21 @@ app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({ status: "Auth Service is running" });
 });
 
-app.use("/", authRoutes);
-app.use("/admin", adminRoutes);
+// API routes (API Gateway removes /api/v1 prefix before forwarding)
+// So service receives: /auth/*, /users/*, /users/follows/*, /auth/admin/*
 
-app.use("/profile",userRoutes);
+// Auth routes: receives /auth/* after gateway removes /api/v1
+app.use("/auth", authRoutes);
 
-app.use("/follows", followRoutes);
-app.use("/search", authRoutes)
+// User routes: receives /users/* after gateway removes /api/v1
+// Changed from /profile to /users to match API Gateway structure
+app.use("/users", userRoutes);
+
+// Follow routes: receives /users/follows/* after gateway removes /api/v1
+app.use("/users/follows", followRoutes);
+
+// Admin routes: receives /auth/admin/* after gateway removes /api/v1
+app.use("/auth/admin", adminRoutes);
 
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

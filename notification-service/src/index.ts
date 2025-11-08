@@ -50,9 +50,13 @@ app.get("/health", (req: Request, res: Response) => {
   });
 });
 
-// Routes
-app.use("/notifications", notificationRoutes);
-app.use("/admin/dlq", dlqRoutes);
+// API routes (API Gateway keeps /api/v1 prefix for notifications)
+// So service receives: /api/v1/notifications/*
+
+// Notification routes: receives /api/v1/notifications/* from gateway
+const API_PREFIX = '/api/v1';
+app.use(`${API_PREFIX}/notifications`, notificationRoutes);
+app.use(`${API_PREFIX}/admin/dlq`, dlqRoutes);
 
 // Error handling middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

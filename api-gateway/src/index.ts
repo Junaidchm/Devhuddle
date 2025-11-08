@@ -6,48 +6,21 @@ import { logger } from "./utils/logger";
 import { sendErrorResponse } from "./utils/error.util";
 import { ApiError } from "./types/auth";
 import cors from "cors";
-import {
-  authServiceProxy,
-  userServiveProxy,
-} from "./middleware/authserver.proxy.middleware";
+import { authServiceProxy } from "./middleware/authserver.proxy.middleware";
+import { notificationServiceProxy } from "./middleware/notification.proxy.middleware";
 import authRouter from "./routes/authservice/auth.routes";
 import feedRouter from "./routes/feedService/feed.routes";
 import generalRouter from "./routes/generalservice/general.routes";
 import { connectRedis } from "./utils/redis.util";
 import { app_config } from "./config/app.config";
-import jwtMiddleware from "./middleware/jwt.middleware";
-import { createProxyMiddleware } from "http-proxy-middleware";
+import conditionalJwtMiddleware from "./middleware/conditional-jwt.middleware";
+import { ROUTES } from "./constants/routes";
 
 dotenv.config();
 
 // create app
 const app = express();
 const server = createServer(app);
-
-// Proxy for Notification Service (with WebSocket support)
-const notificationProxy = createProxyMiddleware({
-  target: app_config.notificationServiceUrl,
-  changeOrigin: true,
-  ws: true, // Enable WebSocket proxying
-  // pathRewrite: { "^/notifications": "" }, // This rewrite is causing the 404s
-  onProxyReqWs: (proxyReq, req, socket, options, head) => {
-    let token = req.headers["authorization"];
-
-    // Fallback to checking the query parameter if the header is not present
-    if (!token && req.url) {
-      const url = new URL(req.url, `ws://${req.headers.host}`);
-      const tokenFromQuery = url.searchParams.get("token");
-      if (tokenFromQuery) {
-        // The downstream service likely expects the "Bearer " prefix
-        token = `Bearer ${tokenFromQuery}`;
-      }
-    }
-
-    if (token) {
-      proxyReq.setHeader("Authorization", token);
-    }
-  },
-});
 
 app.use(
   cors({
@@ -67,26 +40,33 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// HTTP proxy for Google OAuth routes
-app.use("/auth/google", authServiceProxy);
-// app.use("/auth/google/callback", authServiceProxy);
-app.use("/auth/admin", authServiceProxy);
-
-// http proxy for Follow route
-app.use("/users", jwtMiddleware, userServiveProxy);
-
-// WebSocket proxy for notifications
-app.use("/notifications", jwtMiddleware, notificationProxy);
-
-// grpc rpc routing
-app.use("/general", generalRouter);
+// ============================================
+// gRPC Routes (direct Express routers, not proxies)
+// ============================================
+// These routes handle login, signup, verify-otp, etc. via gRPC
+// They are NOT HTTP proxy routes - they call gRPC directly
 app.use("/auth", authRouter);
-app.use("/feed", feedRouter);
+app.use(ROUTES.GENERAL.BASE, generalRouter);
+app.use(ROUTES.FEED.BASE, feedRouter);
+
+// ============================================
+// HTTP Proxy Routes (forwarded to microservices)
+// ============================================
+
+// Unified Auth Service Proxy (handles all HTTP routes to auth service)
+// Uses conditional JWT middleware: public routes skip JWT, protected routes require JWT
+// Public routes: /api/v1/auth/google, /api/v1/auth/google/callback
+// Protected routes: /api/v1/auth/search, /api/v1/users/*, /api/v1/auth/admin/*
+app.use(ROUTES.AUTH.BASE, conditionalJwtMiddleware, authServiceProxy);
+app.use(ROUTES.USERS.BASE, conditionalJwtMiddleware, authServiceProxy);
+
+// Notification Service Routes (protected, JWT required)
+app.use(ROUTES.NOTIFICATIONS.BASE, conditionalJwtMiddleware, notificationServiceProxy);
 
 
 
 // Health check
-app.get("/health", (req: Request, res: Response) => {
+app.get(ROUTES.HEALTH, (req: Request, res: Response) => {
   res.status(HttpStatus.OK).json({ status: "API Gateway is running" });
 });
 
