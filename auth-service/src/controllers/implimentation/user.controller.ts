@@ -3,6 +3,7 @@ import { IUserService } from "../../services/interface/IUserService";
 import { CustomError, sendErrorResponse } from "../../utils/error.util";
 import { HttpStatus } from "../../constents/httpStatus";
 import logger from "../../utils/logger.util";
+import { User } from "@prisma/client";
 
 export class UserController {
   constructor(private _userService: IUserService) {}
@@ -49,6 +50,30 @@ export class UserController {
     } catch (err: any) {
       logger.error("Get following error", { error: err.message });
       sendErrorResponse(res, err);
+    }
+  }
+
+  async searchUsers(req: Request, res: Response): Promise<void> {
+    try {
+      const query = req.query.q as string;
+      const currentUserId = JSON.parse(req.headers["x-user-data"] as string).id;
+
+      if (!query || query.trim().length < 2) {
+        res.status(HttpStatus.OK).json([]);
+        return;
+      }
+
+      const users: Partial<User>[] = await this._userService.searchUsers(
+        query,
+        currentUserId
+      );
+      res.status(HttpStatus.OK).json(users);
+    } catch (err: any) {
+      logger.error("Search users error", { error: err.message });
+      sendErrorResponse(
+        res,
+        err instanceof CustomError ? err : { status: 500, message: "Server error" }
+      );
     }
   }
 }

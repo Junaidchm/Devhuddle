@@ -16,6 +16,7 @@ router
   .get("/google", authController.googleAuth.bind(authController))
   .get("/google/callback", authController.googleCallback.bind(authController))
 
-  .get("/search",authController.searchUsers.bind(authController))
+  // Note: searchUsers has been moved to user.routes.ts at /users/search
+  // Keeping this route for backward compatibility, but /users/search is the preferred route
 
 export default router;
