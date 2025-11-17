@@ -22,18 +22,18 @@ import logger from "../../utils/logger.util";
 export class PostController implements IfeedController {
   constructor(private postService: IpostService) {}
 
-  async feedPosting(req: CreatePostRequest): Promise<CreatePostResponse> {
-    try {
-      const post = await this.postService.createPost(req);
-      return {
-        message: "Post created",
-        postId: post.postId,
-      };
-    } catch (err: any) {
-      logger.error("CreatePost error", { error: err.message });
-      throw new CustomError(grpc.status.INTERNAL, err.message);
-    }
-  }
+  // async feedPosting(req: CreatePostRequest): Promise<CreatePostResponse> {
+  //   try {
+  //     const post = await this.postService.createPost(req);
+  //     return {
+  //       message: "Post created",
+  //       postId: post.postId,
+  //     };
+  //   } catch (err: any) {
+  //     logger.error("CreatePost error", { error: err.message });
+  //     throw new CustomError(grpc.status.INTERNAL, err.message);
+  //   }
+  // }
 
   async submitPostController(
     req: SubmitPostRequest
