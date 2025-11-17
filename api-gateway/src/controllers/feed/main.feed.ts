@@ -21,38 +21,38 @@ import { logger } from "../../utils/logger";
 import { grpcToHttp } from "../../constants/http.status";
 import { filterError, sendErrorResponse } from "../../utils/error.util";
 
-export const submitPost = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const request: CreatePostRequest = { ...req.body, userId: req.user?.id };
-    const response: CreatePostResponse = await grpcs<
-      PostServiceClient,
-      CreatePostRequest,
-      CreatePostResponse
-    >(postClient, "createPost", request);
+// export const submitPost = async (
+//   req: Request,
+//   res: Response
+// ): Promise<void> => {
+//   try {
+//     const request: CreatePostRequest = { ...req.body, userId: req.user?.id };
+//     const response: CreatePostResponse = await grpcs<
+//       PostServiceClient,
+//       CreatePostRequest,
+//       CreatePostResponse
+//     >(postClient, "createPost", request);
 
-    console.log(
-      "this is the response response is comming ..................,:",
-      response
-    );
+//     console.log(
+//       "this is the response response is comming ..................,:",
+//       response
+//     );
 
-    res
-      .status(HttpStatus.OK)
-      .json({ success: true, message: response.message });
-  } catch (err: any) {
-    logger.error("Error in post creation", {
-      error: err.message,
-      stack: err.stack,
-    });
-    const statusCode = grpcToHttp[err.code] || HttpStatus.INTERNAL_SERVER_ERROR;
-    sendErrorResponse(res, {
-      status: statusCode,
-      message: filterError(err) || "Server error",
-    });
-  }
-};
+//     res
+//       .status(HttpStatus.OK)
+//       .json({ success: true, message: response.message });
+//   } catch (err: any) {
+//     logger.error("Error in post creation", {
+//       error: err.message,
+//       stack: err.stack,
+//     });
+//     const statusCode = grpcToHttp[err.code] || HttpStatus.INTERNAL_SERVER_ERROR;
+//     sendErrorResponse(res, {
+//       status: statusCode,
+//       message: filterError(err) || "Server error",
+//     });
+//   }
+// };
 
 export const createPost = async (
   req: Request,
