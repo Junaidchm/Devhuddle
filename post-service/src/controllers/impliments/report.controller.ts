@@ -4,6 +4,7 @@ import { CustomError } from "../../utils/error.util";
 import logger from "../../utils/logger.util";
 import { ReportReason } from "@prisma/client";
 import { IReportController } from "../interfaces/IReportController";
+import { HttpStatus } from "../../constands/http.status";
 
 export class ReportController implements IReportController {
   constructor(private reportService: IReportService) {}
@@ -15,20 +16,20 @@ export class ReportController implements IReportController {
       const reporterId = (req as any).user?.userId || (req as any).user?.id;
 
       if (!reporterId) {
-        throw new CustomError(401, "Unauthorized");
+        throw new CustomError(HttpStatus.UNAUTHORIZED, "Unauthorized");
       }
 
       if (!postId) {
-        throw new CustomError(400, "Post ID is required");
+        throw new CustomError(HttpStatus.BAD_REQUEST, "Post ID is required");
       }
 
       if (!reason || !Object.values(ReportReason).includes(reason)) {
-        throw new CustomError(400, "Valid report reason is required");
+        throw new CustomError(HttpStatus.BAD_REQUEST, "Valid report reason is required");
       }
 
       const report = await this.reportService.reportPost(postId, reporterId, reason, metadata);
 
-      res.status(201).json({
+      res.status(HttpStatus.CREATED).json({
         success: true,
         message: "Post reported successfully",
         data: report,
@@ -45,20 +46,20 @@ export class ReportController implements IReportController {
       const reporterId = (req as any).user?.userId || (req as any).user?.id;
 
       if (!reporterId) {
-        throw new CustomError(401, "Unauthorized");
+        throw new CustomError(HttpStatus.UNAUTHORIZED, "Unauthorized");
       }
 
       if (!commentId) {
-        throw new CustomError(400, "Comment ID is required");
+        throw new CustomError(HttpStatus.BAD_REQUEST, "Comment ID is required");
       }
 
       if (!reason || !Object.values(ReportReason).includes(reason)) {
-        throw new CustomError(400, "Valid report reason is required");
+        throw new CustomError(HttpStatus.BAD_REQUEST, "Valid report reason is required");
       }
 
       const report = await this.reportService.reportComment(commentId, reporterId, reason, metadata);
 
-      res.status(201).json({
+      res.status(HttpStatus.CREATED).json({
         success: true,
         message: "Comment reported successfully",
         data: report,
@@ -73,12 +74,12 @@ export class ReportController implements IReportController {
       const { targetType, targetId } = req.query;
 
       if (!targetType || !targetId) {
-        throw new CustomError(400, "Target type and target ID are required");
+        throw new CustomError(HttpStatus.BAD_REQUEST, "Target type and target ID are required");
       }
 
       const count = await this.reportService.getReportCount(targetType as string, targetId as string);
 
-      res.status(200).json({
+      res.status(HttpStatus.OK).json({
         success: true,
         count,
       });
@@ -93,11 +94,11 @@ export class ReportController implements IReportController {
       const reporterId = (req as any).user?.userId || (req as any).user?.id;
 
       if (!reporterId) {
-        throw new CustomError(401, "Unauthorized");
+        throw new CustomError(HttpStatus.UNAUTHORIZED, "Unauthorized");
       }
 
       if (!targetType || !targetId) {
-        throw new CustomError(400, "Target type and target ID are required");
+        throw new CustomError(HttpStatus.BAD_REQUEST, "Target type and target ID are required");
       }
 
       const hasReported = await this.reportService.hasReported(
@@ -106,7 +107,7 @@ export class ReportController implements IReportController {
         reporterId
       );
 
-      res.status(200).json({
+      res.status(HttpStatus.OK).json({
         success: true,
         hasReported,
       });

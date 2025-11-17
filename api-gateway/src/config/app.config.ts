@@ -13,6 +13,7 @@ export interface Iconfig {
   frontend_production_url : string;
   notificationServiceUrl:string;
   FRONTEND_PRODUCTION_URL2 : string;
+  postServiceUrl: string;
 }
 
 export const app_config: Iconfig = {
@@ -26,5 +27,6 @@ export const app_config: Iconfig = {
   communicationServiceUrl : process.env.COMMUNICATION_SERVICE_URL as string,
   subscription_service : process.env.SUBSCRIPTION_SERVICE_URL as string,
   frontend_production_url : process.env.FRONTEND_PRODUCTION_URL as string,
-  FRONTEND_PRODUCTION_URL2 : process.env.FRONTEND_PRODUCTION_URL2 as string
+  FRONTEND_PRODUCTION_URL2 : process.env.FRONTEND_PRODUCTION_URL2 as string,
+  postServiceUrl: process.env.POST_SERVICE_URL as string,
 };

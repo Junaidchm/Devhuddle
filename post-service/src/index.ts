@@ -36,7 +36,6 @@
 
 // startServer();
 
-
 import compression from "compression";
 import dotenv from "dotenv";
 import express, { Express, NextFunction, Request, Response } from "express";
@@ -46,6 +45,7 @@ import logger from "./utils/logger.util";
 import { CustomError, sendErrorResponse } from "./utils/error.util";
 import { app, startServer } from "./utils/server.start.util";
 import path from "path";
+import { OutboxProcessor } from "./services/impliments/outbox.processor";
 
 // Import repositories
 import { LikeRepository } from "./repositories/impliments/like.repository";
@@ -56,7 +56,6 @@ import { PostRepository } from "./repositories/impliments/post.repository";
 import { MentionRepository } from "./repositories/impliments/mention.repository";
 import { OutboxRepository } from "./repositories/impliments/outbox.repository";
 import { IdempotencyRepository } from "./repositories/impliments/idempotency.repository";
-
 
 // Import services
 import { LikeService } from "./services/impliments/like.service";
@@ -75,7 +74,6 @@ import { MentionController } from "./controllers/impliments/mention.controller";
 
 // Import routes
 import { setupEngagementRoutes } from "./routes/engagement.routes";
-import { OutboxProcessor } from "./services/impliments/outbox.processor";
 
 dotenv.config();
 
@@ -97,6 +95,7 @@ const idempotencyRepository = new IdempotencyRepository();
 
 // Initialize services
 const outboxService = new OutboxService(outboxRepository);
+const outboxProcessor = new OutboxProcessor(outboxRepository);
 const mentionService = new MentionService(mentionRepository, outboxService);
 const likeService = new LikeService(
   likeRepository,
@@ -127,8 +126,10 @@ const likeController = new LikeController(likeService);
 const commentController = new CommentController(commentService);
 const shareController = new ShareController(shareService);
 const reportController = new ReportController(reportService);
-const mentionController = new MentionController(mentionRepository, mentionService);
-const outboxProcessor = new OutboxProcessor(outboxRepository);
+const mentionController = new MentionController(
+  mentionRepository,
+  mentionService
+);
 // Setup routes
 const engagementRouter = setupEngagementRoutes(
   likeController,
@@ -154,4 +155,11 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   );
 });
 
-startServer();
+const startOutboxProcessor = () => {
+  outboxProcessor.start();
+  logger.info("Outbox processor started");
+};
+
+startServer().then(() => {
+  startOutboxProcessor();
+});

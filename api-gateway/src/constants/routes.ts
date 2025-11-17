@@ -9,6 +9,14 @@
 export const API_VERSION = '/api/v1';
 
 export const ROUTES = {
+  // Engagement Service Routes
+  ENGAGEMENT: {
+    BASE: `${API_VERSION}/engagement`,
+    LIKE_POST: (postId: string) => `${API_VERSION}/engagement/posts/${postId}/likes`,
+    UNLIKE_POST: (postId: string) => `${API_VERSION}/engagement/posts/${postId}/likes`,
+    LIKE_COMMENT: (commentId: string) => `${API_VERSION}/engagement/comments/${commentId}/likes`,
+    UNLIKE_COMMENT: (commentId: string) => `${API_VERSION}/engagement/comments/${commentId}/likes`,
+  },
   // Auth Service Routes
   AUTH: {
     BASE: `${API_VERSION}/auth`,
@@ -84,15 +92,15 @@ export const ROUTES = {
 
 // Type helper for route values
 // Extracts all string values from nested route objects
-type ExtractRouteValues<T> = T extends string
-  ? T
-  : T extends (...args: any[]) => string
-  ? T
-  : T extends object
-  ? {
-      [K in keyof T]: ExtractRouteValues<T[K]>;
-    }[keyof T]
-  : never;
+// type ExtractRouteValues<T> = T extends string
+//   ? T
+//   : T extends (...args: any[]) => string
+//   ? T
+//   : T extends object
+//   ? {
+//       [K in keyof T]: ExtractRouteValues<T[K]>;
+//     }[keyof T]
+//   : never;
 
-export type RouteValue = ExtractRouteValues<typeof ROUTES[keyof typeof ROUTES]>;
+// export type RouteValue = ExtractRouteValues<typeof ROUTES[keyof typeof ROUTES]>;
 

@@ -15,6 +15,7 @@ import { connectRedis } from "./utils/redis.util";
 import { app_config } from "./config/app.config";
 import conditionalJwtMiddleware from "./middleware/conditional-jwt.middleware";
 import { ROUTES } from "./constants/routes";
+import { engagementServiceProxy } from "./middleware/engagement.proxy.middleware";
 
 dotenv.config();
 
@@ -63,6 +64,8 @@ app.use(ROUTES.USERS.BASE, conditionalJwtMiddleware, authServiceProxy);
 // Notification Service Routes (protected, JWT required)
 app.use(ROUTES.NOTIFICATIONS.BASE, conditionalJwtMiddleware, notificationServiceProxy);
 
+// Engagement Service Routes (protected, JWT required)
+app.use(ROUTES.ENGAGEMENT.BASE, conditionalJwtMiddleware, engagementServiceProxy);
 
 
 // Health check

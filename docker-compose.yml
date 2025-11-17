@@ -131,41 +131,6 @@ services:
       start_period: 15s
     restart: unless-stopped
   
-  # auth-db:
-  #   image: postgres:alpine
-  #   container_name: auth-db
-  #   environment:
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=postgres
-  #     - POSTGRES_DB=devhuddle_auth
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #   volumes:
-  #     - auth_data:/var/lib/postgresql/data
-  #   networks:
-  #     - shared
-
-  # post-db:
-  #   # image: postgres:alpine
-  #   image: postgres:13-alpine
-  #   container_name: post-db
-  #   environment:
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=postgres
-  #     - POSTGRES_DB=devhuddle_posts
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #   volumes:
-  #     - post_data:/var/lib/postgresql/data
-  #   networks:
-  #     - shared
-
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
     container_name: zookeeper
