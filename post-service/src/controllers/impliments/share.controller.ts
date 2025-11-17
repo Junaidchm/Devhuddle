@@ -24,7 +24,7 @@ export class ShareController implements IShareController {
         throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.USER_NOT_FOUND);
       }
 
-      if (postId) {
+      if (!postId) {
         throw new CustomError(
           HttpStatus.BAD_REQUEST,
           Messages.POST_ID_REQUIRED
@@ -59,9 +59,9 @@ export class ShareController implements IShareController {
         targetType as TargetType
       );
 
-      res.status(HttpStatus.OK).json({
+      res.status(HttpStatus.CREATED).json({
         success: true,
-        message: Messages.SHARE_TYPE_MUST_BE_RESHARE_QUOTE,
+        message: "Post shared successfully",
         data: share,
       });
     } catch (error: any) {
@@ -108,7 +108,7 @@ export class ShareController implements IShareController {
         throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.USER_NOT_FOUND);
       }
 
-      if (postId) {
+      if (!postId) {
         throw new CustomError(
           HttpStatus.BAD_REQUEST,
           Messages.POST_ID_REQUIRED

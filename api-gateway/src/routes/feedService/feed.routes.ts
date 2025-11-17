@@ -23,5 +23,7 @@ router
     .delete('/delete',jwtMiddleware,deletePost)
     .delete('/medias',deleteUnuseMedias)
 
+   
+
 export default router; 
     
