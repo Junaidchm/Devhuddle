@@ -24,6 +24,146 @@ export class NotificationsRepository
   }
 
   /**
+   * Create or update like notification with aggregation
+   */
+  async createLikeNotification(
+    issuerId: string,
+    recipientId: string,
+    entityId: string,
+    entityType: "POST" | "COMMENT",
+    version: number
+  ): Promise<void> {
+    try {
+      let notificationObject = null;
+
+      const existingObject = await prisma.notificationObject.findFirst({
+        where: {
+          type: "LIKE",
+          entityType: entityType === "POST" ? "POST" : "COMMENT",
+          entityId: entityId,
+        },
+        include: { actors: true, recipients: true },
+      });
+
+      // Version check: only process if version is >= current version
+      if (existingObject && existingObject.version > version) {
+        logger.info(
+          `Skipping outdated like event: incoming version ${version} < current version ${existingObject.version}`
+        );
+        return;
+      }
+
+      if (existingObject) {
+        const existingActors = existingObject.actors.map((a) => a.actorId);
+
+        // Only add if actor not already in the list
+        if (!existingActors.includes(issuerId)) {
+          const updatedCount = existingObject.actors.length + 1;
+
+          notificationObject = await prisma.notificationObject.update({
+            where: { id: existingObject.id },
+            data: {
+              aggregatedCount: updatedCount,
+              summary: {
+                json: {
+                  actors: [...existingActors, issuerId],
+                  count: updatedCount,
+                  text: this._generateSummaryText(
+                    [...existingActors, issuerId],
+                    updatedCount,
+                    entityType === "POST"
+                      ? "liked your post"
+                      : "liked your comment"
+                  ),
+                },
+              },
+              version,
+            },
+          });
+
+          await prisma.notificationActor.create({
+            data: {
+              notificationObjectId: existingObject.id,
+              actorId: issuerId,
+            },
+          });
+
+          await prisma.notificationRecipient.upsert({
+            where: {
+              recipientId_notificationObjectId: {
+                recipientId,
+                notificationObjectId: existingObject.id,
+              },
+            },
+            create: {
+              notificationObjectId: existingObject.id,
+              recipientId,
+            },
+            update: {
+              deletedAt: null,
+              read: false,
+              readAt: null,
+            },
+          });
+        }
+      } else {
+        // Create new notification object
+        notificationObject = await prisma.notificationObject.create({
+          data: {
+            type: "LIKE",
+            entityType: entityType === "POST" ? "POST" : "COMMENT",
+            entityId: entityId,
+            aggregatedCount: 1,
+            summary: {
+              json: {
+                actors: [issuerId],
+                count: 1,
+                text: `${issuerId} ${
+                  entityType === "POST"
+                    ? "liked your post"
+                    : "liked your comment"
+                }`,
+              },
+            },
+            version,
+          },
+        });
+
+        await prisma.notificationActor.create({
+          data: {
+            notificationObjectId: notificationObject.id,
+            actorId: issuerId,
+          },
+        });
+
+        await prisma.notificationRecipient.create({
+          data: {
+            notificationObjectId: notificationObject.id,
+            recipientId,
+          },
+        });
+      }
+
+      // Broadcast the notification
+      this.wsService?.broadcastNotification(recipientId, notificationObject);
+      await this._updateAndBroadcastUnreadCount(recipientId);
+
+      logger.info(
+        `Like notification processed for recipient ${recipientId}, entity ${entityId}`
+      );
+    } catch (error: any) {
+      logger.error("Error creating like notification", {
+        error: (error as Error).message,
+        issuerId,
+        recipientId,
+        entityId,
+        entityType,
+      });
+      throw new Error("Database error");
+    }
+  }
+
+  /**
    * Create or update follow notification with aggregation
    */
   async createFollowNotification(
@@ -448,15 +588,15 @@ export class NotificationsRepository
     recipientId: string
   ): Promise<void> {
     try {
-      const notification = await prisma.notificationRecipient.findMany({
-        where: {
-          recipientId,
-          read: false,
-          deletedAt: null,
-        },
-      });
+      // const notification = await prisma.notificationRecipient.findMany({
+      //   where: {
+      //     recipientId,
+      //     read: false,
+      //     deletedAt: null,
+      //   },
+      // });
 
-      console.log("this is the notification for the user ", notification);
+      // console.log("this is the notification for the user ", notification);
       const count = await prisma.notificationRecipient.count({
         where: {
           recipientId,

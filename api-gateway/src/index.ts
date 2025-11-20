@@ -62,11 +62,14 @@ app.use(ROUTES.AUTH.BASE, conditionalJwtMiddleware, authServiceProxy);
 app.use(ROUTES.USERS.BASE, conditionalJwtMiddleware, authServiceProxy);
 
 // Notification Service Routes (protected, JWT required)
-app.use(ROUTES.NOTIFICATIONS.BASE, conditionalJwtMiddleware, notificationServiceProxy);
+app.use(ROUTES.NOTIFICATIONS.BASE, notificationServiceProxy);
 
 // Engagement Service Routes (protected, JWT required)
-app.use(ROUTES.ENGAGEMENT.BASE, conditionalJwtMiddleware, engagementServiceProxy);
-
+app.use(
+  ROUTES.ENGAGEMENT.BASE,
+  conditionalJwtMiddleware,
+  engagementServiceProxy
+);
 
 // Health check
 app.get(ROUTES.HEALTH, (req: Request, res: Response) => {
@@ -78,6 +81,12 @@ app.get("/favicon.ico", (req: Request, res: Response) => {
   res.status(204).end();
 });
 
+// WebSocket upgrade handler (explicit handling for better logging)
+server.on("upgrade", (req, socket, head) => {
+  logger.info(`WebSocket upgrade request: ${req.url}`);
+  // http-proxy-middleware will handle this via the proxy middleware (notificationServiceProxy)
+});
+
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   const error: ApiError = {
@@ -86,6 +95,25 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   };
   sendErrorResponse(res, error);
 });
+
+// ⭐ Graceful shutdown handler
+const gracefulShutdown = (signal: string) => {
+  logger.info(`${signal} received. Starting graceful shutdown...`);
+
+  server.close(() => {
+    logger.info("HTTP server closed");
+    process.exit(0);
+  });
+
+  // Force close after 10 seconds
+  setTimeout(() => {
+    logger.error("Forced shutdown after timeout");
+    process.exit(1);
+  }, 10000);
+};
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 const startServer = async () => {
   try {

@@ -9,86 +9,313 @@ interface AuthenticatedWebSocket extends WebSocket {
   isAlive?: boolean;
 }
 
+// Configuration constants
+const MAX_CONNECTIONS_PER_USER = 5;
+const HEARTBEAT_INTERVAL = 30000;
+const WEBSOCKET_PATH = '/api/v1/notifications';
+const AUTH_TIMEOUT = 5000; // 5 seconds
+
 export class WebSocketService {
   private wss: Server;
   private connections: Map<string, Set<AuthenticatedWebSocket>> = new Map();
+  private pendingConnections: Map<AuthenticatedWebSocket, NodeJS.Timeout> = new Map(); 
 
   constructor(server: HttpServer) {
     this.wss = new Server({
-      server
+      server,
+      path: WEBSOCKET_PATH,
+      verifyClient: (info: any) => {
+        //  No token check here - we'll authenticate after connection
+        return true;
+      }
     });
 
     this.setupWebSocket();
     this.startHeartbeat();
+    this.setupGracefulShutdown();
   }
+
+  // private setupWebSocket(): void {
+  //   this.wss.on("connection", async (ws: AuthenticatedWebSocket, req: any) => {
+  //     let userId: string;
+  //     try {
+  //       const authHeader: string | undefined = req.headers.authorization;
+  //       if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  //         throw new Error("No authorization token provided");
+  //       }
+  //       const token = authHeader.split(" ")[1];
+  //       const decoded = jwt.verify(
+  //         token,
+  //         process.env.ACCESS_TOKEN_SECRET as string
+  //       ) as { id: string };
+  //       userId = decoded.id;
+  //     } catch (error: any) {
+  //       logger.warn("WebSocket connection rejected: Invalid token", { error: error.message });
+  //       ws.close(4001, "Unauthorized");
+  //       return;
+  //     }
+
+  //     logger.info(`WebSocket connection established for user ${userId}`);
+
+  //     // Add to connections map
+  //     if (!this.connections.has(userId)) {
+  //       this.connections.set(userId, new Set());
+  //     }
+  //     this.connections.get(userId)!.add(ws);
+
+  //     ws.userId = userId;
+  //     ws.isAlive = true;
+
+  //     logger.info(
+  //       `WebSocket connected for user ${userId}. Total connections: ${this.connections.size}`
+  //     );
+
+  //     // Send initial unread count
+  //     const cacheKey = `notifications:unread:${userId}`;
+  //     const unreadCount = await redisClient.get(cacheKey);
+
+  //     console.log('this is the user unread count socket conection  ----------------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^->' , unreadCount)
+  //     ws.send(
+  //       JSON.stringify({
+  //         type: "unread_count",
+  //         data: { unreadCount: parseInt(unreadCount || "0", 10) },
+  //       })
+  //     );
+
+  //     // Handle ping/pong for keep-alive
+  //     ws.on("pong", () => {
+  //       ws.isAlive = true;
+  //     });
+
+  //     ws.on("close", () => {
+  //       if (userId && this.connections.has(userId)) {
+  //         this.connections.get(userId)!.delete(ws);
+  //         if (this.connections.get(userId)!.size === 0) {
+  //           this.connections.delete(userId);
+  //         }
+  //       }
+  //       logger.info(
+  //         `WebSocket disconnected for user ${userId}. Remaining connections: ${this.connections.size}`
+  //       );
+  //     });
+
+  //     ws.on("error", (error) => {
+  //       logger.error(`WebSocket error for user ${userId}`, {
+  //         error: error.message,
+  //       });
+  //     });
+  //   });
+  // }
 
   private setupWebSocket(): void {
     this.wss.on("connection", async (ws: AuthenticatedWebSocket, req: any) => {
-      let userId: string;
-      try {
-        const authHeader: string | undefined = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-          throw new Error("No authorization token provided");
-        }
-        const token = authHeader.split(" ")[1];
-        const decoded = jwt.verify(
-          token,
-          process.env.ACCESS_TOKEN_SECRET as string
-        ) as { id: string };
-        userId = decoded.id;
-      } catch (error: any) {
-        logger.warn("WebSocket connection rejected: Invalid token", { error: error.message });
-        ws.close(4001, "Unauthorized");
+      //  Path filtering
+      if (req.url && !req.url.startsWith(WEBSOCKET_PATH)) {
+        logger.warn(`WebSocket connection rejected: Invalid path ${req.url}`);
+        ws.close(4004, "Invalid path");
         return;
       }
 
-      logger.info(`WebSocket connection established for user ${userId}`);
+      logger.info("New WebSocket connection (awaiting authentication)");
 
-      // Add to connections map
-      if (!this.connections.has(userId)) {
-        this.connections.set(userId, new Set());
-      }
-      this.connections.get(userId)!.add(ws);
+      // Mark as unauthenticated initially
+      ws.isAlive = false; // Don't ping until authenticated
+      
+      // Set timeout for authentication - close if not authenticated in 5 seconds
+      const authTimeout = setTimeout(() => {
+        if (!ws.userId) {
+          logger.warn("WebSocket connection closed: Authentication timeout");
+          ws.close(4002, "Authentication timeout");
+          this.pendingConnections.delete(ws);
+        }
+      }, AUTH_TIMEOUT);
 
-      ws.userId = userId;
-      ws.isAlive = true;
+      this.pendingConnections.set(ws, authTimeout);
 
-      logger.info(
-        `WebSocket connected for user ${userId}. Total connections: ${this.connections.size}`
-      );
+      // Handle first message as authentication
+      const handleAuth = async (data: Buffer) => {
+        try {
+          const message = JSON.parse(data.toString());
 
-      // Send initial unread count
-      const cacheKey = `notifications:unread:${userId}`;
-      const unreadCount = await redisClient.get(cacheKey);
+          // Only accept auth messages when unauthenticated
+          if (message.type !== "auth" || !message.token) {
+            logger.warn("First message must be auth message");
+            ws.send(JSON.stringify({
+              type: "auth_error",
+              error: "First message must be authentication"
+            }));
+            ws.close(4001, "Authentication required");
+            this.pendingConnections.delete(ws);
+            clearTimeout(authTimeout);
+            return;
+          }
 
-      console.log('this is the user unread count socket conection  ----------------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^->' , unreadCount)
-      ws.send(
-        JSON.stringify({
-          type: "unread_count",
-          data: { unreadCount: parseInt(unreadCount || "0", 10) },
-        })
-      );
+          // Validate JWT token
+          let userId: string;
+          try {
+            if (!message.token || typeof message.token !== 'string') {
+              throw new Error("Invalid token format");
+            }
 
-      // Handle ping/pong for keep-alive
+            const decoded = jwt.verify(
+              message.token,
+              process.env.ACCESS_TOKEN_SECRET as string
+            ) as { id: string };
+
+            if (!decoded || !decoded.id) {
+              throw new Error("Invalid token payload");
+            }
+
+            userId = decoded.id;
+          } catch (error: any) {
+            logger.warn("WebSocket authentication failed", { 
+              error: error.message 
+            });
+            
+            ws.send(JSON.stringify({
+              type: "auth_error",
+              error: "Invalid token"
+            }));
+            ws.close(4001, "Unauthorized");
+            this.pendingConnections.delete(ws);
+            clearTimeout(authTimeout);
+            return;
+          }
+
+          // Check connection limit
+          const userConnections = this.connections.get(userId);
+          if (userConnections && userConnections.size >= MAX_CONNECTIONS_PER_USER) {
+            logger.warn(`Connection limit reached for user ${userId}`, {
+              currentConnections: userConnections.size,
+              maxConnections: MAX_CONNECTIONS_PER_USER
+            });
+            
+            ws.send(JSON.stringify({
+              type: "auth_error",
+              error: "Too many connections"
+            }));
+            ws.close(4003, "Too many connections");
+            this.pendingConnections.delete(ws);
+            clearTimeout(authTimeout);
+            return;
+          }
+
+          // Authentication successful
+          ws.userId = userId;
+          ws.isAlive = true;
+          
+          // Clear auth timeout
+          clearTimeout(authTimeout);
+          this.pendingConnections.delete(ws);
+
+          // Add to connections map
+          if (!this.connections.has(userId)) {
+            this.connections.set(userId, new Set());
+          }
+          this.connections.get(userId)!.add(ws);
+
+          logger.info(`WebSocket authenticated for user ${userId}`, {
+            userId,
+            totalConnections: this.connections.size,
+            userConnections: this.connections.get(userId)!.size
+          });
+
+          // Send auth success message
+          ws.send(JSON.stringify({
+            type: "auth_success"
+          }));
+
+          // Send initial unread count
+          try {
+            const cacheKey = `notifications:unread:${userId}`;
+            const unreadCount = await redisClient.get(cacheKey);
+            const count = parseInt(unreadCount || "0", 10);
+
+            logger.info(`Sending initial unread count to user ${userId}`, { unreadCount: count });
+
+            ws.send(
+              JSON.stringify({
+                type: "unread_count",
+                data: { unreadCount: count },
+              })
+            );
+          } catch (error: any) {
+            logger.error(`Failed to send initial unread count to user ${userId}`, {
+              error: error.message
+            });
+          }
+
+          // Remove auth handler and add normal message handler
+          ws.off('message', handleAuth);
+          
+          ws.on('message', (data) => {
+            try {
+              const message = JSON.parse(data.toString());
+              logger.debug(`Received message from user ${userId}`, { message });
+              // Handle other client messages if needed
+            } catch (error: any) {
+              logger.warn(`Failed to parse message from user ${userId}`, {
+                error: error.message
+              });
+            }
+          });
+
+        } catch (error: any) {
+          logger.error("Failed to process auth message", {
+            error: error.message,
+            stack: error.stack
+          });
+          
+          ws.send(JSON.stringify({
+            type: "auth_error",
+            error: "Invalid message format"
+          }));
+          ws.close(4000, "Invalid message");
+          this.pendingConnections.delete(ws);
+          clearTimeout(authTimeout);
+        }
+      };
+
+      // Listen for first message as auth
+      ws.once('message', handleAuth);
+
+      // Handle ping/pong for keep-alive (only after authenticated)
       ws.on("pong", () => {
-        ws.isAlive = true;
+        if (ws.userId) { // Only update if authenticated
+          ws.isAlive = true;
+        }
       });
 
       ws.on("close", () => {
-        if (userId && this.connections.has(userId)) {
-          this.connections.get(userId)!.delete(ws);
-          if (this.connections.get(userId)!.size === 0) {
-            this.connections.delete(userId);
+        // Clear auth timeout if still pending
+        const authTimeout = this.pendingConnections.get(ws);
+        if (authTimeout) {
+          clearTimeout(authTimeout);
+          this.pendingConnections.delete(ws);
+        }
+
+        if (ws.userId && this.connections.has(ws.userId)) {
+          const userConnections = this.connections.get(ws.userId);
+          if (userConnections) {
+            userConnections.delete(ws);
+            if (userConnections.size === 0) {
+              this.connections.delete(ws.userId);
+            }
           }
         }
-        logger.info(
-          `WebSocket disconnected for user ${userId}. Remaining connections: ${this.connections.size}`
-        );
+        
+        logger.info(`WebSocket disconnected`, {
+          userId: ws.userId || "unauthenticated",
+          remainingConnections: this.connections.size,
+          userConnections: ws.userId ? this.connections.get(ws.userId)?.size || 0 : 0
+        });
       });
 
       ws.on("error", (error) => {
-        logger.error(`WebSocket error for user ${userId}`, {
+        logger.error(`WebSocket error`, {
           error: error.message,
+          userId: ws.userId || "unauthenticated",
+          stack: error.stack
         });
       });
     });
@@ -113,6 +340,28 @@ export class WebSocketService {
       clearInterval(interval);
     });
   }
+  
+  /**
+   * Setup graceful shutdown
+   */
+  private setupGracefulShutdown(): void {
+    const shutdown = () => {
+      logger.info("Shutting down WebSocket server gracefully");
+      
+      this.wss.clients.forEach((ws: AuthenticatedWebSocket) => {
+        ws.close(1001, "Server shutting down");
+      });
+
+      this.wss.close(() => {
+        logger.info("WebSocket server closed");
+        process.exit(0);
+      });
+    };
+
+    process.on("SIGTERM", shutdown);
+    process.on("SIGINT", shutdown);
+  }
+
 
   /**
    * Broadcast notification to a specific user

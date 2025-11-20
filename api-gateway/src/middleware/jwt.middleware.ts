@@ -24,7 +24,7 @@ export default async function jwtMiddleware(
 ) {
   try {
     const authHeader = req.headers["authorization"];
-    // console.log('this is the auth header ...................----------------------------->' , authHeader)
+    
     const token = authHeader?.startsWith("Bearer ")
       ? authHeader.split(" ")[1]
       : null;
