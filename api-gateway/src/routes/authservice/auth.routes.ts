@@ -3,7 +3,7 @@ import { Router, json, urlencoded } from "express";
 import cookieParser from "cookie-parser";
 import compression from "compression";
 import jwtMiddleware from "../../middleware/jwt.middleware";
-import refreshTokenMiddleware from "../../middleware/refreshToken";
+
 import {
   signup,
   verifyOtp,
@@ -18,6 +18,7 @@ import {
   refreshToken,
   generatePresignedUrl,
 } from "../../controllers/auth.controller";
+import refreshTokenMiddleware from "../../middleware/refreshToken";
 
 const router = Router();
 router.use(compression());

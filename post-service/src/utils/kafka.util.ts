@@ -1,9 +1,78 @@
-import { Kafka, Producer } from "kafkajs";
+import { Kafka, Producer,Admin } from "kafkajs";
 import { KAFKA_CONFIG, KAFKA_TOPICS } from "../config/kafka.config";
 import logger from "./logger.util";
 import { v4 as uuidv4 } from "uuid";
 
 let producer: Producer | null = null;
+let admin: Admin | null = null;
+
+
+
+/**
+ * Initialize Kafka topics (create if they don't exist)
+ * This should be called once when the service starts
+ */
+export async function initializeKafkaTopics(): Promise<void> {
+  try {
+    if (!admin) {
+      const kafka = new Kafka(KAFKA_CONFIG);
+      admin = kafka.admin();
+      await admin.connect();
+      logger.info("Kafka admin connected");
+    }
+
+    // Get all topic names from KAFKA_TOPICS
+    const topics = Object.values(KAFKA_TOPICS).map((topicName) => ({
+      topic: topicName,
+      numPartitions: 3, // Match KAFKA_NUM_PARTITIONS in docker-compose
+      replicationFactor: 1, // Match KAFKA_DEFAULT_REPLICATION_FACTOR
+      configEntries: [
+        {
+          name: "retention.ms",
+          value: "604800000", // 7 days
+        },
+        {
+          name: "compression.type",
+          value: "snappy",
+        },
+      ],
+    }));
+
+    // Check which topics already exist
+    const existingTopics = await admin.listTopics();
+    const topicsToCreate = topics.filter(
+      (topic) => !existingTopics.includes(topic.topic)
+    );
+
+    if (topicsToCreate.length > 0) {
+      logger.info(`Creating ${topicsToCreate.length} Kafka topics...`, {
+        topics: topicsToCreate.map((t) => t.topic),
+      });
+
+      await admin.createTopics({
+        topics: topicsToCreate,
+        waitForLeaders: true,
+        timeout: 30000,
+      });
+
+      logger.info("Kafka topics created successfully", {
+        topics: topicsToCreate.map((t) => t.topic),
+      });
+    } else {
+      logger.info("All Kafka topics already exist");
+    }
+  } catch (error: any) {
+    // If topics already exist, that's okay - just log and continue
+    if (error.message?.includes("already exists") || error.code === 36) {
+      logger.info("Kafka topics already exist, continuing...");
+    } else {
+      logger.error("Failed to initialize Kafka topics", {
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+}
 
 export async function getProducer(): Promise<Producer> {
   if (!producer) {
@@ -143,6 +212,17 @@ async function publishToDLQ(
       originalTopic,
       dlqError: dlqError.message,
     });
+  }
+}
+
+/**
+ * Disconnect admin client (for graceful shutdown)
+ */
+export async function disconnectAdmin(): Promise<void> {
+  if (admin) {
+    await admin.disconnect();
+    admin = null;
+    logger.info("Kafka admin disconnected");
   }
 }
 
