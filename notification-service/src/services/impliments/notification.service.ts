@@ -1,3 +1,4 @@
+import { INotificationRepository } from "../../repository/interface/INotificationRepository";
 import logger from "../../utils/logger.util";
 import { INotificationService } from "../interfaces/INotificationService";
 

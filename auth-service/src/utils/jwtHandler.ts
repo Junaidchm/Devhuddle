@@ -1,5 +1,4 @@
 import { Response } from "express";
-import { User } from "../generated/prisma";
 import { generateAccessToken, GenerateRefreshToken } from "./jwt.util";
 import { jwtPayload, jwtUserFilter } from "../types/auth";
 import { generateUuid4 } from "./uuid.util";

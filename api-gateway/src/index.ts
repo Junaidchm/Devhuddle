@@ -16,6 +16,7 @@ import { app_config } from "./config/app.config";
 import conditionalJwtMiddleware from "./middleware/conditional-jwt.middleware";
 import { ROUTES } from "./constants/routes";
 import { engagementServiceProxy } from "./middleware/engagement.proxy.middleware";
+import jwtMiddleware from "middleware/jwt.middleware";
 
 dotenv.config();
 
@@ -28,7 +29,7 @@ app.use(
     origin: [app_config.frontend_URL!],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key"],
   })
 );
 
@@ -62,7 +63,7 @@ app.use(ROUTES.AUTH.BASE, conditionalJwtMiddleware, authServiceProxy);
 app.use(ROUTES.USERS.BASE, conditionalJwtMiddleware, authServiceProxy);
 
 // Notification Service Routes (protected, JWT required)
-app.use(ROUTES.NOTIFICATIONS.BASE, notificationServiceProxy);
+app.use(ROUTES.NOTIFICATIONS.BASE,conditionalJwtMiddleware, notificationServiceProxy);
 
 // Engagement Service Routes (protected, JWT required)
 app.use(

@@ -5,7 +5,7 @@ import { ICommentRepository } from "../../repositories/interface/ICommentReposit
 import { IOutboxService } from "../interfaces/IOutboxService";
 import { CustomError } from "../../utils/error.util";
 import logger from "../../utils/logger.util";
-import * as grpc from "@grpc/grpc-js";
+import { HttpStatus } from "../../constands/http.status";
 import { RedisCacheService } from "../../utils/redis.util";
 import { KAFKA_TOPICS } from "../../config/kafka.config";
 import {
@@ -60,6 +60,17 @@ export class LikeService implements ILikeService {
 
   // ========== PRIVATE HELPERS (Shared Logic - DRY) ==========
 
+  /**
+   * Get event version for ordering and conflict resolution
+   * Uses timestamp as version for simplicity
+   * In production, you might want to use a sequence number from database
+   */
+  private _getEventVersion(): number {
+    // Use timestamp as version for event ordering
+    // This ensures events are ordered correctly even if Kafka delivers them out of order
+    return Date.now();
+  }
+
   private async likeInternal(
     targetType: ReactionTargetType,
     targetId: string,
@@ -69,7 +80,7 @@ export class LikeService implements ILikeService {
       // Validate target exists
       const targetDetails = await this._getTargetDetails(targetType, targetId);
       if (!targetDetails) {
-        throw new CustomError(grpc.status.NOT_FOUND, "Target not found");
+        throw new CustomError(HttpStatus.NOT_FOUND, "Target not found");
       }
 
       // Check if already liked
@@ -80,7 +91,7 @@ export class LikeService implements ILikeService {
       );
       if (existingLike) {
         throw new CustomError(
-          grpc.status.ALREADY_EXISTS,
+          HttpStatus.CONFLICT,
           `${targetType} already liked`
         );
       }
@@ -102,10 +113,14 @@ export class LikeService implements ILikeService {
         });
       } else {
         throw new CustomError(
-          grpc.status.INVALID_ARGUMENT,
+          HttpStatus.BAD_REQUEST,
           `Invalid target type: ${targetType}`
         );
       }
+
+      // Get event version and timestamp for ordering
+      const version = this._getEventVersion();
+      const eventTimestamp = new Date().toISOString();
 
       // Update counter and prepare event
       let eventType: OutboxEventType;
@@ -121,6 +136,9 @@ export class LikeService implements ILikeService {
           postId: targetId,
           userId,
           postAuthorId: targetDetails.authorId,
+          eventTimestamp,
+          version,
+          action: "LIKE",
         };
       } else if (targetType === ReactionTargetType.COMMENT) {
         await this.commentRepository.incrementLikesCount(targetId);
@@ -132,10 +150,13 @@ export class LikeService implements ILikeService {
           userId,
           commentAuthorId: targetDetails.authorId,
           postId: targetDetails.postId,
+          eventTimestamp,
+          version,
+          action: "LIKE",
         };
       } else {
         throw new CustomError(
-          grpc.status.INVALID_ARGUMENT,
+          HttpStatus.BAD_REQUEST,
           `Invalid target type: ${targetType}`
         );
       }
@@ -159,7 +180,10 @@ export class LikeService implements ILikeService {
       });
       throw err instanceof CustomError
         ? err
-        : new CustomError(grpc.status.INTERNAL, `Failed to like ${targetType}`);
+        : new CustomError(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            `Failed to like ${targetType}`
+          );
     }
   }
 
@@ -196,7 +220,7 @@ export class LikeService implements ILikeService {
         userId
       );
       if (!existingLike) {
-        throw new CustomError(grpc.status.NOT_FOUND, "Like not found");
+        throw new CustomError(HttpStatus.NOT_FOUND, "Like not found");
       }
 
       // Delete like
@@ -205,8 +229,12 @@ export class LikeService implements ILikeService {
       // Get target details for event (before deleting)
       const targetDetails = await this._getTargetDetails(targetType, targetId);
       if (!targetDetails) {
-        throw new CustomError(grpc.status.NOT_FOUND, "Target not found");
+        throw new CustomError(HttpStatus.NOT_FOUND, "Target not found");
       }
+
+      // Get event version and timestamp for ordering
+      const version = this._getEventVersion();
+      const eventTimestamp = new Date().toISOString();
 
       // Update counter and prepare event
       let eventType: OutboxEventType;
@@ -222,6 +250,9 @@ export class LikeService implements ILikeService {
           postId: targetId,
           userId,
           postAuthorId: targetDetails.authorId,
+          eventTimestamp, // ✅ Add timestamp
+          version, // ✅ Add version
+          action: "UNLIKE", // ✅ Add action type
         };
       } else if (targetType === ReactionTargetType.COMMENT) {
         await this.commentRepository.decrementLikesCount(targetId);
@@ -233,10 +264,13 @@ export class LikeService implements ILikeService {
           userId,
           commentAuthorId: targetDetails.authorId,
           postId: targetDetails.postId,
+          eventTimestamp, // ✅ Add timestamp
+          version, // ✅ Add version
+          action: "UNLIKE", // ✅ Add action type
         };
       } else {
         throw new CustomError(
-          grpc.status.INVALID_ARGUMENT,
+          HttpStatus.BAD_REQUEST,
           `Invalid target type: ${targetType}`
         );
       }
@@ -261,7 +295,7 @@ export class LikeService implements ILikeService {
       throw err instanceof CustomError
         ? err
         : new CustomError(
-            grpc.status.INTERNAL,
+            HttpStatus.INTERNAL_SERVER_ERROR,
             `Failed to unlike ${targetType}`
           );
     }
@@ -328,7 +362,7 @@ export class LikeService implements ILikeService {
         targetId,
       });
       throw new CustomError(
-        grpc.status.INTERNAL,
+        HttpStatus.INTERNAL_SERVER_ERROR,
         `Failed to get ${targetType} like count`
       );
     }
