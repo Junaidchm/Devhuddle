@@ -5,7 +5,7 @@ import logger from "./logger.util";
 import { v4 as uuidv4 } from "uuid";
 
 let producer: Producer | null = null;
-let consumer: Consumer | null = null;
+let consumers: Map<string, Consumer> = new Map();
 
 export async function getProducer(): Promise<Producer> {
   if (!producer) {
@@ -32,9 +32,10 @@ export async function getProducer(): Promise<Producer> {
 }
 
 export async function getConsumer(groupId: string): Promise<Consumer> {
-  if (!consumer) {
+  //  Check if consumer for this group already exists
+  if (!consumers.has(groupId)) {
     const kafka = new Kafka(KAFKA_CONFIG);
-    consumer = kafka.consumer({
+    const consumer = kafka.consumer({
       groupId,
       sessionTimeout: 30000,
       heartbeatInterval: 3000,
@@ -42,8 +43,13 @@ export async function getConsumer(groupId: string): Promise<Consumer> {
     });
     await consumer.connect();
     logger.info(`Kafka consumer connected with group: ${groupId}`);
+
+    // Store consumer in map by group ID
+    consumers.set(groupId, consumer);
   }
-  return consumer;
+
+  // Return the consumer for this specific group ID
+  return consumers.get(groupId)!;
 }
 
 /**

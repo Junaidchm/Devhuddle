@@ -5,6 +5,7 @@ import { BaseRepository } from "./base.repository";
 import { NotificationObject, Prisma } from "@prisma/client";
 import redisClient from "../../config/redis.config";
 import { WebSocketService } from "../../utils/websocket.util";
+import { INotificationRepository } from "../interface/INotificationRepository";
 
 export class NotificationsRepository
   extends BaseRepository<
@@ -24,7 +25,7 @@ export class NotificationsRepository
   }
 
   /**
-   * Create or update like notification with aggregation
+   * Create like notification with aggregation (following same pattern as createFollowNotification)
    */
   async createLikeNotification(
     issuerId: string,
@@ -40,44 +41,43 @@ export class NotificationsRepository
         where: {
           type: "LIKE",
           entityType: entityType === "POST" ? "POST" : "COMMENT",
-          entityId: entityId,
+          entityId,
         },
         include: { actors: true, recipients: true },
       });
 
-      // Version check: only process if version is >= current version
-      if (existingObject && existingObject.version > version) {
-        logger.info(
-          `Skipping outdated like event: incoming version ${version} < current version ${existingObject.version}`
-        );
+      // Version check: ignore out-of-order events
+      if (existingObject && version <= existingObject.version) {
+        logger.info(`Ignoring out-of-order like event`, {
+          entityId,
+          eventVersion: version,
+          currentVersion: existingObject.version,
+        });
         return;
       }
 
       if (existingObject) {
+        const updatedCount = existingObject.actors.length + 1;
         const existingActors = existingObject.actors.map((a) => a.actorId);
 
-        // Only add if actor not already in the list
+        // Only add if actor doesn't exist
         if (!existingActors.includes(issuerId)) {
-          const updatedCount = existingObject.actors.length + 1;
-
           notificationObject = await prisma.notificationObject.update({
             where: { id: existingObject.id },
             data: {
               aggregatedCount: updatedCount,
+              version,
               summary: {
                 json: {
-                  actors: [...existingActors, issuerId],
+                  actors: [...existingActors, issuerId].slice(0, 3), // Keep top 3 for summary
                   count: updatedCount,
                   text: this._generateSummaryText(
                     [...existingActors, issuerId],
                     updatedCount,
-                    entityType === "POST"
-                      ? "liked your post"
-                      : "liked your comment"
+                    "liked"
                   ),
                 },
               },
-              version,
             },
           });
 
@@ -112,20 +112,16 @@ export class NotificationsRepository
           data: {
             type: "LIKE",
             entityType: entityType === "POST" ? "POST" : "COMMENT",
-            entityId: entityId,
+            entityId,
             aggregatedCount: 1,
+            version,
             summary: {
               json: {
                 actors: [issuerId],
                 count: 1,
-                text: `${issuerId} ${
-                  entityType === "POST"
-                    ? "liked your post"
-                    : "liked your comment"
-                }`,
+                text: this._generateSummaryText([issuerId], 1, "liked"),
               },
             },
-            version,
           },
         });
 
@@ -146,18 +142,149 @@ export class NotificationsRepository
 
       // Broadcast the notification
       this.wsService?.broadcastNotification(recipientId, notificationObject);
+      // Update unread count cache
       await this._updateAndBroadcastUnreadCount(recipientId);
 
-      logger.info(
-        `Like notification processed for recipient ${recipientId}, entity ${entityId}`
-      );
+      logger.info(`Like notification created for ${recipientId}`);
     } catch (error: any) {
       logger.error("Error creating like notification", {
-        error: (error as Error).message,
+        error: error.message,
         issuerId,
         recipientId,
         entityId,
-        entityType,
+      });
+      throw new Error("Database error");
+    }
+  }
+
+  async getLikeNotification(
+    recipientId: string,
+    entityId: string,
+    entityType: "POST" | "COMMENT"
+  ): Promise<NotificationObject | null> {
+    try {
+      const notification = await prisma.notificationRecipient.findFirst({
+        where: {
+          recipientId,
+          deletedAt: null,
+          notificationObject: {
+            type: "LIKE",
+            entityType: entityType === "POST" ? "POST" : "COMMENT",
+            entityId,
+          },
+        },
+        include: {
+          notificationObject: {
+            include: {
+              actors: true,
+            },
+          },
+        },
+      });
+
+      return notification?.notificationObject || null;
+    } catch (error: any) {
+      logger.error("Error getting like notification", {
+        error: error.message,
+        recipientId,
+        entityId,
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Delete like notification with aggregation (following same pattern as deleteFollowNotification)
+   */
+  async deleteLikeNotification(
+    issuerId: string,
+    recipientId: string,
+    entityId: string,
+    entityType: "POST" | "COMMENT",
+    version: number
+  ): Promise<void> {
+    try {
+      const existing = await prisma.notificationObject.findFirst({
+        where: {
+          type: "LIKE",
+          entityType: entityType === "POST" ? "POST" : "COMMENT",
+          entityId,
+        },
+        include: { actors: true },
+      });
+
+      if (!existing) return;
+
+      // Version check: ignore out-of-order events
+      if (version <= existing.version) {
+        logger.info(`Ignoring out-of-order unlike event`, {
+          entityId,
+          eventVersion: version,
+          currentVersion: existing.version,
+        });
+        return;
+      }
+
+      // Remove the actor
+      await prisma.notificationActor.deleteMany({
+        where: {
+          notificationObjectId: existing.id,
+          actorId: issuerId,
+        },
+      });
+
+      const remainingActorsCount = await prisma.notificationActor.count({
+        where: {
+          notificationObjectId: existing.id,
+        },
+      });
+
+      if (remainingActorsCount === 0) {
+        // Soft delete the entire notification
+        await prisma.notificationRecipient.updateMany({
+          where: {
+            recipientId,
+            notificationObjectId: existing.id,
+          },
+          data: {
+            deletedAt: new Date(),
+          },
+        });
+      } else {
+        // Update aggregation
+        const remainingActors = await prisma.notificationActor.findMany({
+          where: {
+            notificationObjectId: existing.id,
+          },
+          select: { actorId: true },
+        });
+
+        await super.update(existing.id, {
+          aggregatedCount: remainingActorsCount,
+          version,
+          summary: {
+            json: {
+              actors: remainingActors.map((a) => a.actorId).slice(0, 3), // Keep top 3
+              count: remainingActorsCount,
+              text: this._generateSummaryText(
+                remainingActors.map((a) => a.actorId),
+                remainingActorsCount,
+                "liked"
+              ),
+            },
+          },
+        });
+
+        await this._updateAndBroadcastUnreadCount(recipientId);
+      }
+
+      logger.info(`Like notification deleted for recipient ${recipientId}`);
+    } catch (error: any) {
+      logger.error("Error deleting like notification", {
+        error: error.message,
+        issuerId,
+        recipientId,
+        entityId,
       });
       throw new Error("Database error");
     }
@@ -588,14 +715,6 @@ export class NotificationsRepository
     recipientId: string
   ): Promise<void> {
     try {
-      // const notification = await prisma.notificationRecipient.findMany({
-      //   where: {
-      //     recipientId,
-      //     read: false,
-      //     deletedAt: null,
-      //   },
-      // });
-
       // console.log("this is the notification for the user ", notification);
       const count = await prisma.notificationRecipient.count({
         where: {
@@ -635,4 +754,6 @@ export class NotificationsRepository
       return `${actors[0]} and ${count - 1} others ${action} you`;
     }
   }
+
+ 
 }

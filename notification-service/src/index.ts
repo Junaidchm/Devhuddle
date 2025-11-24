@@ -8,6 +8,7 @@ import notificationRoutes from "./routes/notification.routes";
 import dlqRoutes from "./routes/dlq.routes";
 import { WebSocketService } from "./utils/websocket.util";
 import { startDLQConsumer } from "./consumers/dlq.consumers";
+import { startEngagementConsumer } from "./consumers/engagement.consumer";
 
 const app: Express = express();
 const server = createServer(app);
@@ -79,9 +80,7 @@ const startServer = async () => {
 
     // Start Kafka consumers and pass WebSocket service instance
     await startFollowConsumer(wsService);
-    // await startLikeConsumer(wsService);
-    // await startCommentConsumer(wsService);
-    // await startDLQConsumer(); // DLQ might not need wsService
+    await startEngagementConsumer(wsService);
     logger.info("All Kafka consumers started");
 
     // Start HTTP server
