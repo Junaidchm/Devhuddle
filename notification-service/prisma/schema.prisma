@@ -40,7 +40,7 @@ model NotificationObject {
   aggregatedCount Int              @default(1)
   summary         Json?
   metadata        Json?
-  version         Int              @default(0)
+  version         BigInt           @default(0)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @default(now())
 

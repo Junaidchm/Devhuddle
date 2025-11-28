@@ -10,7 +10,17 @@ message getUserForFeedListingResponse {
     string username = 3;
 }
 
+message CheckFollowRequest {
+  string followerId = 1;
+  string followingId = 2;
+}
+
+message CheckFollowResponse {
+  bool isFollowing = 1;
+}
+
 service UserService {
   // User-related methods
   rpc getUserForFeedListing (getUserForFeedListingRequest) returns (getUserForFeedListingResponse);
+  rpc CheckFollow (CheckFollowRequest) returns (CheckFollowResponse);
 }

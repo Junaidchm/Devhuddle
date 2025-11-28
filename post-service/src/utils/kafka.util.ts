@@ -31,10 +31,8 @@ export async function initializeKafkaTopics(): Promise<void> {
           name: "retention.ms",
           value: "604800000", // 7 days
         },
-        {
-          name: "compression.type",
-          value: "snappy",
-        },
+        // Removed compression.type: "snappy" - KafkaJS doesn't support Snappy by default
+        // If compression is needed, use producer-level compression with gzip instead
       ],
     }));
 
@@ -91,6 +89,8 @@ export async function getProducer(): Promise<Producer> {
       },
       allowAutoTopicCreation: false,
       idempotent: true, // Ensure exactly-once semantics
+      // Compression is disabled - KafkaJS doesn't support Snappy by default
+      // If compression is needed, install 'snappy' package and enable it here
     });
     await producer.connect();
     logger.info("Kafka producer connected");
@@ -113,12 +113,16 @@ export async function publishEvent(
 
   try {
     const kafkaProducer = await getProducer();
+    // Ensure version is a number (if present in event)
+    // schemaVersion is separate metadata about the event schema version
     const eventWithMetadata = {
       ...event,
+      // Preserve version as number if it exists (for event ordering/conflict resolution)
+      ...(event.version !== undefined && { version: typeof event.version === 'number' ? event.version : Number(event.version) }),
       dedupeId: dedupeId || uuidv4(),
       timestamp: new Date().toISOString(),
       source: "post-service",
-      version: "1.0",
+      schemaVersion: "1.0", // Schema version (metadata), separate from event version
       retryCount,
     };
 

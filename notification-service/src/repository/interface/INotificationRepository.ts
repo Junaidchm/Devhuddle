@@ -26,23 +26,44 @@ export interface INotificationRepository {
     version: number 
   ): Promise<void>;
 
+  deleteLikeNotification(
+    issuerId: string,
+    recipientId: string,
+    entityId: string,
+    entityType: "POST" | "COMMENT",
+    version: number
+  ): Promise<void>;
+
   getLikeNotification(
     recipientId: string,
     entityId: string,
     entityType: "POST" | "COMMENT"
   ): Promise<NotificationObject | null>;
 
-  // deleteLikeNotification(issuerId: string, recipientId: string, entityId: string, entityType: "POST" | "COMMENT"): Promise<void>;
+  // Comment notifications (aggregated)
+  createCommentNotification(
+    issuerId: string,
+    recipientId: string,
+    postId: string,
+    commentId: string,
+    notificationType: "POST" | "COMMENT",
+    version: number
+  ): Promise<void>;
 
-  // // Comment notifications (aggregated)
-  // createCommentNotification(issuerId: string, recipientId: string, postId: string, version: number): Promise<void>;
-  // deleteCommentNotification(issuerId: string, recipientId: string, postId: string): Promise<void>;
+  deleteCommentNotification(
+    commentId: string,
+    version: number
+  ): Promise<void>;
 
-  // // Share notifications (aggregated)
-  // createShareNotification(issuerId: string, recipientId: string, postId: string, version: number): Promise<void>;
-
-  // // Mention notifications (aggregated)
-  // createMentionNotification(issuerId: string, recipientId: string, postId?: string, commentId?: string, version?: number): Promise<void>;
+  // Mention notifications
+  createMentionNotification(
+    issuerId: string,
+    recipientId: string,
+    postId: string,
+    commentId: string,
+    entityType: "POST" | "COMMENT",
+    version: number
+  ): Promise<void>;
 
   // // Report notifications (typically not aggregated, but keeping for consistency)
   // createReportNotification(issuerId: string, recipientId: string, postId: string): Promise<void>;

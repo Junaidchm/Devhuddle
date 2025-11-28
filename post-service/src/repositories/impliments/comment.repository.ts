@@ -68,8 +68,11 @@ export class CommentRepository
 
   async findComment(commentId: string): Promise<Comment | null> {
     try {
-      return await prisma.comment.findUnique({
-        where: { id: commentId },
+      return await prisma.comment.findFirst({
+        where: { 
+          id: commentId,
+          deletedAt: null, // Exclude soft-deleted comments
+        },
         include: {
           commentMentions: true,
         },
@@ -80,43 +83,7 @@ export class CommentRepository
     }
   }
 
-  // async getCommentsByPost(
-  //   postId: string,
-  //   options?: CommentSelectOptions
-  // ): Promise<Comment[]> {
-  //   try {
-  //     const defaultOptions: CommentSelectOptions = {
-  //       where: {
-  //         postId,
-  //         parentCommentId: null, // Top-level comments only
-  //         deletedAt: null,
-  //       },
-  //       orderBy: {
-  //         createdAt: "desc",
-  //       },
-  //       take: options?.take || 20,
-  //       include: {
-  //         commentMentions: true,
-  //         Replies: {
-  //           where: {
-  //             deletedAt: null,
-  //           },
-  //           take: 5,
-  //           orderBy: {
-  //             createdAt: "asc",
-  //           },
-  //         },
-  //       },
-  //     };
 
-  //     const mergedOptions = { ...defaultOptions, ...options };
-
-  //     return await prisma.comment.findMany(mergedOptions);
-  //   } catch (error: any) {
-  //     logger.error("Error getting comments by post", { error: error.message });
-  //     throw new Error("Failed to get comments by post");
-  //   }
-  // }
   async getCommentsByPost(
     postId: string,
     limit: number,
@@ -136,10 +103,16 @@ export class CommentRepository
         include.Replies = {
           where: {
             deletedAt: null,
+            // LinkedIn-style: Only get direct replies to this main comment
+            // No nested replies - all replies are flat under main comment
           },
-          take: 5,
+          take: 10, // Can show more replies
           orderBy: {
             createdAt: "asc",
+          },
+          include: {
+            commentMentions: includeMentions,
+            // NO nested Replies include - replies don't have replies in LinkedIn-style
           },
         };
       }
@@ -185,6 +158,20 @@ export class CommentRepository
     } catch (error: any) {
       logger.error("Error getting replies", { error: error.message });
       throw new Error("Failed to get replies");
+    }
+  }
+
+  async getReplyCount(commentId: string): Promise<number> {
+    try {
+      return await prisma.comment.count({
+        where: {
+          parentCommentId: commentId,
+          deletedAt: null,
+        },
+      });
+    } catch (error: any) {
+      logger.error("Error getting reply count", { error: error.message, commentId });
+      throw new Error("Failed to get reply count");
     }
   }
 

@@ -58,6 +58,10 @@ export class LikeController {
         throw new CustomError(HttpStatus.BAD_REQUEST, Messages.COMMENT_ID_REQUIRED);
       }
 
+      if (!userId) {
+        throw new CustomError(HttpStatus.UNAUTHORIZED, "User not authenticated");
+      }
+
       await this._likeService.likeComment(commentId, userId);
 
       res.status(HttpStatus.CREATED).json({
@@ -65,6 +69,12 @@ export class LikeController {
         message: Messages.COMMENT_LIKED_SUCCESS,
       });
     } catch (error: any) {
+      logger.error("Error in likeComment controller", {
+        error: error.message,
+        commentId: req.params.commentId,
+        userId: getUserIdFromRequest(req),
+        stack: error.stack,
+      });
       next(error);
     }
   }

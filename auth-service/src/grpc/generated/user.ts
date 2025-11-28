@@ -31,6 +31,15 @@ export interface getUserForFeedListingResponse {
   username: string;
 }
 
+export interface CheckFollowRequest {
+  followerId: string;
+  followingId: string;
+}
+
+export interface CheckFollowResponse {
+  isFollowing: boolean;
+}
+
 function createBasegetUserForFeedListingRequest(): getUserForFeedListingRequest {
   return { userId: "" };
 }
@@ -183,6 +192,140 @@ export const getUserForFeedListingResponse: MessageFns<getUserForFeedListingResp
   },
 };
 
+function createBaseCheckFollowRequest(): CheckFollowRequest {
+  return { followerId: "", followingId: "" };
+}
+
+export const CheckFollowRequest: MessageFns<CheckFollowRequest> = {
+  encode(message: CheckFollowRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.followerId !== "") {
+      writer.uint32(10).string(message.followerId);
+    }
+    if (message.followingId !== "") {
+      writer.uint32(18).string(message.followingId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CheckFollowRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckFollowRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.followerId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.followingId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckFollowRequest {
+    return {
+      followerId: isSet(object.followerId) ? globalThis.String(object.followerId) : "",
+      followingId: isSet(object.followingId) ? globalThis.String(object.followingId) : "",
+    };
+  },
+
+  toJSON(message: CheckFollowRequest): unknown {
+    const obj: any = {};
+    if (message.followerId !== "") {
+      obj.followerId = message.followerId;
+    }
+    if (message.followingId !== "") {
+      obj.followingId = message.followingId;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CheckFollowRequest>, I>>(base?: I): CheckFollowRequest {
+    return CheckFollowRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CheckFollowRequest>, I>>(object: I): CheckFollowRequest {
+    const message = createBaseCheckFollowRequest();
+    message.followerId = object.followerId ?? "";
+    message.followingId = object.followingId ?? "";
+    return message;
+  },
+};
+
+function createBaseCheckFollowResponse(): CheckFollowResponse {
+  return { isFollowing: false };
+}
+
+export const CheckFollowResponse: MessageFns<CheckFollowResponse> = {
+  encode(message: CheckFollowResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.isFollowing !== false) {
+      writer.uint32(8).bool(message.isFollowing);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CheckFollowResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckFollowResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.isFollowing = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckFollowResponse {
+    return { isFollowing: isSet(object.isFollowing) ? globalThis.Boolean(object.isFollowing) : false };
+  },
+
+  toJSON(message: CheckFollowResponse): unknown {
+    const obj: any = {};
+    if (message.isFollowing !== false) {
+      obj.isFollowing = message.isFollowing;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CheckFollowResponse>, I>>(base?: I): CheckFollowResponse {
+    return CheckFollowResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CheckFollowResponse>, I>>(object: I): CheckFollowResponse {
+    const message = createBaseCheckFollowResponse();
+    message.isFollowing = object.isFollowing ?? false;
+    return message;
+  },
+};
+
 export type UserServiceService = typeof UserServiceService;
 export const UserServiceService = {
   /** User-related methods */
@@ -197,11 +340,21 @@ export const UserServiceService = {
       Buffer.from(getUserForFeedListingResponse.encode(value).finish()),
     responseDeserialize: (value: Buffer): getUserForFeedListingResponse => getUserForFeedListingResponse.decode(value),
   },
+  checkFollow: {
+    path: "/UserService/CheckFollow",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: CheckFollowRequest): Buffer => Buffer.from(CheckFollowRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CheckFollowRequest => CheckFollowRequest.decode(value),
+    responseSerialize: (value: CheckFollowResponse): Buffer => Buffer.from(CheckFollowResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer): CheckFollowResponse => CheckFollowResponse.decode(value),
+  },
 } as const;
 
 export interface UserServiceServer extends UntypedServiceImplementation {
   /** User-related methods */
   getUserForFeedListing: handleUnaryCall<getUserForFeedListingRequest, getUserForFeedListingResponse>;
+  checkFollow: handleUnaryCall<CheckFollowRequest, CheckFollowResponse>;
 }
 
 export interface UserServiceClient extends Client {
@@ -220,6 +373,21 @@ export interface UserServiceClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: getUserForFeedListingResponse) => void,
+  ): ClientUnaryCall;
+  checkFollow(
+    request: CheckFollowRequest,
+    callback: (error: ServiceError | null, response: CheckFollowResponse) => void,
+  ): ClientUnaryCall;
+  checkFollow(
+    request: CheckFollowRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: CheckFollowResponse) => void,
+  ): ClientUnaryCall;
+  checkFollow(
+    request: CheckFollowRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: CheckFollowResponse) => void,
   ): ClientUnaryCall;
 }
 

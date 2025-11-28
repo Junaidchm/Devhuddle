@@ -156,6 +156,15 @@ export interface Post {
   createdAt: string;
   user: FeedUserProfileDetiles | undefined;
   attachments: Attachments[];
+  engagement: PostEngagement | undefined;
+}
+
+export interface PostEngagement {
+  likesCount: number;
+  commentsCount: number;
+  sharesCount: number;
+  isLiked: boolean;
+  isShared: boolean;
 }
 
 export interface CreatePostRequest {
@@ -175,6 +184,7 @@ export interface CreatePostResponse {
 
 export interface ListPostsRequest {
   pageParam?: string | undefined;
+  userId?: string | undefined;
 }
 
 export interface ListPostsResponse {
@@ -1521,7 +1531,7 @@ export const ListPosts: MessageFns<ListPosts> = {
 };
 
 function createBasePost(): Post {
-  return { id: "", content: "", userId: "", createdAt: "", user: undefined, attachments: [] };
+  return { id: "", content: "", userId: "", createdAt: "", user: undefined, attachments: [], engagement: undefined };
 }
 
 export const Post: MessageFns<Post> = {
@@ -1543,6 +1553,9 @@ export const Post: MessageFns<Post> = {
     }
     for (const v of message.attachments) {
       Attachments.encode(v!, writer.uint32(50).fork()).join();
+    }
+    if (message.engagement !== undefined) {
+      PostEngagement.encode(message.engagement, writer.uint32(58).fork()).join();
     }
     return writer;
   },
@@ -1602,6 +1615,14 @@ export const Post: MessageFns<Post> = {
           message.attachments.push(Attachments.decode(reader, reader.uint32()));
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.engagement = PostEngagement.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1621,6 +1642,7 @@ export const Post: MessageFns<Post> = {
       attachments: globalThis.Array.isArray(object?.attachments)
         ? object.attachments.map((e: any) => Attachments.fromJSON(e))
         : [],
+      engagement: isSet(object.engagement) ? PostEngagement.fromJSON(object.engagement) : undefined,
     };
   },
 
@@ -1644,6 +1666,9 @@ export const Post: MessageFns<Post> = {
     if (message.attachments?.length) {
       obj.attachments = message.attachments.map((e) => Attachments.toJSON(e));
     }
+    if (message.engagement !== undefined) {
+      obj.engagement = PostEngagement.toJSON(message.engagement);
+    }
     return obj;
   },
 
@@ -1660,6 +1685,133 @@ export const Post: MessageFns<Post> = {
       ? FeedUserProfileDetiles.fromPartial(object.user)
       : undefined;
     message.attachments = object.attachments?.map((e) => Attachments.fromPartial(e)) || [];
+    message.engagement = (object.engagement !== undefined && object.engagement !== null)
+      ? PostEngagement.fromPartial(object.engagement)
+      : undefined;
+    return message;
+  },
+};
+
+function createBasePostEngagement(): PostEngagement {
+  return { likesCount: 0, commentsCount: 0, sharesCount: 0, isLiked: false, isShared: false };
+}
+
+export const PostEngagement: MessageFns<PostEngagement> = {
+  encode(message: PostEngagement, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.likesCount !== 0) {
+      writer.uint32(8).int32(message.likesCount);
+    }
+    if (message.commentsCount !== 0) {
+      writer.uint32(16).int32(message.commentsCount);
+    }
+    if (message.sharesCount !== 0) {
+      writer.uint32(24).int32(message.sharesCount);
+    }
+    if (message.isLiked !== false) {
+      writer.uint32(32).bool(message.isLiked);
+    }
+    if (message.isShared !== false) {
+      writer.uint32(40).bool(message.isShared);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PostEngagement {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePostEngagement();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.likesCount = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.commentsCount = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.sharesCount = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.isLiked = reader.bool();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.isShared = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PostEngagement {
+    return {
+      likesCount: isSet(object.likesCount) ? globalThis.Number(object.likesCount) : 0,
+      commentsCount: isSet(object.commentsCount) ? globalThis.Number(object.commentsCount) : 0,
+      sharesCount: isSet(object.sharesCount) ? globalThis.Number(object.sharesCount) : 0,
+      isLiked: isSet(object.isLiked) ? globalThis.Boolean(object.isLiked) : false,
+      isShared: isSet(object.isShared) ? globalThis.Boolean(object.isShared) : false,
+    };
+  },
+
+  toJSON(message: PostEngagement): unknown {
+    const obj: any = {};
+    if (message.likesCount !== 0) {
+      obj.likesCount = Math.round(message.likesCount);
+    }
+    if (message.commentsCount !== 0) {
+      obj.commentsCount = Math.round(message.commentsCount);
+    }
+    if (message.sharesCount !== 0) {
+      obj.sharesCount = Math.round(message.sharesCount);
+    }
+    if (message.isLiked !== false) {
+      obj.isLiked = message.isLiked;
+    }
+    if (message.isShared !== false) {
+      obj.isShared = message.isShared;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PostEngagement>, I>>(base?: I): PostEngagement {
+    return PostEngagement.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<PostEngagement>, I>>(object: I): PostEngagement {
+    const message = createBasePostEngagement();
+    message.likesCount = object.likesCount ?? 0;
+    message.commentsCount = object.commentsCount ?? 0;
+    message.sharesCount = object.sharesCount ?? 0;
+    message.isLiked = object.isLiked ?? false;
+    message.isShared = object.isShared ?? false;
     return message;
   },
 };
@@ -1897,13 +2049,16 @@ export const CreatePostResponse: MessageFns<CreatePostResponse> = {
 };
 
 function createBaseListPostsRequest(): ListPostsRequest {
-  return { pageParam: undefined };
+  return { pageParam: undefined, userId: undefined };
 }
 
 export const ListPostsRequest: MessageFns<ListPostsRequest> = {
   encode(message: ListPostsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.pageParam !== undefined) {
       writer.uint32(10).string(message.pageParam);
+    }
+    if (message.userId !== undefined) {
+      writer.uint32(18).string(message.userId);
     }
     return writer;
   },
@@ -1923,6 +2078,14 @@ export const ListPostsRequest: MessageFns<ListPostsRequest> = {
           message.pageParam = reader.string();
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1933,13 +2096,19 @@ export const ListPostsRequest: MessageFns<ListPostsRequest> = {
   },
 
   fromJSON(object: any): ListPostsRequest {
-    return { pageParam: isSet(object.pageParam) ? globalThis.String(object.pageParam) : undefined };
+    return {
+      pageParam: isSet(object.pageParam) ? globalThis.String(object.pageParam) : undefined,
+      userId: isSet(object.userId) ? globalThis.String(object.userId) : undefined,
+    };
   },
 
   toJSON(message: ListPostsRequest): unknown {
     const obj: any = {};
     if (message.pageParam !== undefined) {
       obj.pageParam = message.pageParam;
+    }
+    if (message.userId !== undefined) {
+      obj.userId = message.userId;
     }
     return obj;
   },
@@ -1950,6 +2119,7 @@ export const ListPostsRequest: MessageFns<ListPostsRequest> = {
   fromPartial<I extends Exact<DeepPartial<ListPostsRequest>, I>>(object: I): ListPostsRequest {
     const message = createBaseListPostsRequest();
     message.pageParam = object.pageParam ?? undefined;
+    message.userId = object.userId ?? undefined;
     return message;
   },
 };
