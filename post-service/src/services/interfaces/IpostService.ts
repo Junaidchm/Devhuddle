@@ -12,7 +12,7 @@ import {
 
 export interface IpostService {
   // createPost(req: CreatePostRequest): Promise<{ postId: string }>;
-  getPosts(pageParam?: string): Promise<ListPostsResponse>;
+  getPosts(pageParam?: string, userId?: string): Promise<ListPostsResponse>;
   submitPost(req: SubmitPostRequest): Promise<SubmitPostResponse>;
   deletePostServ(postId: string): Promise<DeletePostResponse>;
 }

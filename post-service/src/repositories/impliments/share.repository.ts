@@ -68,4 +68,51 @@ export class ShareRepository
       throw new Error("Failed to get share count");
     }
   }
+
+  async hasShared(postId: string, userId: string): Promise<boolean> {
+    try {
+      const share = await this.findShare(postId, userId);
+      return !!share;
+    } catch (error: any) {
+      logger.error("Error checking if user shared post", { error: error.message });
+      return false;
+    }
+  }
+
+  async getUserSharesForPosts(
+    userId: string,
+    postIds: string[]
+  ): Promise<Record<string, boolean>> {
+    try {
+      if (!userId || postIds.length === 0) {
+        return {};
+      }
+
+      const shares = await prisma.share.findMany({
+        where: {
+          userId,
+          postId: {
+            in: postIds,
+          },
+        },
+        select: {
+          postId: true,
+        },
+      });
+
+      return shares.reduce<Record<string, boolean>>((acc, share) => {
+        if (share.postId) {
+          acc[share.postId] = true;
+        }
+        return acc;
+      }, {});
+    } catch (error: any) {
+      logger.error("Error getting user shares for posts", {
+        error: error.message,
+        userId,
+        postIdsCount: postIds.length,
+      });
+      throw new Error("Database error");
+    }
+  }
 }

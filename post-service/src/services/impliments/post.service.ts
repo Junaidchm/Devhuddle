@@ -18,10 +18,17 @@ import { CustomError } from "../../utils/error.util";
 // import { PostMapper } from "../../mapper/post.mapper";
 import logger from "../../utils/logger.util";
 import * as grpc from "@grpc/grpc-js";
-import { IMediaRepository } from "../../repositories/interface/IMediaRepository";
+import { ILikeRepository } from "../../repositories/interface/ILikeRepository";
+import { ICommentRepository } from "../../repositories/interface/ICommentRepository";
+import { IShareRepository } from "../../repositories/interface/IShareRepository";
 
 export class PostSerive implements IpostService {
-  constructor(private postRepository: IPostRepository) {}
+  constructor(
+    private postRepository: IPostRepository,
+    private likeRepository?: ILikeRepository,
+    private commentRepository?: ICommentRepository,
+    private shareRepository?: IShareRepository
+  ) {}
 
   // async createPost(payload: CreatePostRequest) {
   //   try {
@@ -46,7 +53,7 @@ export class PostSerive implements IpostService {
     }
   }
 
-  async getPosts(pageParam?: string): Promise<any> {
+  async getPosts(pageParam?: string, userId?: string): Promise<ListPostsResponse> {
     try {
       const PAGE_SIZE = 10;
       const PostselectOptions: PostSelectOptions = {
@@ -63,16 +70,37 @@ export class PostSerive implements IpostService {
         PostselectOptions
       );
 
-      // console.log("this are the post datas ====================", prismaPosts);
-
-      // const fromPostToListPostRes = PostMapper.fromPosts(prismaPosts);
-
       const hasMore = prismaPosts.length > PAGE_SIZE;
       const items = prismaPosts.slice(0, PAGE_SIZE);
-      const nextCursor = hasMore ? items[items.length - 1].id : null;
+      const postIds = items.map((post: any) => post.id);
+
+      let userLikesMap: Record<string, boolean> = {};
+      let userSharesMap: Record<string, boolean> = {};
+
+      if (userId && postIds.length > 0) {
+        userLikesMap =
+          (await this.likeRepository?.getUserLikesForPosts(userId, postIds)) ||
+          {};
+        userSharesMap =
+          (await this.shareRepository?.getUserSharesForPosts(userId, postIds)) ||
+          {};
+      }
+
+      const enrichedPosts = items.map((post: any) => ({
+        ...post,
+        engagement: {
+          likesCount: post.likesCount ?? 0,
+          commentsCount: post.commentsCount ?? 0,
+          sharesCount: post.sharesCount ?? 0,
+          isLiked: userLikesMap[post.id] ?? false,
+          isShared: userSharesMap[post.id] ?? false,
+        },
+      }));
+
+      const nextCursor = hasMore ? enrichedPosts[enrichedPosts.length - 1].id : null;
 
       return {
-        pages: items,
+        pages: enrichedPosts,
         nextCursor,
       };
     } catch (err: any) {

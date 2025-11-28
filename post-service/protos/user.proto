@@ -28,8 +28,18 @@ message ResolveUsernamesResponse {
   repeated ResolvedUser users = 1;
 }
 
+message CheckFollowRequest {
+  string followerId = 1;
+  string followingId = 2;
+}
+
+message CheckFollowResponse {
+  bool isFollowing = 1;
+}
+
 service UserService {
   // User-related methods
   rpc getUserForFeedListing (getUserForFeedListingRequest) returns (getUserForFeedListingResponse);
   rpc ResolveUsernames (ResolveUsernamesRequest) returns (ResolveUsernamesResponse);
+  rpc CheckFollow (CheckFollowRequest) returns (CheckFollowResponse);
 }

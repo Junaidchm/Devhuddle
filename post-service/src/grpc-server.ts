@@ -20,13 +20,24 @@ import { PostController } from "./controllers/impliments/feed.controller";
 import { CustomError } from "./utils/error.util";
 import { PostSerive } from "./services/impliments/post.service";
 import { PostRepository } from "./repositories/impliments/post.repository";
+import { LikeRepository } from "./repositories/impliments/like.repository";
+import { CommentRepository } from "./repositories/impliments/comment.repository";
+import { ShareRepository } from "./repositories/impliments/share.repository";
 import { MediaRepository } from "./repositories/impliments/media.repository";
 import { MediaService } from "./services/impliments/media.service";
 import { MediaController } from "./controllers/impliments/media.controller";
 import { grpcHandler } from "./utils/grpc.helper";
 
 const postRepository = new PostRepository();
-const postService = new PostSerive(postRepository);
+const likeRepository = new LikeRepository();
+const commentRepository = new CommentRepository();
+const shareRepository = new ShareRepository();
+const postService = new PostSerive(
+  postRepository,
+  likeRepository,
+  commentRepository,
+  shareRepository
+);
 const postController = new PostController(postService);
 
 const mediaRepository = new MediaRepository();

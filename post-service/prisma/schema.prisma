@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -40,6 +39,7 @@ enum ReactionTargetType {
   REACTION_POST
   REACTION_COMMENT
 }
+
 enum ShareType {
   RESHARE
   QUOTE
@@ -120,25 +120,13 @@ enum OutboxEventType {
   POST_MENTION_IN_COMMENT_CREATED
 }
 
-// enum KafkaTopic {
-//   ENGAGEMENT_EVENTS
-//   POST_LIKE_CREATED
-//   POST_LIKE_REMOVED
-//   POST_COMMENT_CREATED
-//   POST_COMMENT_UPDATED
-//   POST_COMMENT_DELETED
-//   POST_SHARE_CREATED
-//   POST_REPORT_CREATED
-//   POST_MENTION_IN_POST_CREATED
-//   POST_MENTION_IN_COMMENT_CREATED
-// }
-
 model Posts {
-  id         String     @id @default(cuid())
-  content    String
-  userId     String
-  visibility Visibility @default(PUBLIC)
-  tags       String[]   @default([]) // hashtags / topic tags
+  id             String         @id @default(cuid())
+  content        String
+  userId         String
+  visibility     Visibility     @default(PUBLIC)
+  tags           String[]       @default([]) // hashtags / topic tags
+  commentControl CommentControl @default(ANYONE)
 
   // Denormalized counters for read-heavy access patterns
   likesCount    Int @default(0)
@@ -198,17 +186,17 @@ model UserFeed {
 }
 
 model Comment {
-  id              String   @id @default(uuid())
+  id              String  @id @default(uuid())
   postId          String
   userId          String
   content         String
   parentCommentId String?
 
-  likesCount    Int @default(0)
+  likesCount Int       @default(0)
   // Soft delete and versioning
-  deletedAt DateTime?
-  editedAt  DateTime?
-  version   Int      @default(1)
+  deletedAt  DateTime?
+  editedAt   DateTime?
+  version    Int       @default(1)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -220,6 +208,7 @@ model Comment {
   commentMentions CommentMention[]
   Reports         Report[]
   Reactions       Reaction[]
+
   @@index([postId])
   @@index([userId])
   @@index([parentCommentId])
@@ -244,14 +233,14 @@ model CommentMention {
 }
 
 model Share {
-  id         String    @id @default(uuid())
+  id         String     @id @default(uuid())
   postId     String
   userId     String
-  shareType  ShareType @default(RESHARE)
+  shareType  ShareType  @default(RESHARE)
   caption    String?
   targetType TargetType @default(USER)
   targetId   String?
-  createdAt  DateTime  @default(now())
+  createdAt  DateTime   @default(now())
 
   Post Posts @relation(fields: [postId], references: [id], onDelete: Cascade)
 
@@ -261,20 +250,19 @@ model Share {
   @@index([createdAt])
 }
 
-
 model Reaction {
-  id        String       @id @default(uuid())
-  postId    String?      // Optional - for post likes
-  commentId String?      // Optional - for comment likes
-  userId    String
-  type      ReactionType @default(LIKE)
-  createdAt DateTime     @default(now())
-  deletedAt DateTime?    // Soft delete for unlike
+  id         String             @id @default(uuid())
+  postId     String? // Optional - for post likes
+  commentId  String? // Optional - for comment likes
+  userId     String
+  type       ReactionType       @default(LIKE)
+  createdAt  DateTime           @default(now())
+  deletedAt  DateTime? // Soft delete for unlike
   targetType ReactionTargetType
-  version   Int      @default(1)
+  version    Int                @default(1)
 
-  Post    Posts?    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  Comment Comment?  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  Post    Posts?   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  Comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId, type])
   @@unique([commentId, userId, type])
@@ -309,27 +297,27 @@ model SavedPost {
 }
 
 model Report {
-  id         String          @id @default(uuid())
+  id         String           @id @default(uuid())
   reporterId String
   targetType ReportTargetType
   targetId   String // postId or commentId
   postId     String? // For comments, we need postId for cascade
   commentId  String? // For comments
   reason     ReportReason
-  status     ReportStatus    @default(OPEN)
+  status     ReportStatus     @default(OPEN)
   metadata   Json? // Additional context
   resolvedAt DateTime?
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @default(now()) @updatedAt
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @default(now()) @updatedAt
 
-  Post    Posts?    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  Comment Comment?  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  Post    Posts?   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  Comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
+  @@unique([reporterId, targetType, targetId]) // One report per user per target
   @@index([targetType, targetId])
   @@index([reporterId])
   @@index([status])
   @@index([createdAt])
-  @@unique([reporterId, targetType, targetId]) // One report per user per target
 }
 
 // Post mention (server-detected @username in posts)
@@ -350,17 +338,17 @@ model PostMention {
 
 // Reliable outbox table for atomic event publishing
 model OutboxEvent {
-  id              String       @id @default(uuid())
+  id              String              @id @default(uuid())
   aggregateType   OutboxAggregateType
   aggregateId     String?
   type            OutboxEventType
   topic           String
   key             String?
   payload         Json
-  status          OutboxStatus @default(PENDING)
-  attempts        Int          @default(0)
+  status          OutboxStatus        @default(PENDING)
+  attempts        Int                 @default(0)
   lastAttemptedAt DateTime?
-  createdAt       DateTime     @default(now())
+  createdAt       DateTime            @default(now())
   publishedAt     DateTime?
 
   @@index([status])

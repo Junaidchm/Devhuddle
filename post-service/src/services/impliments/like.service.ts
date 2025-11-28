@@ -83,39 +83,68 @@ export class LikeService implements ILikeService {
         throw new CustomError(HttpStatus.NOT_FOUND, "Target not found");
       }
 
-      // Check if already liked
+      // Check if already liked (active like)
       const existingLike = await this.likeRepository.findLike(
         targetType,
         targetId,
         userId
       );
       if (existingLike) {
-        throw new CustomError(
-          HttpStatus.CONFLICT,
-          `${targetType} already liked`
-        );
+        // Already liked - return silently (idempotent behavior)
+        logger.info(`${targetType} ${targetId} already liked by user ${userId}`);
+        return;
       }
 
-      // Create like
-      if (targetType === ReactionTargetType.POST) {
-        await this.likeRepository.createLike({
-          userId,
-          type: "LIKE",
-          postId: targetId,
-          targetType: ReactionTargetType.POST,
-        });
-      } else if (targetType === ReactionTargetType.COMMENT) {
-        await this.likeRepository.createLike({
-          userId,
-          type: "LIKE",
-          commentId: targetId,
-          targetType: ReactionTargetType.COMMENT,
-        });
+      // Check if there's a soft-deleted like (for re-liking)
+      const softDeletedLike = await this.likeRepository.findSoftDeletedLike(
+        targetType,
+        targetId,
+        userId
+      );
+
+      let like: any;
+      const isRestore = !!softDeletedLike;
+      
+      if (softDeletedLike) {
+        // Restore the soft-deleted like instead of creating a new one
+        like = await this.likeRepository.restoreLike(softDeletedLike.id);
+        logger.info(`Restored soft-deleted like for ${targetType} ${targetId} by user ${userId}`);
       } else {
-        throw new CustomError(
-          HttpStatus.BAD_REQUEST,
-          `Invalid target type: ${targetType}`
-        );
+        // Create new like
+        try {
+          if (targetType === ReactionTargetType.POST) {
+            like = await this.likeRepository.createLike({
+              userId,
+              type: "LIKE",
+              postId: targetId,
+              targetType: ReactionTargetType.POST,
+            });
+          } else if (targetType === ReactionTargetType.COMMENT) {
+            like = await this.likeRepository.createLike({
+              userId,
+              type: "LIKE",
+              commentId: targetId,
+              targetType: ReactionTargetType.COMMENT,
+            });
+          } else {
+            throw new CustomError(
+              HttpStatus.BAD_REQUEST,
+              `Invalid target type: ${targetType}`
+            );
+          }
+        } catch (createError: any) {
+          // If unique constraint violation, check if like was created by another request
+          if (createError.message?.includes("already exists") || createError.code === 'P2002') {
+            logger.warn(`Like already exists for ${targetType} ${targetId} by user ${userId} (race condition)`);
+            // Verify it exists now
+            const verifyLike = await this.likeRepository.findLike(targetType, targetId, userId);
+            if (verifyLike) {
+              // Like exists now, treat as success
+              return;
+            }
+          }
+          throw createError;
+        }
       }
 
       // Get event version and timestamp for ordering
@@ -123,6 +152,8 @@ export class LikeService implements ILikeService {
       const eventTimestamp = new Date().toISOString();
 
       // Update counter and prepare event
+      // Note: For restored likes, counters were decremented on unlike, so we need to increment them back
+      // For new likes, we increment counters
       let eventType: OutboxEventType;
       let topic: string;
       let payload: any;
@@ -138,9 +169,15 @@ export class LikeService implements ILikeService {
           postAuthorId: targetDetails.authorId,
           eventTimestamp,
           version,
-          action: "LIKE",
+          action: isRestore ? "LIKE_RESTORED" : "LIKE",
         };
       } else if (targetType === ReactionTargetType.COMMENT) {
+        // Verify comment exists before incrementing counter
+        const comment = await this.commentRepository.findComment(targetId);
+        if (!comment) {
+          throw new CustomError(HttpStatus.NOT_FOUND, "Comment not found");
+        }
+        
         await this.commentRepository.incrementLikesCount(targetId);
         await RedisCacheService.incrementCommentLikes(targetId);
         eventType = OutboxEventType.COMMENT_LIKE_CREATED;
@@ -152,7 +189,7 @@ export class LikeService implements ILikeService {
           postId: targetDetails.postId,
           eventTimestamp,
           version,
-          action: "LIKE",
+          action: isRestore ? "LIKE_RESTORED" : "LIKE",
         };
       } else {
         throw new CustomError(
@@ -250,9 +287,9 @@ export class LikeService implements ILikeService {
           postId: targetId,
           userId,
           postAuthorId: targetDetails.authorId,
-          eventTimestamp, // ✅ Add timestamp
-          version, // ✅ Add version
-          action: "UNLIKE", // ✅ Add action type
+          eventTimestamp, 
+          version, 
+          action: "UNLIKE", 
         };
       } else if (targetType === ReactionTargetType.COMMENT) {
         await this.commentRepository.decrementLikesCount(targetId);
@@ -261,12 +298,12 @@ export class LikeService implements ILikeService {
         topic = KAFKA_TOPICS.COMMENT_LIKE_REMOVED;
         payload = {
           commentId: targetId,
-          userId,
+            userId,
           commentAuthorId: targetDetails.authorId,
           postId: targetDetails.postId,
-          eventTimestamp, // ✅ Add timestamp
-          version, // ✅ Add version
-          action: "UNLIKE", // ✅ Add action type
+          eventTimestamp, 
+          version, 
+          action: "UNLIKE", 
         };
       } else {
         throw new CustomError(

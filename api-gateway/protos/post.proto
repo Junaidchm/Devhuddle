@@ -105,6 +105,15 @@ message Post {
   string createdAt = 4;
   FeedUserProfileDetiles user = 5;
   repeated Attachments attachments = 6;
+  PostEngagement engagement = 7;
+}
+
+message PostEngagement {
+  int32 likesCount = 1;
+  int32 commentsCount = 2;
+  int32 sharesCount = 3;
+  bool isLiked = 4;
+  bool isShared = 5;
 }
 
 
@@ -127,6 +136,7 @@ message CreatePostResponse {
 
 message ListPostsRequest {
   optional string pageParam = 1;
+  optional string userId = 2;
 }
 
 message ListPostsResponse{

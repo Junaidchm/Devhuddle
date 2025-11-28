@@ -90,12 +90,13 @@ export const createPost = async (
 export const listPost = async (req: Request, res: Response): Promise<void> => {
   try {
     const pageParam = req.query?.cursor as string;
+    const userId = req.user?.id;
 
     const response = await grpcs<
       PostServiceClient,
       ListPostsRequest,
       ListPostsResponse
-    >(postClient, "listPosts", { pageParam });
+    >(postClient, "listPosts", { pageParam, userId });
 
     res.status(HttpStatus.OK).json({
       success: true,
@@ -193,87 +194,3 @@ export const deleteUnuseMedias = async (req: Request, res: Response) => {
     });
   }
 };
-
-// import { Request, Response } from "express";
-// import {
-//   CreatePostRequest,
-//   CreatePostResponse,
-//   SubmitPostRequest,
-//   SubmitPostResponse,
-//   ListPostsRequest,
-//   ListPostsResponse,
-//   UploadMediaRequest,
-//   UploadMediaResponse,
-//   DeletePostRequest,
-//   DeletePostResponse,
-//   DeleteUnusedMediasRequest,
-//   DeleteUnusedMediasResponse,
-//   PostServiceClient,
-// } from "../../grpc/generated/post";
-// import { grpcs } from "../../utils/grpc.helper";
-// import { postClient } from "../../config/grpc.client";
-// import { handleGrpcCall } from "../../utils/grpcControllerHandler";
-
-// //  submitPost
-// export const submitPost = async (req: Request, res: Response) => {
-//   const request: CreatePostRequest = { ...req.body, userId: req.user?.id };
-//   await handleGrpcCall<CreatePostRequest, CreatePostResponse>(
-//     res,
-//     "submitPost",
-//     () => grpcs(postClient, "createPost", request),
-//     (response) => ({ message: response.message })
-//   );
-// };
-
-// //  createPost
-// export const createPost = async (req: Request, res: Response) => {
-//   const request: SubmitPostRequest = { ...req.body, userId: req.user?.id };
-//   await handleGrpcCall<SubmitPostRequest, SubmitPostResponse>(
-//     res,
-//     "createPost",
-//     () => grpcs(postClient, "submitPost", request)
-//   );
-// };
-
-// //  listPost
-// export const listPost = async (req: Request, res: Response) => {
-//   const pageParam = req.query?.cursor as string;
-//   const request: ListPostsRequest = { pageParam };
-//   await handleGrpcCall<ListPostsRequest, ListPostsResponse>(
-//     res,
-//     "listPost",
-//     () => grpcs(postClient, "listPosts", request)
-//   );
-// };
-
-// //  uploadMedia
-// export const uploadMedia = async (req: Request, res: Response) => {
-//   const request: UploadMediaRequest = req.body;
-//   await handleGrpcCall<UploadMediaRequest, UploadMediaResponse>(
-//     res,
-//     "uploadMedia",
-//     () => grpcs(postClient, "uploadMedia", request)
-//   );
-// };
-
-// //  deletePost
-// export const deletePost = async (req: Request, res: Response) => {
-//   const request: DeletePostRequest = { postId: req.body.Id };
-//   await handleGrpcCall<DeletePostRequest, DeletePostResponse>(
-//     res,
-//     "deletePost",
-//     () => grpcs(postClient, "deletePost", request),
-//     (response) => ({ deletedPost: response })
-//   );
-// };
-
-// //  deleteUnusedMedias
-// export const deleteUnuseMedias = async (req: Request, res: Response) => {
-//   const request: DeleteUnusedMediasRequest = { postId: req.body.Id };
-//   await handleGrpcCall<DeleteUnusedMediasRequest, DeleteUnusedMediasResponse>(
-//     res,
-//     "deleteUnusedMedias",
-//     () => grpcs(postClient, "deleteUnusedMedias", request),
-//     (response) => ({ deletedPost: response })
-//   );
-// };

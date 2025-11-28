@@ -49,9 +49,10 @@ export class PostController implements IfeedController {
 
   async getPostsController(req: ListPostsRequest): Promise<ListPostsResponse> {
     try {
-      const { pageParam } = req;
+      const { pageParam, userId } = req;
       const result: ListPostsResponse = await this.postService.getPosts(
-        pageParam as string | undefined
+        pageParam as string | undefined,
+        userId as string | undefined
       );
 
       return result;
