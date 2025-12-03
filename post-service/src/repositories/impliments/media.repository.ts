@@ -8,6 +8,7 @@ import {
 } from "../../grpc/generated/post";
 import logger from "../../utils/logger.util";
 import { UTApi } from "uploadthing/server";
+import { v4 as uuidv4 } from "uuid";
 
 export class MediaRepository
   extends BaseRepository<
@@ -28,11 +29,16 @@ export class MediaRepository
 
   async createMedia(data: UploadMediaRequest): Promise<string> {
     try {
-      const { id: mediaId } = await super.create(data as any);
+      // ✅ FIX: Generate ID for Media (same as posts)
+      const { id: mediaId } = await super.create({
+        ...data,
+        id: uuidv4(), // Generate ID using UUID v4
+      } as any);
       return mediaId;
     } catch (error: any) {
       logger.error("Error creating entity", {
         error: (error as Error).message,
+        stack: (error as Error).stack,
       });
       throw new Error("Database error");
     }

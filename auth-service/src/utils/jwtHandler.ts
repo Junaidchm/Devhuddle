@@ -65,6 +65,8 @@ export const setAccesToken = async (
     expires: expiryAccessToken,
     sameSite: "lax",
   });
+  // Return token so it can be included in response body (for NextAuth)
+  return { accessToken };
 };
 
 export const setAuthToken = async (userData: jwtUserFilter, res: Response) => {
@@ -72,6 +74,8 @@ export const setAuthToken = async (userData: jwtUserFilter, res: Response) => {
     const accessToken = generateAccessToken(userData, generateUuid4());
     const refreshToken = GenerateRefreshToken(userData, generateUuid4());
     setCookies(accessToken, refreshToken, res);
+    // Return tokens so they can be included in response body (for NextAuth)
+    return { accessToken, refreshToken };
   } catch (error) {
     console.log("Error while setting auth tokens");
     throw error;

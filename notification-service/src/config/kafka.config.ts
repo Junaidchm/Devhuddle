@@ -46,9 +46,13 @@ export const KAFKA_TOPICS = {
   POST_COMMENT_EDITED_DLQ: "post.comment.edited.v1-dlq",
   POST_COMMENT_DELETED_DLQ: "post.comment.deleted.v1-dlq",
   
-  // Share events
-  POST_SHARED: "post.shared.v1",
-  POST_SHARED_DLQ: "post.shared.v1-dlq",
+  // Send Post events (LinkedIn-style)
+  POST_SENT: "post.sent.v1",
+  POST_SENT_DLQ: "post.sent.v1-dlq",
+  
+  // ✅ NEW: Post creation events (for notifications to followers)
+  POST_CREATED: "post.created.v1",
+  POST_CREATED_DLQ: "post.created.v1-dlq",
   
   // Report events
   POST_REPORTED: "post.reported.v1",

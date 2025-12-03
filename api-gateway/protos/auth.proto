@@ -105,8 +105,14 @@ message GetProfileResponse {
   string username = 3;
   string name = 4;
   string role = 5;
+  string profilePicture = 6;
   string location = 7;
   string bio = 8;
+  repeated string skills = 9;
+  string jobTitle = 10;
+  string company = 11;
+  string yearsOfExperience = 12;
+  bool emailVerified = 13;
 }
 
 message UpdateProfileRequest {
@@ -116,6 +122,10 @@ message UpdateProfileRequest {
   string location = 4;
   string bio = 5;
   string profilePicture = 6;
+  repeated string skills = 7;
+  string jobTitle = 8;
+  string company = 9;
+  string yearsOfExperience = 10;
 }
 
 message UpdateProfileResponse {
@@ -124,8 +134,14 @@ message UpdateProfileResponse {
   string username = 3;
   string name = 4;
   string role = 5;
+  string profilePicture = 6;
   string location = 7;
   string bio = 8;
+  repeated string skills = 9;
+  string jobTitle = 10;
+  string company = 11;
+  string yearsOfExperience = 12;
+  bool emailVerified = 13;
 }
 
 message VerifyRefreshTokenRequest {

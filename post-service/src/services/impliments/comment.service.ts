@@ -3,6 +3,7 @@ import { ICommentRepository } from "../../repositories/interface/ICommentReposit
 import { IPostRepository } from "../../repositories/interface/IPostRepository";
 import { IMentionService } from "../interfaces/IMentionService";
 import { IOutboxService } from "../interfaces/IOutboxService";
+import { ILikeRepository } from "../../repositories/interface/ILikeRepository";
 import { CustomError } from "../../utils/error.util";
 import logger from "../../utils/logger.util";
 import { HttpStatus } from "../../constands/http.status";
@@ -30,7 +31,8 @@ export class CommentService implements ICommentService {
     private commentRepository: ICommentRepository,
     private postRepository: IPostRepository,
     private mentionService: IMentionService,
-    private outboxService: IOutboxService
+    private outboxService: IOutboxService,
+    private likeRepository?: ILikeRepository
   ) {}
 
   /**
@@ -359,7 +361,11 @@ export class CommentService implements ICommentService {
    * Enrich a single comment with user data via gRPC
    * LinkedIn-style: Flat replies only, no nested replies
    */
-  private async _enrichCommentWithUser(comment: any, postAuthorId?: string): Promise<any> {
+  private async _enrichCommentWithUser(
+    comment: any,
+    postAuthorId?: string,
+    userLikesMap?: Record<string, boolean>
+  ): Promise<any> {
     try {
       const userResponse = await grpcs<
         UserServiceClient,
@@ -377,10 +383,13 @@ export class CommentService implements ICommentService {
         },
         // LinkedIn-style: Include isAuthor flag
         isAuthor: postAuthorId ? comment.userId === postAuthorId : false,
+        // Include isLiked status
+        isLiked: userLikesMap ? userLikesMap[comment.id] || false : false,
+        
         // LinkedIn-style: Flat replies only (no nested replies)
-        replies: comment.Replies && comment.Replies.length > 0
+        replies: comment.other_Comment && comment.other_Comment.length > 0
           ? await Promise.all(
-              comment.Replies.map((reply: any) => this._enrichCommentWithUser(reply, postAuthorId))
+              comment.other_Comment.map((reply: any) => this._enrichCommentWithUser(reply, postAuthorId, userLikesMap))
             )
           : undefined,
       };
@@ -400,38 +409,71 @@ export class CommentService implements ICommentService {
           avatar: "",
         },
         isAuthor: postAuthorId ? comment.userId === postAuthorId : false,
-        replies: comment.Replies || undefined,
+        isLiked: userLikesMap ? userLikesMap[comment.id] || false : false,
+        replies: comment.other_Comment || undefined,
       };
     }
   }
 
   /**
    * Enrich multiple comments with user data (batched)
-   * LinkedIn-style: Include post author ID for isAuthor flag
+   * LinkedIn-style: Include post author ID for isAuthor flag and isLiked status
    */
-  private async _enrichCommentsWithUsers(comments: any[], postAuthorId?: string): Promise<any[]> {
+  private async _enrichCommentsWithUsers(
+    comments: any[],
+    postAuthorId?: string,
+    userLikesMap?: Record<string, boolean>
+  ): Promise<any[]> {
     return Promise.all(
-      comments.map((comment) => this._enrichCommentWithUser(comment, postAuthorId))
+      comments.map((comment) => this._enrichCommentWithUser(comment, postAuthorId, userLikesMap))
     );
   }
 
   async getComments(
     postId: string,
     limit: number = 20,
-    offset: number = 0
+    offset: number = 0,
+    userId?: string
   ): Promise<Comment[]> {
     try {
       // Get post to get author ID for isAuthor flag
       const post = await this.postRepository.findPost(postId);
       const postAuthorId = post?.userId;
 
+      // Initialize userLikesMap
+      let userLikesMap: Record<string, boolean> = {};
+
       if (offset === 0) {
         const cachedComments = await RedisCacheService.getCachedCommentList(
           postId
         );
-        if (cachedComments) {
-          // Enrich cached comments with user data and isAuthor flag
-          return await this._enrichCommentsWithUsers(cachedComments.slice(0, limit), postAuthorId);
+        // Only use cache if it has enough comments for the requested limit
+        // This prevents the issue where preview (limit=1) caches only 1 comment,
+        // and then full list (limit=20) returns only that 1 cached comment
+        if (cachedComments && cachedComments.length >= limit) {
+          // Extract all comment IDs (main comments + replies)
+          const commentsToEnrich = cachedComments.slice(0, limit);
+          const allCommentIds = this._extractCommentIds(commentsToEnrich);
+          
+          // Fetch user likes for all comments (batched)
+          if (userId && this.likeRepository && allCommentIds.length > 0) {
+            userLikesMap = await this.likeRepository.getUserLikesForComments(
+              userId,
+              allCommentIds
+            );
+          }
+          
+          // Enrich cached comments with user data, isAuthor flag, and isLiked status
+          return await this._enrichCommentsWithUsers(
+            commentsToEnrich,
+            postAuthorId,
+            userLikesMap
+          );
+        }
+        // If cache doesn't have enough comments, invalidate it and fetch from DB
+        // This ensures we get the full list when requested
+        if (cachedComments && cachedComments.length < limit) {
+          await RedisCacheService.invalidateCommentList(postId);
         }
       }
 
@@ -444,11 +486,29 @@ export class CommentService implements ICommentService {
         true // includeMentions
       );
 
-      // Enrich comments with user data and isAuthor flag
-      const enrichedComments = await this._enrichCommentsWithUsers(comments, postAuthorId);
+      // Extract all comment IDs (main comments + replies) for batch like lookup
+      const allCommentIds = this._extractCommentIds(comments);
+
+      // Fetch user likes for all comments (batched)
+      if (userId && this.likeRepository && allCommentIds.length > 0) {
+        userLikesMap = await this.likeRepository.getUserLikesForComments(
+          userId,
+          allCommentIds
+        );
+      }
+
+      // Enrich comments with user data, isAuthor flag, and isLiked status
+      const enrichedComments = await this._enrichCommentsWithUsers(
+        comments,
+        postAuthorId,
+        userLikesMap
+      );
 
       // Cache if first page (cache raw data, enrichment happens on read)
-      if (offset === 0 && enrichedComments.length > 0) {
+      // Don't cache if limit=1 (preview) to avoid incomplete cache entries
+      // Only cache when we're fetching a reasonable number of comments (>= 5)
+      // This prevents the issue where preview caches 1 comment and full list uses that incomplete cache
+      if (offset === 0 && enrichedComments.length > 0 && limit >= 5) {
         // Cache the raw comments (without user data) to avoid stale user info
         await RedisCacheService.cacheCommentList(postId, comments);
       }
@@ -502,7 +562,8 @@ export class CommentService implements ICommentService {
 
   async getReplies(
     commentId: string,
-    limit: number = 10
+    limit: number = 10,
+    userId?: string
   ): Promise<Comment[]> {
     try {
       // Get the main comment to find the post and post author
@@ -517,8 +578,20 @@ export class CommentService implements ICommentService {
 
       const replies = await this.commentRepository.getReplies(commentId, limit);
       
-      // Enrich replies with user data and isAuthor flag
-      return await this._enrichCommentsWithUsers(replies, postAuthorId);
+      // Extract reply IDs for batch like lookup
+      const replyIds = replies.map((reply) => reply.id);
+      
+      // Fetch user likes for replies (batched)
+      let userLikesMap: Record<string, boolean> = {};
+      if (userId && this.likeRepository && replyIds.length > 0) {
+        userLikesMap = await this.likeRepository.getUserLikesForComments(
+          userId,
+          replyIds
+        );
+      }
+      
+      // Enrich replies with user data, isAuthor flag, and isLiked status
+      return await this._enrichCommentsWithUsers(replies, postAuthorId, userLikesMap);
     } catch (err: any) {
       logger.error("Error getting replies", {
         error: err.message,
@@ -532,11 +605,27 @@ export class CommentService implements ICommentService {
   }
 
   /**
+   * Helper: Extract all comment IDs from comments and their replies (recursively)
+   */
+  private _extractCommentIds(comments: any[]): string[] {
+    const ids: string[] = [];
+    const extract = (comment: any) => {
+      ids.push(comment.id);
+      if (comment.other_Comment && comment.other_Comment.length > 0) {
+        comment.other_Comment.forEach((reply: any) => extract(reply));
+      }
+    };
+    comments.forEach((comment) => extract(comment));
+    return ids;
+  }
+
+  /**
    * Get comment preview (first comment) for LinkedIn-style display
    * Returns first comment with total count and hasMore flag
    */
   async getCommentPreview(
-    postId: string
+    postId: string,
+    userId?: string
   ): Promise<{ comment: Comment | null; totalCount: number; hasMore: boolean }> {
     try {
       // Get total count
@@ -551,8 +640,8 @@ export class CommentService implements ICommentService {
         };
       }
 
-      // Get first comment (limit=1, offset=0)
-      const comments = await this.getComments(postId, 1, 0);
+      // Get first comment (limit=1, offset=0) with isLiked status
+      const comments = await this.getComments(postId, 1, 0, userId);
 
       return {
         comment: comments.length > 0 ? comments[0] : null,

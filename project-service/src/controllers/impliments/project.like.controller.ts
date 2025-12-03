@@ -1,0 +1,58 @@
+import { Request, Response, NextFunction } from "express";
+import { IProjectLikeService } from "../../services/interfaces/IProjectLikeService";
+import { CustomError } from "../../utils/error.util";
+import { HttpStatus } from "../../constands/http.status";
+import { getUserIdFromRequest } from "../../utils/request.util";
+
+export class ProjectLikeController {
+  constructor(private likeService: IProjectLikeService) {}
+
+  async likeProject(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { projectId } = req.params;
+      const userId = getUserIdFromRequest(req);
+
+      const result = await this.likeService.likeProject({
+        projectId,
+        userId,
+      });
+
+      res.status(HttpStatus.OK).json({
+        success: true,
+        message: "Project liked successfully",
+        data: result,
+      });
+    } catch (error: any) {
+      next(error);
+    }
+  }
+
+  async unlikeProject(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { projectId } = req.params;
+      const userId = getUserIdFromRequest(req);
+
+      const result = await this.likeService.unlikeProject({
+        projectId,
+        userId,
+      });
+
+      res.status(HttpStatus.OK).json({
+        success: true,
+        message: "Project unliked successfully",
+        data: result,
+      });
+    } catch (error: any) {
+      next(error);
+    }
+  }
+}
+

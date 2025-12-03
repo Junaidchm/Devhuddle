@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { LikeController } from "../controllers/impliments/like.controller";
 import { CommentController } from "../controllers/impliments/comment.controller";
-import { ShareController } from "../controllers/impliments/share.controller";
+import { SendController } from "../controllers/impliments/send.controller";
 import { ReportController } from "../controllers/impliments/report.controller";
+import { ShareLinkController } from "../controllers/impliments/shareLink.controller";
 import { idempotencyMiddleware } from "../middlewares/idempotency.middleware";
 import { createRateLimiters } from "../middlewares/rateLimit.middleware";
 import { IIdempotencyRepository } from "../repositories/interface/IIdempotencyRepository";
@@ -14,9 +15,10 @@ const rateLimiters = createRateLimiters();
 export const setupEngagementRoutes = (
   likeController: LikeController,
   commentController: CommentController,
-  shareController: ShareController,
+  sendController: SendController,
   reportController: ReportController,
   mentionController: MentionController,
+  shareLinkController: ShareLinkController,
   idempotencyRepository: IIdempotencyRepository
 ) => {
   // Like routes
@@ -119,24 +121,18 @@ export const setupEngagementRoutes = (
     commentController.getReplies.bind(commentController)
   );
 
-  // Share routes
+  // Send Post routes
+  router.get(
+    "/connections",
+    // rateLimiters.moderate,
+    sendController.getConnections.bind(sendController)
+  );
+
   router.post(
-    "/posts/:postId/share",
+    "/posts/:postId/send",
     // rateLimiters.strict,
     idempotencyMiddleware(idempotencyRepository),
-    shareController.sharePost.bind(shareController)
-  );
-
-  router.get(
-    "/posts/:postId/shares/count",
-    // rateLimiters.moderate,
-    shareController.getShareCount.bind(shareController)
-  );
-
-  router.get(
-    "/posts/:postId/shares/status",
-    // rateLimiters.moderate,
-    shareController.hasShared.bind(shareController)
+    sendController.sendPost.bind(sendController)
   );
 
   // Report routes
@@ -185,6 +181,19 @@ export const setupEngagementRoutes = (
     // rateLimiters.strict,
     idempotencyMiddleware(idempotencyRepository),
     mentionController.processMentions.bind(mentionController)
+  );
+
+  // Share Link routes
+  router.get(
+    "/posts/:postId/share-link",
+    // rateLimiters.moderate,
+    shareLinkController.getShareLink.bind(shareLinkController)
+  );
+
+  router.get(
+    "/share/:tokenOrShortId",
+    // rateLimiters.moderate,
+    shareLinkController.resolveShareLink.bind(shareLinkController)
   );
 
   return router;

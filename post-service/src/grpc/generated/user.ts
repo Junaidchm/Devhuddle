@@ -55,6 +55,21 @@ export interface CheckFollowResponse {
   isFollowing: boolean;
 }
 
+/** ✅ NEW: Get followers for fan-out pattern */
+export interface GetFollowersRequest {
+  userId: string;
+}
+
+export interface Follower {
+  id: string;
+  username: string;
+  name: string;
+}
+
+export interface GetFollowersResponse {
+  followers: Follower[];
+}
+
 function createBasegetUserForFeedListingRequest(): getUserForFeedListingRequest {
   return { userId: "" };
 }
@@ -571,6 +586,218 @@ export const CheckFollowResponse: MessageFns<CheckFollowResponse> = {
   },
 };
 
+function createBaseGetFollowersRequest(): GetFollowersRequest {
+  return { userId: "" };
+}
+
+export const GetFollowersRequest: MessageFns<GetFollowersRequest> = {
+  encode(message: GetFollowersRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userId !== "") {
+      writer.uint32(10).string(message.userId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetFollowersRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetFollowersRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetFollowersRequest {
+    return { userId: isSet(object.userId) ? globalThis.String(object.userId) : "" };
+  },
+
+  toJSON(message: GetFollowersRequest): unknown {
+    const obj: any = {};
+    if (message.userId !== "") {
+      obj.userId = message.userId;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetFollowersRequest>, I>>(base?: I): GetFollowersRequest {
+    return GetFollowersRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetFollowersRequest>, I>>(object: I): GetFollowersRequest {
+    const message = createBaseGetFollowersRequest();
+    message.userId = object.userId ?? "";
+    return message;
+  },
+};
+
+function createBaseFollower(): Follower {
+  return { id: "", username: "", name: "" };
+}
+
+export const Follower: MessageFns<Follower> = {
+  encode(message: Follower, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.username !== "") {
+      writer.uint32(18).string(message.username);
+    }
+    if (message.name !== "") {
+      writer.uint32(26).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Follower {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFollower();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Follower {
+    return {
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+    };
+  },
+
+  toJSON(message: Follower): unknown {
+    const obj: any = {};
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Follower>, I>>(base?: I): Follower {
+    return Follower.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Follower>, I>>(object: I): Follower {
+    const message = createBaseFollower();
+    message.id = object.id ?? "";
+    message.username = object.username ?? "";
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseGetFollowersResponse(): GetFollowersResponse {
+  return { followers: [] };
+}
+
+export const GetFollowersResponse: MessageFns<GetFollowersResponse> = {
+  encode(message: GetFollowersResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.followers) {
+      Follower.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetFollowersResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetFollowersResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.followers.push(Follower.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetFollowersResponse {
+    return {
+      followers: globalThis.Array.isArray(object?.followers)
+        ? object.followers.map((e: any) => Follower.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: GetFollowersResponse): unknown {
+    const obj: any = {};
+    if (message.followers?.length) {
+      obj.followers = message.followers.map((e) => Follower.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetFollowersResponse>, I>>(base?: I): GetFollowersResponse {
+    return GetFollowersResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetFollowersResponse>, I>>(object: I): GetFollowersResponse {
+    const message = createBaseGetFollowersResponse();
+    message.followers = object.followers?.map((e) => Follower.fromPartial(e)) || [];
+    return message;
+  },
+};
+
 export type UserServiceService = typeof UserServiceService;
 export const UserServiceService = {
   /** User-related methods */
@@ -605,6 +832,17 @@ export const UserServiceService = {
     responseSerialize: (value: CheckFollowResponse): Buffer => Buffer.from(CheckFollowResponse.encode(value).finish()),
     responseDeserialize: (value: Buffer): CheckFollowResponse => CheckFollowResponse.decode(value),
   },
+  /** ✅ NEW: Get followers for feed fan-out */
+  getFollowers: {
+    path: "/UserService/GetFollowers",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: GetFollowersRequest): Buffer => Buffer.from(GetFollowersRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): GetFollowersRequest => GetFollowersRequest.decode(value),
+    responseSerialize: (value: GetFollowersResponse): Buffer =>
+      Buffer.from(GetFollowersResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer): GetFollowersResponse => GetFollowersResponse.decode(value),
+  },
 } as const;
 
 export interface UserServiceServer extends UntypedServiceImplementation {
@@ -612,6 +850,8 @@ export interface UserServiceServer extends UntypedServiceImplementation {
   getUserForFeedListing: handleUnaryCall<getUserForFeedListingRequest, getUserForFeedListingResponse>;
   resolveUsernames: handleUnaryCall<ResolveUsernamesRequest, ResolveUsernamesResponse>;
   checkFollow: handleUnaryCall<CheckFollowRequest, CheckFollowResponse>;
+  /** ✅ NEW: Get followers for feed fan-out */
+  getFollowers: handleUnaryCall<GetFollowersRequest, GetFollowersResponse>;
 }
 
 export interface UserServiceClient extends Client {
@@ -660,6 +900,22 @@ export interface UserServiceClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: CheckFollowResponse) => void,
+  ): ClientUnaryCall;
+  /** ✅ NEW: Get followers for feed fan-out */
+  getFollowers(
+    request: GetFollowersRequest,
+    callback: (error: ServiceError | null, response: GetFollowersResponse) => void,
+  ): ClientUnaryCall;
+  getFollowers(
+    request: GetFollowersRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: GetFollowersResponse) => void,
+  ): ClientUnaryCall;
+  getFollowers(
+    request: GetFollowersRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: GetFollowersResponse) => void,
   ): ClientUnaryCall;
 }
 

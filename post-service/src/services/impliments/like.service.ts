@@ -180,6 +180,10 @@ export class LikeService implements ILikeService {
         
         await this.commentRepository.incrementLikesCount(targetId);
         await RedisCacheService.incrementCommentLikes(targetId);
+        // Invalidate comment list cache so refetches get fresh data with updated likesCount
+        if (targetDetails.postId) {
+          await RedisCacheService.invalidateCommentList(targetDetails.postId);
+        }
         eventType = OutboxEventType.COMMENT_LIKE_CREATED;
         topic = KAFKA_TOPICS.COMMENT_LIKE_CREATED;
         payload = {
@@ -294,6 +298,10 @@ export class LikeService implements ILikeService {
       } else if (targetType === ReactionTargetType.COMMENT) {
         await this.commentRepository.decrementLikesCount(targetId);
         await RedisCacheService.decrementCommentLikes(targetId);
+        // Invalidate comment list cache so refetches get fresh data with updated likesCount
+        if (targetDetails.postId) {
+          await RedisCacheService.invalidateCommentList(targetDetails.postId);
+        }
         eventType = OutboxEventType.COMMENT_LIKE_REMOVED;
         topic = KAFKA_TOPICS.COMMENT_LIKE_REMOVED;
         payload = {

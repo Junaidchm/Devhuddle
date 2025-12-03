@@ -76,6 +76,25 @@ interface PostCommentDeletedEvent extends BaseEngagementEvent {
   action: "COMMENT_DELETED";
 }
 
+interface PostSentEvent extends BaseEngagementEvent {
+  postId: string;
+  senderId: string;
+  recipientId: string;
+  postAuthorId: string;
+  message?: string;
+  action: "POST_SENT";
+}
+
+// ✅ NEW: Post creation event (for fan-out notifications)
+interface PostCreatedEvent extends BaseEngagementEvent {
+  postId: string;
+  userId: string; // Post author
+  visibility: string; // "PUBLIC" | "VISIBILITY_CONNECTIONS"
+  content?: string; // Preview
+  createdAt: string;
+  action: "POST_CREATED";
+}
+
 export async function startEngagementConsumer(
   wsService: WebSocketService
 ): Promise<void> {
@@ -92,9 +111,10 @@ export async function startEngagementConsumer(
       KAFKA_TOPICS.POST_COMMENT_CREATED,
       KAFKA_TOPICS.POST_COMMENT_EDITED,
       KAFKA_TOPICS.POST_COMMENT_DELETED,
-      KAFKA_TOPICS.POST_SHARED,
+      KAFKA_TOPICS.POST_SENT,
       KAFKA_TOPICS.POST_REPORTED,
       KAFKA_TOPICS.USER_MENTIONED,
+      KAFKA_TOPICS.POST_CREATED, // ✅ NEW: Subscribe to post creation events
     ],
     fromBeginning: false,
   });
@@ -154,6 +174,12 @@ export async function startEngagementConsumer(
               event as PostCommentDeletedEvent,
               repo
             );
+            break;
+          case KAFKA_TOPICS.POST_SENT:
+            await handlePostSent(event as PostSentEvent, repo);
+            break;
+          case KAFKA_TOPICS.POST_CREATED:
+            await handlePostCreated(event as PostCreatedEvent, repo, wsService);
             break;
           default:
             logger.warn(`Unhandled topic: ${topic}`);
@@ -359,4 +385,61 @@ async function handlePostCommentDeleted(
   await repo.deleteCommentNotification(commentId, versionNumber);
 
   logger.info(`Comment notifications deleted for comment ${commentId}`);
+}
+
+// ✅ NEW: Handle post creation event (notify followers)
+async function handlePostCreated(
+  event: PostCreatedEvent,
+  repo: NotificationsRepository,
+  wsService: WebSocketService
+): Promise<void> {
+  const { postId, userId, visibility, version } = event;
+
+  // Only notify followers for PUBLIC or VISIBILITY_CONNECTIONS posts
+  if (visibility !== "PUBLIC" && visibility !== "VISIBILITY_CONNECTIONS") {
+    logger.info(`Post ${postId} is private, skipping notifications`, {
+      visibility,
+    });
+    return;
+  }
+
+  const versionNumber = version || Date.now();
+
+  // TODO: Get followers from User Service via gRPC
+  // For now, this is a placeholder - notifications will be sent once GetFollowers is implemented
+  // The fan-out to feeds is already working in PostService
+  logger.info(`Post created: ${postId} by user ${userId}`, {
+    visibility,
+    note: "Followers notification pending GetFollowers implementation",
+  });
+
+  // Once GetFollowers is implemented in User Service:
+  // 1. Call GetFollowers(userId) to get follower list
+  // 2. For each follower:
+  //    await repo.createPostNotification(userId, followerId, postId, versionNumber);
+  //    wsService.broadcastToUser(followerId, { type: 'NEW_POST', payload: { postId, authorId: userId } });
+}
+
+async function handlePostSent(
+  event: PostSentEvent,
+  repo: NotificationsRepository
+): Promise<void> {
+  const { postId, senderId, recipientId, postAuthorId, message, version } = event;
+
+  // Don't notify if user sent their own post to themselves
+  if (senderId === recipientId) return;
+
+  const versionNumber = version || Date.now();
+
+  // Create a notification for the recipient
+  // This is similar to a message notification - someone sent you a post
+  await repo.createPostSentNotification(
+    senderId,
+    recipientId,
+    postId,
+    message,
+    versionNumber
+  );
+
+  logger.info(`Post sent notification created for ${recipientId} from ${senderId}`);
 }

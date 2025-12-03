@@ -160,7 +160,9 @@ export class AuthService implements IAuthService {
   }
 
   //////////// user login
-
+  // Note: This endpoint is used for both user and admin login
+  // Role validation for admin access happens on the client side (NextAuth) and in middleware
+  // The backend returns the user's role in the JWT payload, and the client validates it
   async login({ email, password }: LoginRequest): Promise<GetJwtUserResponse> {
     try {
       const user = await this.userRepository.findByEmail(email);
@@ -340,8 +342,19 @@ export class AuthService implements IAuthService {
     userId: string,
     data: ProfileUpdatePayload
   ): Promise<UpdateProfileResponse> {
-    const { name, username, location, bio, profilePicture } = data;
+    const { 
+      name, 
+      username, 
+      location, 
+      bio, 
+      profilePicture,
+      skills,
+      jobTitle,
+      company,
+      yearsOfExperience
+    } = data;
 
+    // Validate username uniqueness if username is being updated
     if (username) {
       const existingUsername = await this.userRepository.findByUsername(
         username
@@ -354,18 +367,54 @@ export class AuthService implements IAuthService {
       }
     }
 
-    const updatedFields = {
+    // Validate skills array if provided
+    if (skills !== undefined) {
+      if (!Array.isArray(skills)) {
+        throw new CustomError(
+          grpc.status.INVALID_ARGUMENT,
+          "Skills must be an array"
+        );
+      }
+      if (skills.length > 20) {
+        throw new CustomError(
+          grpc.status.INVALID_ARGUMENT,
+          "Maximum 20 skills allowed"
+        );
+      }
+      // Validate each skill
+      for (const skill of skills) {
+        if (typeof skill !== 'string' || skill.trim().length === 0) {
+          throw new CustomError(
+            grpc.status.INVALID_ARGUMENT,
+            "Skills must be non-empty strings"
+          );
+        }
+        if (skill.length > 50) {
+          throw new CustomError(
+            grpc.status.INVALID_ARGUMENT,
+            "Each skill must be at most 50 characters"
+          );
+        }
+      }
+    }
+
+    // Build update fields object
+    const updatedFields: Partial<User> = {
       name,
       username,
       location,
       bio,
       profilePicture,
+      skills,
+      jobTitle,
+      company,
+      yearsOfExperience,
     };
 
-    // Remove undefined fields
+    // Remove undefined fields to avoid overwriting with undefined
     const filteredFields = Object.fromEntries(
       Object.entries(updatedFields).filter(([_, value]) => value !== undefined)
-    );
+    ) as Partial<User>;
 
     // Update user
     const updatedUser = await this.userRepository.updateProfile(
@@ -373,14 +422,21 @@ export class AuthService implements IAuthService {
       filteredFields
     );
 
+    // Return updated profile response
     return {
-      bio: updatedUser.bio || "",
-      email: updatedUser.email,
       id: updatedUser.id,
-      location: updatedUser.location || "",
+      email: updatedUser.email,
+      username: updatedUser.username,
       name: updatedUser.name,
       role: updatedUser.role,
-      username: updatedUser.name,
+      profilePicture: updatedUser.profilePicture || "",
+      location: updatedUser.location || "",
+      bio: updatedUser.bio || "",
+      skills: updatedUser.skills || [],
+      jobTitle: updatedUser.jobTitle || "",
+      company: updatedUser.company || "",
+      yearsOfExperience: updatedUser.yearsOfExperience || "",
+      emailVerified: updatedUser.emailVerified,
     };
   }
 

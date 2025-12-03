@@ -1,0 +1,271 @@
+syntax = "proto3";
+
+package project;
+
+service ProjectService {
+  // Project CRUD
+  rpc CreateProject (CreateProjectRequest) returns (CreateProjectResponse);
+  rpc UpdateProject (UpdateProjectRequest) returns (UpdateProjectResponse);
+  rpc GetProject (GetProjectRequest) returns (GetProjectResponse);
+  rpc ListProjects (ListProjectsRequest) returns (ListProjectsResponse);
+  rpc DeleteProject (DeleteProjectRequest) returns (DeleteProjectResponse);
+  rpc PublishProject (PublishProjectRequest) returns (PublishProjectResponse);
+  
+  // Trending and discovery
+  rpc GetTrendingProjects (GetTrendingProjectsRequest) returns (GetTrendingProjectsResponse);
+  rpc GetTopProjects (GetTopProjectsRequest) returns (GetTopProjectsResponse);
+  rpc SearchProjects (SearchProjectsRequest) returns (SearchProjectsResponse);
+  
+  // Media
+  rpc UploadProjectMedia (UploadProjectMediaRequest) returns (UploadProjectMediaResponse);
+  
+  // Engagement
+  rpc LikeProject (LikeProjectRequest) returns (LikeProjectResponse);
+  rpc UnlikeProject (UnlikeProjectRequest) returns (UnlikeProjectResponse);
+  rpc ShareProject (ShareProjectRequest) returns (ShareProjectResponse);
+  rpc ReportProject (ReportProjectRequest) returns (ReportProjectResponse);
+  
+  // Analytics
+  rpc TrackProjectView (TrackProjectViewRequest) returns (TrackProjectViewResponse);
+}
+
+// Messages
+message CreateProjectRequest {
+  string userId = 1;
+  string title = 2;
+  string description = 3;
+  repeated string repositoryUrls = 4;
+  optional string demoUrl = 5;
+  repeated string techStack = 6;
+  repeated string tags = 7;
+  string visibility = 8; // PUBLIC, PRIVATE, VISIBILITY_CONNECTIONS
+  repeated string mediaIds = 9; // Pre-uploaded media IDs
+}
+
+message CreateProjectResponse {
+  string id = 1;
+  string title = 2;
+  string status = 3; // DRAFT, PUBLISHED
+  string createdAt = 4;
+}
+
+message UpdateProjectRequest {
+  string projectId = 1;
+  string userId = 2;
+  optional string title = 3;
+  optional string description = 4;
+  repeated string repositoryUrls = 5;
+  optional string demoUrl = 6;
+  repeated string techStack = 7;
+  repeated string tags = 8;
+  optional string visibility = 9;
+  repeated string mediaIds = 10;
+}
+
+message UpdateProjectResponse {
+  string id = 1;
+  string updatedAt = 2;
+}
+
+message GetProjectRequest {
+  string projectId = 1;
+  optional string userId = 2; // For checking like status
+}
+
+message GetProjectResponse {
+  Project project = 1;
+}
+
+message ListProjectsRequest {
+  optional string pageParam = 1;
+  optional string userId = 2;
+  optional string filter = 3; // "trending", "newest", "top"
+  repeated string techStack = 4;
+  repeated string tags = 5;
+  optional string period = 6; // "day", "week", "month", "all"
+  int32 limit = 7;
+}
+
+message ListProjectsResponse {
+  repeated Project projects = 1;
+  optional string nextCursor = 2;
+  int32 totalCount = 3;
+}
+
+message GetTrendingProjectsRequest {
+  optional string pageParam = 1;
+  optional string userId = 2;
+  int32 limit = 3;
+  optional string period = 4; // "day", "week", "month"
+}
+
+message GetTrendingProjectsResponse {
+  repeated Project projects = 1;
+  optional string nextCursor = 2;
+}
+
+message GetTopProjectsRequest {
+  optional string pageParam = 1;
+  optional string userId = 2;
+  int32 limit = 3;
+  optional string period = 4;
+}
+
+message GetTopProjectsResponse {
+  repeated Project projects = 1;
+  optional string nextCursor = 2;
+}
+
+message SearchProjectsRequest {
+  string query = 1;
+  optional string pageParam = 2;
+  optional string userId = 3;
+  repeated string techStack = 4;
+  repeated string tags = 5;
+  int32 limit = 6;
+}
+
+message SearchProjectsResponse {
+  repeated Project projects = 1;
+  optional string nextCursor = 2;
+  int32 totalCount = 3;
+}
+
+message DeleteProjectRequest {
+  string projectId = 1;
+  string userId = 2;
+}
+
+message DeleteProjectResponse {
+  string id = 1;
+  bool success = 2;
+}
+
+message PublishProjectRequest {
+  string projectId = 1;
+  string userId = 2;
+}
+
+message PublishProjectResponse {
+  string id = 1;
+  string status = 2;
+  string publishedAt = 3;
+}
+
+message UploadProjectMediaRequest {
+  string url = 1;
+  string type = 2; // IMAGE, VIDEO, SCREENSHOT
+  optional int32 width = 3;
+  optional int32 height = 4;
+  optional int32 fileSize = 5;
+  optional string mimeType = 6;
+}
+
+message UploadProjectMediaResponse {
+  string mediaId = 1;
+  string url = 2;
+}
+
+message LikeProjectRequest {
+  string projectId = 1;
+  string userId = 2;
+}
+
+message LikeProjectResponse {
+  bool isLiked = 1;
+  int32 likesCount = 2;
+}
+
+message UnlikeProjectRequest {
+  string projectId = 1;
+  string userId = 2;
+}
+
+message UnlikeProjectResponse {
+  bool isLiked = 1;
+  int32 likesCount = 2;
+}
+
+message ShareProjectRequest {
+  string projectId = 1;
+  string userId = 2;
+  optional string caption = 3;
+  string shareType = 4; // SHARE, QUOTE
+}
+
+message ShareProjectResponse {
+  string shareId = 1;
+  int32 sharesCount = 2;
+}
+
+message ReportProjectRequest {
+  string projectId = 1;
+  string reporterId = 2;
+  string reason = 3; // SPAM, INAPPROPRIATE, etc.
+  optional string metadata = 4; // JSON string
+}
+
+message ReportProjectResponse {
+  string reportId = 1;
+  bool success = 2;
+}
+
+message TrackProjectViewRequest {
+  string projectId = 1;
+  optional string userId = 2; // NULL for anonymous
+}
+
+message TrackProjectViewResponse {
+  bool success = 1;
+  int32 viewsCount = 2;
+}
+
+// Project model
+message Project {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string userId = 4;
+  repeated string repositoryUrls = 5;
+  optional string demoUrl = 6;
+  repeated string techStack = 7;
+  repeated string tags = 8;
+  string visibility = 9;
+  string status = 10;
+  ProjectEngagement engagement = 11;
+  repeated ProjectMedia media = 12;
+  UserProfile author = 13;
+  string createdAt = 14;
+  string updatedAt = 15;
+  optional string publishedAt = 16;
+  float trendingScore = 17;
+}
+
+message ProjectEngagement {
+  int32 likesCount = 1;
+  int32 commentsCount = 2;
+  int32 sharesCount = 3;
+  int32 viewsCount = 4;
+  bool isLiked = 5;
+  bool isShared = 6;
+}
+
+message ProjectMedia {
+  string id = 1;
+  string type = 2;
+  string url = 3;
+  optional string thumbnailUrl = 4;
+  int32 order = 5;
+  bool isPreview = 6;
+  optional int32 width = 7;
+  optional int32 height = 8;
+  optional int32 duration = 9;
+}
+
+message UserProfile {
+  string id = 1;
+  string name = 2;
+  string username = 3;
+  string avatar = 4;
+}
+

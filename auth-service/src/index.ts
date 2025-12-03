@@ -27,7 +27,13 @@ app.use(cookieParser());
 app.use(passport.initialize());
 
 app.use((req: Request, res: Response, next: NextFunction) => {
-  logger.info(`${req.method} ${req.url}`);
+  logger.info(`${req.method} ${req.url}`, {
+    headers: {
+      contentType: req.headers["content-type"],
+      userAgent: req.headers["user-agent"],
+    },
+    body: req.method === "POST" ? { email: (req.body as any)?.email } : undefined,
+  });
   next();
 });
 

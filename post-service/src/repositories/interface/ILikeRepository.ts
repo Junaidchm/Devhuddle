@@ -20,4 +20,5 @@ export interface ILikeRepository {
   getLikes(targetType: ReactionTargetType, targetId: string, limit?: number): Promise<Reaction[]>;
   getLikeCount(targetType: ReactionTargetType, targetId: string): Promise<number>;
   getUserLikesForPosts(userId: string, postIds: string[]): Promise<Record<string, boolean>>;
+  getUserLikesForComments(userId: string, commentIds: string[]): Promise<Record<string, boolean>>;
 }

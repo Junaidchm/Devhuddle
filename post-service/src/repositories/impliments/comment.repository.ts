@@ -6,6 +6,7 @@ import { BaseRepository } from "./base.repository";
 import { prisma } from "../../config/prisma.config";
 import { Comment, Prisma } from ".prisma/client";
 import logger from "../../utils/logger.util";
+import { v4 as uuidv4 } from "uuid";
 
 export class CommentRepository
   extends BaseRepository<
@@ -28,7 +29,13 @@ export class CommentRepository
     parentCommentId?: string;
   }): Promise<Comment> {
     try {
-      return await super.create(data);
+      // Generate unique ID for the comment
+      const commentId = uuidv4();
+      
+      return await super.create({
+        ...data,
+        id: commentId,
+      });
     } catch (error: any) {
       logger.error("Error creating comment", { error: error.message });
       throw new Error("Failed to create comment");
@@ -74,7 +81,7 @@ export class CommentRepository
           deletedAt: null, // Exclude soft-deleted comments
         },
         include: {
-          commentMentions: true,
+          CommentMention: true,
         },
       });
     } catch (error: any) {
@@ -96,11 +103,11 @@ export class CommentRepository
       const include: any = {};
 
       if (includeMentions) {
-        include.commentMentions = true;
+        include.CommentMention = true;
       }
 
       if (includeReplies) {
-        include.Replies = {
+        include.other_Comment = {
           where: {
             deletedAt: null,
             // LinkedIn-style: Only get direct replies to this main comment
@@ -111,8 +118,8 @@ export class CommentRepository
             createdAt: "asc",
           },
           include: {
-            commentMentions: includeMentions,
-            // NO nested Replies include - replies don't have replies in LinkedIn-style
+            CommentMention: includeMentions,
+            // NO nested other_Comment include - replies don't have replies in LinkedIn-style
           },
         };
       }
@@ -152,7 +159,7 @@ export class CommentRepository
         orderBy: { createdAt: "asc" },
         take: limit,
         include: {
-          commentMentions: true,
+          CommentMention: true,
         },
       });
     } catch (error: any) {

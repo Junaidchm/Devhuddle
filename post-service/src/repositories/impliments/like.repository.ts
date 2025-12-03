@@ -3,6 +3,7 @@ import { BaseRepository } from "./base.repository";
 import { prisma } from "../../config/prisma.config";
 import { Reaction, Prisma, ReactionTargetType } from ".prisma/client";
 import logger from "../../utils/logger.util";
+import { v4 as uuidv4 } from "uuid";
 
 export class LikeRepository
   extends BaseRepository<
@@ -28,14 +29,26 @@ export class LikeRepository
         throw new Error("Cannot provide both postId and commentId");
       }
 
+      // Generate unique ID for the reaction
+      const reactionId = uuidv4();
+      
+      // Build data object conditionally to satisfy TypeScript
+      const reactionData: any = {
+        id: reactionId,
+        userId: data.userId,
+        type: (data.type as any) || "LIKE",
+        targetType: data.targetType,
+      };
+      
+      if (data.postId) {
+        reactionData.postId = data.postId;
+      }
+      if (data.commentId) {
+        reactionData.commentId = data.commentId;
+      }
+
       return await prisma.reaction.create({
-        data: {
-          postId: data.postId,
-          commentId: data.commentId,
-          userId: data.userId,
-          type: (data.type as any) || "LIKE",
-          targetType: data.targetType,
-        },
+        data: reactionData as any, // Type assertion to handle conditional fields
       });
     } catch (error: any) {
       logger.error("Error creating like", { 
@@ -274,6 +287,46 @@ export class LikeRepository
         error: error.message,
         userId,
         postIdsCount: postIds.length,
+      });
+      throw new Error("Database error");
+    }
+  }
+
+  async getUserLikesForComments(
+    userId: string,
+    commentIds: string[]
+  ): Promise<Record<string, boolean>> {
+    try {
+      if (!userId || commentIds.length === 0) {
+        return {};
+      }
+
+      const likes = await prisma.reaction.findMany({
+        where: {
+          userId,
+          type: "LIKE",
+          deletedAt: null,
+          targetType: ReactionTargetType.COMMENT,
+          commentId: {
+            in: commentIds,
+          },
+        },
+        select: {
+          commentId: true,
+        },
+      });
+
+      return likes.reduce<Record<string, boolean>>((acc, like) => {
+        if (like.commentId) {
+          acc[like.commentId] = true;
+        }
+        return acc;
+      }, {});
+    } catch (error: any) {
+      logger.error("Error getting user likes for comments", {
+        error: error.message,
+        userId,
+        commentIdsCount: commentIds.length,
       });
       throw new Error("Database error");
     }
