@@ -13,16 +13,15 @@ services:
       - auth-service
       - post-service
       - notification-service
+      - project-service
       - zookeeper
       - kafka
     volumes:
       - ./api-gateway/src:/app/src
-      - ./api-gateway/protos:/app/protos
-      - ./auth-service/src/grpc/generated:/app/src/grpc/generated
       - ./api-gateway/logs:/app/logs
     networks:
       - shared
-    command: sh -c "npx ts-node src/generate.ts && npm run dev"
+    command: npm run dev
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 10s
@@ -125,6 +124,37 @@ services:
     command: sh -c "npx ts-node src/generate.ts && npx prisma migrate deploy && npm run dev"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+  
+  project-service:
+    build:
+      context: ./project-service
+      dockerfile: Dockerfile
+    container_name: project-service
+    ports:
+      - "3004:3004"
+      - "50053:50053"
+    depends_on:
+      - kafka
+      - zookeeper
+      - redis
+    env_file:
+      - ./project-service/.env
+    volumes:
+      - ./project-service/src:/app/src
+      - ./project-service/protos:/app/protos
+      - ./project-service/src/grpc/generated:/app/src/grpc/generated
+      - ./project-service/prisma:/app/prisma
+      - /app/node_modules
+    networks:
+      - shared
+    command: sh -c "npx ts-node src/generate.ts && npx prisma migrate deploy && npm run dev"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3004/health"]
       interval: 10s
       timeout: 5s
       retries: 5

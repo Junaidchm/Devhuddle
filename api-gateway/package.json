@@ -15,8 +15,6 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.879.0",
     "@aws-sdk/s3-request-presigner": "^3.879.0",
-    "@grpc/grpc-js": "^1.13.4",
-    "@grpc/proto-loader": "^0.7.15",
     "@types/jsonwebtoken": "^9.0.9",
     "compression": "^1.8.0",
     "cookie-parser": "^1.4.7",
@@ -26,7 +24,6 @@
     "express": "^5.1.0",
     "express-http-proxy": "^2.1.2",
     "express-rate-limit": "^7.5.0",
-    "google-protobuf": "^3.21.4",
     "helmet": "^8.1.0",
     "http-proxy-middleware": "^2.0.6",
     "jsonwebtoken": "^9.0.2",
@@ -45,15 +42,12 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.17",
     "@types/express-http-proxy": "^1.6.7",
-    "@types/google-protobuf": "^3.15.12",
     "@types/morgan": "^1.9.10",
     "@types/node": "^22.18.0",
     "@types/nodemailer": "^6.4.17",
     "@types/opossum": "^8.1.9",
     "@types/uuid": "^10.0.0",
-    "protoc-gen-ts": "^0.8.7",
     "ts-node": "^10.9.2",
-    "ts-proto": "^2.7.5",
     "tsc-watch": "^7.1.1",
     "typescript": "^5.8.3"
   }

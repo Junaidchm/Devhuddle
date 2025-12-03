@@ -205,6 +205,10 @@ export interface SubmitPostRequest {
   content: string;
   userId: string;
   mediaIds: string[];
+  /** ✅ FIXED P0-2: Add visibility (PUBLIC, VISIBILITY_CONNECTIONS) */
+  visibility: string;
+  /** ✅ FIXED P0-2: Add commentControl (ANYONE, CONNECTIONS, NONE) */
+  commentControl: string;
 }
 
 export interface SubmitPostResponse {
@@ -2335,7 +2339,7 @@ export const UploadMediaResponse: MessageFns<UploadMediaResponse> = {
 };
 
 function createBaseSubmitPostRequest(): SubmitPostRequest {
-  return { content: "", userId: "", mediaIds: [] };
+  return { content: "", userId: "", mediaIds: [], visibility: "", commentControl: "" };
 }
 
 export const SubmitPostRequest: MessageFns<SubmitPostRequest> = {
@@ -2348,6 +2352,12 @@ export const SubmitPostRequest: MessageFns<SubmitPostRequest> = {
     }
     for (const v of message.mediaIds) {
       writer.uint32(26).string(v!);
+    }
+    if (message.visibility !== "") {
+      writer.uint32(34).string(message.visibility);
+    }
+    if (message.commentControl !== "") {
+      writer.uint32(42).string(message.commentControl);
     }
     return writer;
   },
@@ -2383,6 +2393,22 @@ export const SubmitPostRequest: MessageFns<SubmitPostRequest> = {
           message.mediaIds.push(reader.string());
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.visibility = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.commentControl = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2397,6 +2423,8 @@ export const SubmitPostRequest: MessageFns<SubmitPostRequest> = {
       content: isSet(object.content) ? globalThis.String(object.content) : "",
       userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
       mediaIds: globalThis.Array.isArray(object?.mediaIds) ? object.mediaIds.map((e: any) => globalThis.String(e)) : [],
+      visibility: isSet(object.visibility) ? globalThis.String(object.visibility) : "",
+      commentControl: isSet(object.commentControl) ? globalThis.String(object.commentControl) : "",
     };
   },
 
@@ -2411,6 +2439,12 @@ export const SubmitPostRequest: MessageFns<SubmitPostRequest> = {
     if (message.mediaIds?.length) {
       obj.mediaIds = message.mediaIds;
     }
+    if (message.visibility !== "") {
+      obj.visibility = message.visibility;
+    }
+    if (message.commentControl !== "") {
+      obj.commentControl = message.commentControl;
+    }
     return obj;
   },
 
@@ -2422,6 +2456,8 @@ export const SubmitPostRequest: MessageFns<SubmitPostRequest> = {
     message.content = object.content ?? "";
     message.userId = object.userId ?? "";
     message.mediaIds = object.mediaIds?.map((e) => e) || [];
+    message.visibility = object.visibility ?? "";
+    message.commentControl = object.commentControl ?? "";
     return message;
   },
 };

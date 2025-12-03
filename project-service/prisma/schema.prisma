@@ -1,0 +1,361 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProjectVisibility {
+  PUBLIC
+  PRIVATE
+  VISIBILITY_CONNECTIONS
+}
+
+enum ProjectStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  REMOVED
+}
+
+enum MediaProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ReportStatus {
+  OPEN
+  INVESTIGATING
+  CLOSED
+  RESOLVED
+}
+
+enum ReportReason {
+  SPAM
+  INAPPROPRIATE
+  HARASSMENT
+  COPYRIGHT
+  MISLEADING
+  OTHER
+}
+
+enum OutboxAggregateType {
+  PROJECT
+  PROJECT_LIKE
+  PROJECT_COMMENT
+  PROJECT_SHARE
+  PROJECT_REPORT
+}
+
+enum OutboxEventType {
+  PROJECT_CREATED
+  PROJECT_UPDATED
+  PROJECT_PUBLISHED
+  PROJECT_DELETED
+  PROJECT_LIKE_CREATED
+  PROJECT_LIKE_REMOVED
+  PROJECT_COMMENT_CREATED
+  PROJECT_COMMENT_EDITED
+  PROJECT_COMMENT_DELETED
+  PROJECT_SHARE_CREATED
+  PROJECT_REPORT_CREATED
+}
+
+enum OutboxStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+}
+
+enum IdempotencyStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum HttpMethod {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+}
+
+// Main Project model
+model Project {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  userId      String
+  
+  // Repository links
+  repositoryUrls String[] @default([])
+  demoUrl        String?
+  
+  // Tech stack and tags
+  techStack String[] @default([])
+  tags      String[] @default([])
+  
+  // Visibility and status
+  visibility ProjectVisibility @default(PUBLIC)
+  status     ProjectStatus     @default(DRAFT)
+  
+  // Denormalized counters (read-heavy pattern)
+  likesCount    Int @default(0)
+  commentsCount Int @default(0)
+  sharesCount   Int @default(0)
+  viewsCount    Int @default(0)
+  reportsCount  Int @default(0)
+  
+  // Trending score (calculated periodically)
+  trendingScore Float @default(0)
+  
+  // Soft delete and moderation
+  deletedAt   DateTime?
+  removedAt   DateTime?
+  removedBy   String?
+  
+  // Versioning
+  version Int @default(1)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  publishedAt DateTime?
+  
+  // Relations
+  media          ProjectMedia[]
+  likes          ProjectLike[]
+  comments       ProjectComment[]
+  shares         ProjectShare[]
+  reports        ProjectReport[]
+  versions       ProjectVersion[]
+  analytics      ProjectAnalytics[]
+  
+  @@index([userId])
+  @@index([status])
+  @@index([visibility])
+  @@index([createdAt])
+  @@index([publishedAt])
+  @@index([trendingScore])
+  @@index([techStack])
+  @@index([tags])
+  @@index([deletedAt])
+  @@map("projects")
+}
+
+// Project media attachments
+model ProjectMedia {
+  id          String   @id @default(cuid())
+  projectId   String?  // Nullable - media can be uploaded before project creation
+  type        String
+  url         String
+  thumbnailUrl String?
+  order       Int      @default(0)
+  isPreview   Boolean  @default(false)
+  
+  // Processing status
+  processingStatus MediaProcessingStatus @default(PENDING)
+  processingError  String?
+  
+  // Metadata
+  width       Int?
+  height      Int?
+  fileSize    Int?
+  mimeType    String?
+  duration    Int?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  
+  Project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@index([processingStatus])
+  @@map("project_media")
+}
+
+// Project likes (reactions)
+model ProjectLike {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  createdAt DateTime @default(now())
+  deletedAt DateTime?
+  
+  Project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@index([deletedAt])
+  @@map("project_likes")
+}
+
+// Project comments (reuse existing comment patterns from post-service)
+model ProjectComment {
+  id              String   @id @default(uuid())
+  projectId       String
+  userId          String
+  content         String
+  parentCommentId String?
+  
+  likesCount Int      @default(0)
+  deletedAt  DateTime?
+  editedAt   DateTime?
+  version    Int      @default(1)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  
+  Project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  ParentComment  ProjectComment? @relation("CommentReplies", fields: [parentCommentId], references: [id])
+  Replies        ProjectComment[] @relation("CommentReplies")
+  Reactions      ProjectCommentReaction[]
+  Reports        ProjectReport[]
+  
+  @@index([projectId])
+  @@index([userId])
+  @@index([parentCommentId])
+  @@index([deletedAt])
+  @@map("project_comments")
+}
+
+// Comment reactions
+model ProjectCommentReaction {
+  id        String   @id @default(uuid())
+  commentId String
+  userId    String
+  type      String   @default("LIKE")
+  createdAt DateTime @default(now())
+  deletedAt DateTime?
+  
+  ProjectComment ProjectComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  
+  @@unique([commentId, userId, type])
+  @@index([commentId])
+  @@index([userId])
+  @@map("project_comment_reactions")
+}
+
+// Project shares
+model ProjectShare {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  shareType String   @default("SHARE")
+  caption   String?
+  createdAt DateTime @default(now())
+  
+  Project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("project_shares")
+}
+
+// Project reports (moderation)
+model ProjectReport {
+  id         String       @id @default(uuid())
+  reporterId String
+  projectId  String?
+  commentId  String?
+  reason     ReportReason
+  status     ReportStatus @default(OPEN)
+  metadata   Json?
+  resolvedAt DateTime?
+  resolvedBy String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @default(now()) @updatedAt
+  
+  Project  Project?        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  Comment  ProjectComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  
+  @@unique([reporterId, projectId, commentId])
+  @@index([projectId])
+  @@index([commentId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("project_reports")
+}
+
+// Project version history (simple versioning)
+model ProjectVersion {
+  id        String   @id @default(uuid())
+  projectId String
+  version   Int
+  title     String
+  description String
+  data      Json
+  createdAt DateTime @default(now())
+  
+  Project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@unique([projectId, version])
+  @@index([projectId])
+  @@map("project_versions")
+}
+
+// Project analytics (views, engagement tracking)
+model ProjectAnalytics {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String?
+  eventType String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  
+  Project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@index([userId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("project_analytics")
+}
+
+// Outbox pattern for reliable event publishing
+model OutboxEvent {
+  id              String              @id @default(uuid())
+  aggregateType   OutboxAggregateType
+  aggregateId     String?
+  type            OutboxEventType
+  topic           String
+  key             String?
+  payload         Json
+  status          OutboxStatus        @default(PENDING)
+  attempts        Int                 @default(0)
+  lastAttemptedAt DateTime?
+  createdAt       DateTime            @default(now())
+  publishedAt     DateTime?
+  
+  @@index([status])
+  @@index([createdAt])
+  @@index([aggregateType, aggregateId])
+  @@map("outbox_events")
+}
+
+// Idempotency keys
+model IdempotencyKey {
+  id          String            @id @default(uuid())
+  key         String            @unique
+  userId      String
+  method      HttpMethod
+  route       String
+  requestHash String?
+  response    Json?
+  status      IdempotencyStatus @default(IN_PROGRESS)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @default(now()) @updatedAt
+  
+  @@index([userId])
+  @@index([key])
+  @@map("idempotency_keys")
+}
+

@@ -8,6 +8,12 @@ import {
   SubmitPostResponse,
   UploadMediaRequest,
   UploadMediaResponse,
+  EditPostRequest,
+  EditPostResponse,
+  GetPostVersionsRequest,
+  GetPostVersionsResponse,
+  RestorePostVersionRequest,
+  RestorePostVersionResponse,
 } from "../../grpc/generated/post";
 
 export interface IpostService {
@@ -15,4 +21,7 @@ export interface IpostService {
   getPosts(pageParam?: string, userId?: string): Promise<ListPostsResponse>;
   submitPost(req: SubmitPostRequest): Promise<SubmitPostResponse>;
   deletePostServ(postId: string): Promise<DeletePostResponse>;
+  editPost(req: EditPostRequest): Promise<EditPostResponse>;
+  getPostVersions(req: GetPostVersionsRequest): Promise<GetPostVersionsResponse>;
+  restorePostVersion(req: RestorePostVersionRequest): Promise<RestorePostVersionResponse>;
 }

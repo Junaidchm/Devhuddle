@@ -19,7 +19,8 @@ COPY logs ./logs
 # Generate Prisma client
 RUN npx prisma generate
 
-RUN npx ts-node src/generate.ts
+# Generate gRPC code (needed for service-to-service communication)
+RUN npx ts-node --project tsconfig.json ./src/generate.ts
 # Build the app
 RUN npm run build
 

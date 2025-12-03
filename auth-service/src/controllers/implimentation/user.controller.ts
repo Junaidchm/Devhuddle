@@ -11,14 +11,44 @@ export class UserController {
   async getProfileByUsername(req: Request, res: Response): Promise<void> {
     try {
       const { username } = req.params;
-      const currentUserId = JSON.parse(req.headers["x-user-data"] as string).id;
+      // Profile pages require authentication (social media app - no public profiles)
+      const userData = req.headers["x-user-data"];
+      if (!userData || typeof userData !== "string") {
+        return sendErrorResponse(res, {
+          status: HttpStatus.UNAUTHORIZED,
+          message: "Authentication required to view profiles",
+        });
+      }
+      
+      let currentUserId: string;
+      try {
+        const parsed = JSON.parse(userData);
+        currentUserId = parsed?.id;
+        if (!currentUserId) {
+          return sendErrorResponse(res, {
+            status: HttpStatus.UNAUTHORIZED,
+            message: "Invalid authentication data",
+          });
+        }
+      } catch (parseError) {
+        logger.error("Failed to parse x-user-data header", { error: parseError });
+        return sendErrorResponse(res, {
+          status: HttpStatus.UNAUTHORIZED,
+          message: "Invalid authentication data",
+        });
+      }
+      
       const profile = await this._userService.getProfileByUsername(
         username,
         currentUserId
       );
       res.status(HttpStatus.OK).json(profile);
     } catch (err: any) {
-      logger.error("Get profile error", { error: err.message });
+      logger.error("Get profile error", { 
+        error: err.message,
+        stack: err.stack,
+        username: req.params.username 
+      });
       sendErrorResponse(res, err);
     }
   }
@@ -53,6 +83,34 @@ export class UserController {
     }
   }
 
+  /**
+   * Get current user's following list (connections)
+   * Endpoint: GET /api/v1/users/me/following
+   */
+  async getMyFollowing(req: Request, res: Response): Promise<void> {
+    try {
+      const currentUserId = JSON.parse(req.headers["x-user-data"] as string).id;
+      const currentUser = await this._userService.getUserById(currentUserId);
+      
+      if (!currentUser) {
+        throw new CustomError(HttpStatus.NOT_FOUND, "User not found");
+      }
+
+      if (!currentUser.username) {
+        throw new CustomError(HttpStatus.BAD_REQUEST, "User username is missing");
+      }
+
+      const following = await this._userService.getFollowing(
+        currentUser.username,
+        currentUserId
+      );
+      res.status(HttpStatus.OK).json(following);
+    } catch (err: any) {
+      logger.error("Get my following error", { error: err.message });
+      sendErrorResponse(res, err);
+    }
+  }
+
   async searchUsers(req: Request, res: Response): Promise<void> {
     try {
       const query = req.query.q as string;
@@ -70,6 +128,56 @@ export class UserController {
       res.status(HttpStatus.OK).json(users);
     } catch (err: any) {
       logger.error("Search users error", { error: err.message });
+      sendErrorResponse(
+        res,
+        err instanceof CustomError ? err : { status: 500, message: "Server error" }
+      );
+    }
+  }
+
+  /**
+   * Internal endpoint for service-to-service calls
+   * Gets user info by ID without requiring authentication
+   * Only accessible from internal services (checks x-internal-service header)
+   */
+  async getUserByIdInternal(req: Request, res: Response): Promise<void> {
+    try {
+      // Check if this is an internal service call
+      const internalServiceHeader = req.headers["x-internal-service"];
+      if (!internalServiceHeader || internalServiceHeader !== "notification-service") {
+        return sendErrorResponse(res, {
+          status: HttpStatus.FORBIDDEN,
+          message: "This endpoint is only accessible from internal services",
+        });
+      }
+
+      const { userId } = req.params;
+      if (!userId) {
+        return sendErrorResponse(res, {
+          status: HttpStatus.BAD_REQUEST,
+          message: "User ID is required",
+        });
+      }
+
+      const user = await this._userService.getUserById(userId);
+      if (!user) {
+        return sendErrorResponse(res, {
+          status: HttpStatus.NOT_FOUND,
+          message: "User not found",
+        });
+      }
+
+      res.status(HttpStatus.OK).json({
+        success: true,
+        data: {
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          profilePicture: user.profilePicture,
+        },
+      });
+    } catch (err: any) {
+      logger.error("Get user by ID internal error", { error: err.message });
       sendErrorResponse(
         res,
         err instanceof CustomError ? err : { status: 500, message: "Server error" }

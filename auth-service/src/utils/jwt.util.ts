@@ -190,6 +190,10 @@ export const filterUserProfileData = (
       name: user.name,
       location: user.location || "",
       bio: user.bio || "",
+      skills: user.skills || [],
+      jobTitle: user.jobTitle || "",
+      company: user.company || "",
+      yearsOfExperience: user.yearsOfExperience || "",
       emailVerified: user.emailVerified,
     };
   }

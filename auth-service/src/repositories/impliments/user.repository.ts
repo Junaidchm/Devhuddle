@@ -191,6 +191,14 @@ export class UserRepository
     username: string,
     currentUserId: string
   ): Promise<any | null> {
+    // Profile pages require authentication (social media app - no public profiles)
+    if (!currentUserId || typeof currentUserId !== 'string' || currentUserId.trim().length === 0) {
+      throw new Error("Authentication required to view profiles");
+    }
+    
+    // Always include followers check since authentication is required
+    const hasCurrentUserId = true;
+    
     const user = await prisma.user.findUnique({
       where: { username },
       select: {
@@ -204,6 +212,9 @@ export class UserRepository
         location: true,
         bio: true,
         jobTitle: true,
+        company: true,
+        skills: true,
+        yearsOfExperience: true,
         createdAt: true,
         _count: {
           select: {
@@ -220,26 +231,52 @@ export class UserRepository
             },
           },
         },
-        // Check if the current user is a follower of this profile
-        followers: {
-          where: {
-            followerId: currentUserId,
-            deletedAt: null,
+        // Check if the current user is a follower of this profile (only if currentUserId is provided and valid)
+        ...(hasCurrentUserId ? {
+          followers: {
+            where: {
+              followerId: currentUserId,
+              deletedAt: null,
+            },
+            select: {
+              followerId: true,
+            },
           },
-          select: {
-            followerId: true,
-          },
-        },
+        } : {}),
       },
     });
 
     if (!user) return null;
 
-    const { followers, ...rest } = user;
-    return {
-      ...rest,
-      isFollowing: followers.length > 0,
+    // If currentUserId was provided, check following status; otherwise default to false
+    let isFollowing = false;
+    if (hasCurrentUserId && 'followers' in user) {
+      const followers = (user as any).followers;
+      isFollowing = Array.isArray(followers) && followers.length > 0;
+    }
+
+    // Create a clean, serializable object
+    const userObj = user as any;
+    const result: any = {
+      id: userObj.id,
+      email: userObj.email,
+      username: userObj.username,
+      name: userObj.name,
+      role: userObj.role,
+      emailVerified: userObj.emailVerified,
+      profilePicture: userObj.profilePicture,
+      location: userObj.location,
+      bio: userObj.bio,
+      jobTitle: userObj.jobTitle,
+      company: userObj.company,
+      skills: userObj.skills,
+      yearsOfExperience: userObj.yearsOfExperience,
+      createdAt: userObj.createdAt,
+      _count: userObj._count,
+      isFollowing,
     };
+    
+    return result;
   }
 
   async findFollowers(userId: string, currentUserId: string): Promise<any[]> {

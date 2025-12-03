@@ -15,6 +15,11 @@ export class UserService implements IUserService {
     username: string,
     currentUserId: string
   ): Promise<Partial<User>> {
+    // Profile pages require authentication (social media app - no public profiles)
+    if (!currentUserId) {
+      throw new CustomError(HttpStatus.UNAUTHORIZED, "Authentication required to view profiles");
+    }
+    
     const profile = await this.userRepository.findProfileByUsername(
       username,
       currentUserId
@@ -57,6 +62,10 @@ export class UserService implements IUserService {
 
   async searchUsers(query: string, currentUserId: string): Promise<Partial<User>[]> {
     return this.userRepository.searchUsers(query, currentUserId);
+  }
+
+  async getUserById(userId: string): Promise<Partial<User> | null> {
+    return this.userRepository.findByIdUser(userId);
   }
 }
 

@@ -13,10 +13,22 @@ const followsService = new FollowsService(followsRepository);
 const userService = new UserService(userRepository, followsService);
 const userController = new UserController(userService);
 
+// Internal service endpoint (must come before /:username to avoid conflict)
+router.get(
+  "/internal/:userId",
+  userController.getUserByIdInternal.bind(userController)
+);
+
 // User search route (must come before /:username route to avoid conflict)
 router.get(
   "/search",
   userController.searchUsers.bind(userController)
+);
+
+// Current user's connections (must come before /:username route)
+router.get(
+  "/me/following",
+  userController.getMyFollowing.bind(userController)
 );
 
 // Profile routes

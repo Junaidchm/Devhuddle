@@ -23,6 +23,9 @@ export class NotificationsRepository
   implements INotificationRepository
 {
   private wsService: WebSocketService | null = null;
+  // ✅ FIXED: In-memory cache for user info to avoid repeated fetches
+  private userInfoCache: Map<string, { data: any; timestamp: number }> = new Map();
+  private readonly USER_INFO_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor(wsService?: WebSocketService) {
     super(prisma.notificationObject);
@@ -160,6 +163,46 @@ export class NotificationsRepository
   }
 
   /**
+   * Create post sent notification (LinkedIn-style)
+   * Uses NEW_MESSAGE type since it's similar to sending a message
+   */
+  // ✅ NEW: Create post notification (for followers when post is created)
+  async createPostNotification(
+    issuerId: string,
+    recipientId: string,
+    postId: string,
+    version: number
+  ): Promise<void> {
+    await this._createOrUpdateNotification(
+      NotificationType.NEW_POST,
+      EntityType.POST,
+      postId,
+      issuerId,
+      recipientId,
+      version,
+      "created a new post"
+    );
+  }
+
+  async createPostSentNotification(
+    senderId: string,
+    recipientId: string,
+    postId: string,
+    message: string | undefined,
+    version: number
+  ): Promise<void> {
+    await this._createOrUpdateNotification(
+      NotificationType.NEW_MESSAGE,
+      EntityType.POST,
+      postId,
+      senderId,
+      recipientId,
+      version,
+      message ? "sent you a post with a message" : "sent you a post"
+    );
+  }
+
+  /**
    * Delete comment notification for ALL recipients
    * When a comment is deleted, all notifications about it (COMMENT and MENTION) should be removed
    * Uses generic _deleteNotificationByEntity method
@@ -230,7 +273,150 @@ export class NotificationsRepository
   }
 
   /**
-   * Get notifications with pagination and caching
+   * Fetch user info from auth service
+   * ✅ FIXED: Uses internal endpoint for service-to-service calls
+   * ✅ FIXED: Added in-memory caching to avoid repeated fetches
+   */
+  private async fetchUserInfo(userId: string): Promise<any> {
+    try {
+      // Check cache first
+      const cached = this.userInfoCache.get(userId);
+      if (cached && Date.now() - cached.timestamp < this.USER_INFO_CACHE_TTL) {
+        logger.debug(`Using cached user info for ${userId}`);
+        return cached.data;
+      }
+
+      const authServiceUrl = process.env.AUTH_SERVICE_URL || "http://auth-service:3001";
+      const url = `${authServiceUrl}/users/internal/${userId}`;
+      
+      logger.debug(`Fetching user info from: ${url}`);
+      
+      // ✅ FIXED: Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+      try {
+        // Use internal endpoint for service-to-service calls
+        const response = await fetch(url, {
+          headers: {
+            "Content-Type": "application/json",
+            "x-internal-service": "notification-service",
+          },
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => "Unknown error");
+          logger.warn(`Failed to fetch user info for ${userId}: ${response.status} ${response.statusText} - ${errorText}`);
+          return null;
+        }
+
+        const result = await response.json();
+        logger.debug(`Received user info for ${userId}:`, { 
+          hasData: !!result?.data,
+          hasName: !!result?.data?.name,
+          name: result?.data?.name 
+        });
+        
+        // Handle both { success: true, data: {...} } and direct data formats
+        const userData = result?.data || result || null;
+        if (userData && !userData.name) {
+          logger.warn(`User data for ${userId} missing name field:`, userData);
+        }
+
+        // Cache the result
+        if (userData) {
+          this.userInfoCache.set(userId, {
+            data: userData,
+            timestamp: Date.now(),
+          });
+        }
+
+        return userData;
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        // Handle timeout and other errors
+        if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+          logger.warn(`Timeout fetching user info for ${userId}`);
+        } else {
+          logger.error(`Error fetching user info for ${userId}`, {
+            error: error.message,
+            stack: error.stack,
+          });
+        }
+        return null;
+      }
+    } catch (error: any) {
+      logger.error(`Error in fetchUserInfo for ${userId}`, {
+        error: error.message,
+        stack: error.stack,
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Batch fetch user info for multiple actor IDs
+   * ✅ FIXED: Better error handling and logging
+   */
+  private async fetchActorsInfo(actorIds: string[]): Promise<Map<string, any>> {
+    const actorMap = new Map<string, any>();
+    const uniqueActorIds = [...new Set(actorIds)];
+
+    if (uniqueActorIds.length === 0) {
+      return actorMap;
+    }
+
+    logger.info(`Fetching user info for ${uniqueActorIds.length} actors`);
+
+    // Fetch all actors in parallel
+    const actorPromises = uniqueActorIds.map(async (actorId) => {
+      try {
+        const userInfo = await this.fetchUserInfo(actorId);
+        if (userInfo && userInfo.name) {
+          actorMap.set(actorId, {
+            id: userInfo.id || actorId,
+            name: userInfo.name,
+            username: userInfo.username || "",
+            profilePicture: userInfo.profilePicture || null,
+          });
+          logger.debug(`Fetched user info for ${actorId}: ${userInfo.name}`);
+        } else {
+          // Fallback if user not found
+          logger.warn(`User info not found for actor ${actorId}, using fallback`);
+          actorMap.set(actorId, {
+            id: actorId,
+            name: "Unknown User",
+            username: "",
+            profilePicture: null,
+          });
+        }
+      } catch (error: any) {
+        logger.error(`Error fetching user info for actor ${actorId}`, {
+          error: error.message,
+        });
+        // Fallback on error
+        actorMap.set(actorId, {
+          id: actorId,
+          name: "Unknown User",
+          username: "",
+          profilePicture: null,
+        });
+      }
+    });
+
+    await Promise.all(actorPromises);
+    logger.info(`Successfully fetched user info for ${actorMap.size} actors`);
+    return actorMap;
+  }
+
+  /**
+   * Get notifications with pagination and actor user info
+   * ✅ FIXED: Includes full actor user info (name, profile picture, username)
+   * ✅ FIXED: Reduced cache TTL to 30 seconds for instant updates
+   * ✅ FIXED: Sort by notificationObject.createdAt (newest first)
    */
   async getNotifications(
     recipientId: string,
@@ -242,7 +428,7 @@ export class NotificationsRepository
     hasMore: boolean;
   }> {
     try {
-      // Try cache first
+      // ✅ REDUCED CACHE: Only cache for 30 seconds instead of 5 minutes
       const cacheKey = `notifications:${recipientId}:${limit}:${offset}`;
       const cached = await redisClient.get(cacheKey);
       if (cached) {
@@ -259,11 +445,18 @@ export class NotificationsRepository
           include: {
             notificationObject: {
               include: {
-                actors: true,
+                actors: {
+                  orderBy: { createdAt: "desc" }, // Most recent actors first
               },
             },
           },
-          orderBy: { createdAt: "desc" },
+          },
+          // ✅ FIXED: Sort by notificationObject.createdAt (newest notifications first)
+          orderBy: { 
+            notificationObject: {
+              createdAt: "desc"
+            }
+          },
           take: limit,
           skip: offset,
         }),
@@ -275,27 +468,86 @@ export class NotificationsRepository
         }),
       ]);
 
-      const result = {
-        notifications: notifications.map((n) => ({
+      // Collect all unique actor IDs
+      const allActorIds: string[] = [];
+      notifications.forEach((n) => {
+        n.notificationObject.actors.forEach((actor) => {
+          if (!allActorIds.includes(actor.actorId)) {
+            allActorIds.push(actor.actorId);
+          }
+        });
+      });
+
+      // ✅ FIXED: Fetch actor user info from auth service
+      const actorsInfoMap = await this.fetchActorsInfo(allActorIds);
+
+      // Map notifications with actor user info
+      const mappedNotifications = notifications.map((n) => {
+        const actors = n.notificationObject.actors.map((actor) => {
+          const actorInfo = actorsInfoMap.get(actor.actorId);
+          return {
+            id: actor.actorId,
+            name: actorInfo?.name || "Unknown User",
+            username: actorInfo?.username || "",
+            profilePicture: actorInfo?.profilePicture || null,
+          };
+        });
+
+        // ✅ FIXED: Update summary with actor names and regenerate summary text
+        let summary = n.notificationObject.summary;
+        if (summary && typeof summary === "object" && "json" in summary) {
+          const summaryData = (summary as any).json || summary;
+          
+          // Determine action verb from notification type and entity type
+          const actionVerb = this._getActionVerbFromNotification(
+            n.notificationObject.type,
+            n.notificationObject.entityType,
+            n.notificationObject.contextId // contextId indicates if it's a reply
+          );
+          
+          // Regenerate summary text with actual actor names
+          const summaryText = this._generateSummaryTextWithNames(
+            actors,
+            n.notificationObject.aggregatedCount || actors.length,
+            actionVerb
+          );
+          
+          summary = {
+            ...summaryData,
+            text: summaryText, // ✅ Use regenerated text with real names
+            actors: actors.map((a) => ({
+              id: a.id,
+              name: a.name,
+              username: a.username,
+              profilePicture: a.profilePicture,
+            })),
+          };
+        }
+
+        return {
           id: n.id,
           type: n.notificationObject.type,
           entityType: n.notificationObject.entityType,
           entityId: n.notificationObject.entityId,
           contextId: n.notificationObject.contextId,
-          summary: n.notificationObject.summary,
+          summary,
           metadata: n.notificationObject.metadata,
           aggregatedCount: n.notificationObject.aggregatedCount,
           read: n.read,
           readAt: n.readAt,
-          createdAt: n.createdAt,
-          actors: n.notificationObject.actors.map((a) => a.actorId),
-        })),
+          createdAt: n.notificationObject.createdAt, // ✅ Use notificationObject.createdAt
+          actors, // ✅ Full actor info with name, profile picture, username
+        };
+      });
+
+      const result = {
+        notifications: mappedNotifications,
         total,
         hasMore: offset + limit < total,
       };
 
-      // Cache for 5 minutes
-      await redisClient.setEx(cacheKey, 300, JSON.stringify(result));
+      // ✅ REDUCED CACHE: Cache for only 30 seconds for instant updates
+      await redisClient.setEx(cacheKey, 30, JSON.stringify(result));
 
       return result;
     } catch (error: any) {
@@ -324,7 +576,16 @@ export class NotificationsRepository
         },
       });
 
-      // Update cache
+      // ✅ FIXED: Make cache invalidation non-blocking to avoid timeout
+      // Don't await - let it run in background
+      this._invalidateNotificationCache(recipientId).catch((error) => {
+        logger.error("Error invalidating cache (non-blocking)", {
+          error: error.message,
+          recipientId,
+        });
+      });
+
+      // Update unread count (this is fast, so we can await it)
       await this._updateAndBroadcastUnreadCount(recipientId);
 
       logger.info(
@@ -356,7 +617,14 @@ export class NotificationsRepository
         data: { deletedAt: new Date() },
       });
 
-      // Update cache
+      // ✅ FIXED: Make cache invalidation non-blocking to avoid timeout
+      this._invalidateNotificationCache(recipientId).catch((error) => {
+        logger.error("Error invalidating cache (non-blocking)", {
+          error: error.message,
+          recipientId,
+        });
+      });
+
       await this._updateAndBroadcastUnreadCount(recipientId);
 
       logger.info(
@@ -426,7 +694,14 @@ export class NotificationsRepository
         },
       });
 
-      // Update cache
+      // ✅ FIXED: Make cache invalidation non-blocking to avoid timeout
+      this._invalidateNotificationCache(recipientId).catch((error) => {
+        logger.error("Error invalidating cache (non-blocking)", {
+          error: error.message,
+          recipientId,
+        });
+      });
+
       await this._updateAndBroadcastUnreadCount(recipientId);
 
       logger.info(`All notifications marked as read for user ${recipientId}`);
@@ -440,13 +715,94 @@ export class NotificationsRepository
   }
 
   /**
+   * Invalidate all notification caches for a user
+   */
+  private async _invalidateNotificationCache(recipientId: string): Promise<void> {
+    try {
+      // Delete all cache keys for this user's notifications
+      const pattern = `notifications:${recipientId}:*`;
+      const keys = await redisClient.keys(pattern);
+      if (keys.length > 0) {
+        // ✅ FIXED: Delete keys one by one or use array spread with proper typing
+        // Redis v5 del() accepts multiple keys, but TypeScript needs proper typing
+        for (const key of keys) {
+          await redisClient.del(key);
+        }
+        logger.info(`Invalidated ${keys.length} notification cache keys for user ${recipientId}`);
+      }
+    } catch (error: any) {
+      logger.error("Error invalidating notification cache", {
+        error: error.message,
+        recipientId,
+      });
+    }
+  }
+
+  /**
+   * Get notification with full actor info for WebSocket broadcast
+   */
+  private async _getNotificationWithActorInfo(notificationObjectId: string): Promise<any | null> {
+    try {
+      const notification = await prisma.notificationObject.findUnique({
+        where: { id: notificationObjectId },
+        include: {
+          actors: {
+            orderBy: { createdAt: "desc" },
+          },
+        },
+      });
+
+      if (!notification) return null;
+
+      const actorIds = notification.actors.map((a) => a.actorId);
+      const actorsInfoMap = await this.fetchActorsInfo(actorIds);
+
+      const actors = notification.actors.map((actor) => {
+        const actorInfo = actorsInfoMap.get(actor.actorId);
+        return {
+          id: actor.actorId,
+          name: actorInfo?.name || "Unknown User",
+          username: actorInfo?.username || "",
+          profilePicture: actorInfo?.profilePicture || null,
+        };
+      });
+
+      // Update summary with actor info
+      let summary = notification.summary;
+      if (summary && typeof summary === "object" && "json" in summary) {
+        const summaryData = (summary as any).json || summary;
+        summary = {
+          ...summaryData,
+          actors: actors.map((a) => ({
+            id: a.id,
+            name: a.name,
+            username: a.username,
+            profilePicture: a.profilePicture,
+          })),
+        };
+      }
+
+      return {
+        ...notification,
+        summary,
+        actors,
+      };
+    } catch (error: any) {
+      logger.error("Error getting notification with actor info", {
+        error: error.message,
+        notificationObjectId,
+      });
+      return null;
+    }
+  }
+
+  /**
    * Update unread count cache
    */
   private async _updateAndBroadcastUnreadCount(
     recipientId: string
   ): Promise<void> {
     try {
-      // console.log("this is the notification for the user ", notification);
       const count = await prisma.notificationRecipient.count({
         where: {
           recipientId,
@@ -455,10 +811,6 @@ export class NotificationsRepository
         },
       });
 
-      console.log(
-        "this is the count for unread notification ------------------------->",
-        count
-      );
       const cacheKey = `notifications:unread:${recipientId}`;
       await redisClient.setEx(cacheKey, 3600, count.toString());
 
@@ -617,7 +969,17 @@ export class NotificationsRepository
 
       // Broadcast the notification
       if (notificationObject) {
+        // ✅ FIXED: Invalidate cache when new notification is created
+        await this._invalidateNotificationCache(recipientId);
+        
+        // ✅ FIXED: Fetch full notification with actor info before broadcasting
+        const fullNotification = await this._getNotificationWithActorInfo(notificationObject.id);
+        if (fullNotification) {
+          this.wsService?.broadcastNotification(recipientId, fullNotification);
+        } else {
         this.wsService?.broadcastNotification(recipientId, notificationObject);
+        }
+        
         await this._updateAndBroadcastUnreadCount(recipientId);
       }
 
@@ -820,7 +1182,7 @@ export class NotificationsRepository
   }
 
   /**
-   * Generate summary text for aggregated notifications
+   * Generate summary text for aggregated notifications (with actor IDs)
    */
   private _generateSummaryText(
     actors: string[],
@@ -833,6 +1195,82 @@ export class NotificationsRepository
       return `${actors[0]} and ${actors[1]} ${action} you`;
     } else {
       return `${actors[0]} and ${count - 1} others ${action} you`;
+    }
+  }
+
+  /**
+   * Generate summary text with actual actor names (for display)
+   * ✅ NEW: Uses actor objects with names instead of IDs
+   */
+  private _generateSummaryTextWithNames(
+    actors: Array<{ id: string; name: string; username?: string }>,
+    count: number,
+    action: string
+  ): string {
+    if (actors.length === 0) {
+      return `Someone ${action} you`;
+    }
+
+    const firstActor = actors[0];
+    const firstName = firstActor.name && firstActor.name !== "Unknown User" 
+      ? firstActor.name 
+      : firstActor.username || "Someone";
+
+    if (count === 1) {
+      return `${firstName} ${action} you`;
+    } else if (count === 2 && actors.length >= 2) {
+      const secondActor = actors[1];
+      const secondName = secondActor.name && secondActor.name !== "Unknown User"
+        ? secondActor.name
+        : secondActor.username || "Someone";
+      return `${firstName} and ${secondName} ${action} you`;
+    } else {
+      return `${firstName} and ${count - 1} others ${action} you`;
+    }
+  }
+
+  /**
+   * Get action verb from notification type and entity type
+   * ✅ FIXED: Returns proper action phrases like "liked your post", "commented on your post", etc.
+   */
+  private _getActionVerbFromNotification(
+    type: NotificationType,
+    entityType: EntityType,
+    contextId?: string | null
+  ): string {
+    switch (type) {
+      case NotificationType.LIKE:
+        if (entityType === EntityType.POST) {
+          return "liked your post";
+        } else if (entityType === EntityType.COMMENT) {
+          return "liked your comment";
+        }
+        return "liked";
+        
+      case NotificationType.COMMENT:
+        // If contextId exists, it's a reply to a comment
+        if (contextId) {
+          return "replied to your comment";
+        } else if (entityType === EntityType.POST) {
+          return "commented on your post";
+        } else {
+          return "commented on";
+        }
+        
+      case NotificationType.MENTION:
+        return "mentioned you in a comment";
+        
+      case NotificationType.FOLLOW:
+        return "started following you";
+        
+      case NotificationType.NEW_MESSAGE:
+        return "sent you a post";
+        
+      case NotificationType.ROOM_REMINDER:
+        return "reminder";
+        
+      default:
+        return "interacted with your content";
     }
   }
 }

@@ -134,6 +134,7 @@ export class CommentController {
       const { postId } = req.params;
       const limit = parseInt(req.query.limit as string) || 20;
       const offset = parseInt(req.query.offset as string) || 0;
+      const userId = getUserIdFromRequest(req);
 
       if (!postId) {
         throw new CustomError(
@@ -145,7 +146,8 @@ export class CommentController {
       const comments = await this._commentService.getComments(
         postId,
         limit,
-        offset
+        offset,
+        userId
       );
 
       res.status(HttpStatus.OK).json({
@@ -196,12 +198,13 @@ export class CommentController {
     try {
       const { commentId } = req.params;
       const limit = parseInt(req.query.limit as string) || 10;
+      const userId = getUserIdFromRequest(req);
 
       if (!commentId) {
         throw new CustomError(HttpStatus.BAD_REQUEST, "Comment ID is required");
       }
 
-      const replies = await this._commentService.getReplies(commentId, limit);
+      const replies = await this._commentService.getReplies(commentId, limit, userId);
 
       res.status(HttpStatus.OK).json({
         success: true,
@@ -223,6 +226,7 @@ export class CommentController {
   ): Promise<void> {
     try {
       const { postId } = req.params;
+      const userId = getUserIdFromRequest(req);
 
       if (!postId) {
         throw new CustomError(
@@ -231,7 +235,7 @@ export class CommentController {
         );
       }
 
-      const preview = await this._commentService.getCommentPreview(postId);
+      const preview = await this._commentService.getCommentPreview(postId, userId);
 
       res.status(HttpStatus.OK).json({
         success: true,

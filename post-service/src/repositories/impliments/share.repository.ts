@@ -23,14 +23,23 @@ export class ShareRepository
     userId: string;
     shareType: string;
     caption?: string;
+    visibility?: string;
     targetType?: string;
     targetId?: string;
+    sharedToUserId?: string;
   }): Promise<Share> {
     try {
       return await super.create({
-        ...data,
+        posts: {
+          connect: { id: data.postId },
+        },
+        userId: data.userId,
         shareType: data.shareType as ShareType,
-        targetType: data.targetType as TargetType,
+        caption: data.caption,
+        visibility: (data.visibility as any) || "PUBLIC",
+        targetType: (data.targetType as TargetType) || TargetType.USER,
+        targetId: data.targetId || data.sharedToUserId,
+        sharedToUserId: data.sharedToUserId || data.targetId,
       });
     } catch (error: any) {
       logger.error("Error creating share", { error: error.message });

@@ -6,17 +6,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.startServer = exports.app = void 0;
 const logger_util_1 = __importDefault(require("./logger.util"));
 const express_1 = __importDefault(require("express"));
-const redis_util_1 = require("./redis.util");
 const grpc_server_1 = require("../grpc-server");
+const redis_config_1 = require("../config/redis.config");
+const kafka_util_1 = require("./kafka.util");
 exports.app = (0, express_1.default)();
 const startServer = async () => {
     try {
         logger_util_1.default.info("Prisma connection established");
-        await (0, redis_util_1.connectRedis)();
+        await (0, redis_config_1.connectRedis)();
         logger_util_1.default.info("Redis connection established");
+        await (0, kafka_util_1.initializeKafkaTopics)();
+        logger_util_1.default.info("Kafka topics initialized");
         const PORT = process.env.PORT || 3002;
         exports.app.listen(PORT, () => {
-            logger_util_1.default.info(`Auth Service running on port ${PORT}`);
+            logger_util_1.default.info(`Post Service running on port ${PORT}`);
         });
         grpc_server_1.grpcServer;
     }
@@ -29,3 +32,13 @@ const startServer = async () => {
     }
 };
 exports.startServer = startServer;
+// Graceful shutdown
+const gracefulShutdown = async () => {
+    logger_util_1.default.info("Shutting down gracefully...");
+    // Disconnect Kafka clients
+    await (0, kafka_util_1.disconnectProducer)();
+    await (0, kafka_util_1.disconnectAdmin)();
+    logger_util_1.default.info("Kafka clients disconnected");
+};
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);

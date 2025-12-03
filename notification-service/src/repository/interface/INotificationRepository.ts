@@ -65,6 +65,23 @@ export interface INotificationRepository {
     version: number
   ): Promise<void>;
 
+  // Post Sent notifications (LinkedIn-style)
+  createPostSentNotification(
+    senderId: string,
+    recipientId: string,
+    postId: string,
+    message: string | undefined,
+    version: number
+  ): Promise<void>;
+
+  // ✅ NEW: Post creation notification (for followers)
+  createPostNotification(
+    issuerId: string,
+    recipientId: string,
+    postId: string,
+    version: number
+  ): Promise<void>;
+
   // // Report notifications (typically not aggregated, but keeping for consistency)
   // createReportNotification(issuerId: string, recipientId: string, postId: string): Promise<void>;
 

@@ -2,7 +2,7 @@ export const Messages = {
     OK : "OK",
     SERVER_ERROR: "Internel server error",
     USER_EXIST: "User already exist",
-    USER_BLOCKED: "Your are blocked from DevHuddle, Please contact support",
+    USER_BLOCKED: "You are blocked from DevHuddle, Please contact support",
     USER_NOT_FOUND: "User not found !",
     OTP_ERROR: "Error while sending OTP, Try again later",
     OTP_RESENT: "OTP has been resent successfully",

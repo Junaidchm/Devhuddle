@@ -12,7 +12,9 @@ import {
   OutboxEventType,
   ShareType,
   TargetType,
+  Visibility,
 } from "@prisma/client";
+import { prisma } from "../../config/prisma.config";
 import { sanitizeInput, validateContentLength } from "../../utils/xss.util";
 
 export class ShareService implements IShareService {
@@ -26,31 +28,43 @@ export class ShareService implements IShareService {
     postId: string,
     userId: string,
     shareType: string,
-    caption?: string
+    targetType?: string,
+    caption?: string,
+    visibility?: string,
+    sharedToUserId?: string
   ): Promise<any> {
     try {
-      // Validate post exists
+      // 1. Validate post exists
       const post = await this.postRepository.findPost(postId);
       if (!post) {
         throw new CustomError(grpc.status.NOT_FOUND, "Post not found");
       }
 
-      // Validate share type
-      if (
-        shareType !== ShareType.RESHARE &&
-        shareType !== ShareType.QUOTE
-      ) {
+      // 2. Permission check - can user share this?
+      await this.validateSharePermission(post, userId, shareType as ShareType, visibility as Visibility);
+
+      // 3. Validate share type
+      const validShareTypes = [
+        ShareType.RESHARE,
+        ShareType.QUOTE,
+        ShareType.TO_FEED,
+        ShareType.PRIVATE_MESSAGE,
+        ShareType.TO_CONVERSATION,
+      ];
+      if (!validShareTypes.includes(shareType as ShareType)) {
         throw new CustomError(
           grpc.status.INVALID_ARGUMENT,
-          "Invalid share type. Must be RESHARE or QUOTE"
+          "Invalid share type"
         );
       }
 
-      // Check if already shared (optional - depends on business logic)
-      // Some platforms allow multiple shares, some don't
-      // For now, we'll allow multiple shares
+      // 4. Calculate effective visibility (prevent private → public leak)
+      const effectiveVisibility = this.calculateEffectiveVisibility(
+        post.visibility,
+        visibility as Visibility || Visibility.PUBLIC
+      );
 
-      // Sanitize caption if provided (for QUOTE shares)
+      // 5. Sanitize caption if provided
       let sanitizedCaption: string | undefined;
       if (caption) {
         sanitizedCaption = sanitizeInput(caption);
@@ -62,35 +76,69 @@ export class ShareService implements IShareService {
         }
       }
 
-      // Create share
-      const share = await this.shareRepository.createShare({
-        postId,
-        userId,
-        shareType: shareType as ShareType,
-        caption: sanitizedCaption,
-        targetType: TargetType.USER, // Default to USER, can be extended
-        targetId: userId, // User sharing to their own feed
+      // 6. Determine targetType and targetId based on shareType
+      let finalTargetType: TargetType = TargetType.USER;
+      let finalTargetId: string | undefined;
+
+      if (shareType === ShareType.PRIVATE_MESSAGE) {
+        if (!sharedToUserId) {
+          throw new CustomError(
+            grpc.status.INVALID_ARGUMENT,
+            "sharedToUserId is required for PRIVATE_MESSAGE"
+          );
+        }
+        finalTargetType = TargetType.USER;
+        finalTargetId = sharedToUserId;
+      } else if (shareType === ShareType.TO_FEED) {
+        finalTargetType = TargetType.USER;
+        finalTargetId = userId; // User's own feed
+      } else {
+        finalTargetType = (targetType as TargetType) || TargetType.USER;
+        finalTargetId = userId;
+      }
+
+      // 7. Create share (transaction to ensure atomicity)
+      const share = await prisma.$transaction(async (tx) => {
+        const share = await tx.share.create({
+          data: {
+            postId,
+            userId,
+            shareType: shareType as ShareType,
+            caption: sanitizedCaption,
+            visibility: effectiveVisibility,
+            targetType: finalTargetType,
+            targetId: finalTargetId,
+            sharedToUserId: finalTargetId,
+          } as any, // Type assertion - id will be auto-generated
+        });
+
+        // Update post shares counter (denormalized)
+        await tx.posts.update({
+          where: { id: postId },
+          data: { sharesCount: { increment: 1 } },
+        });
+
+        return share;
       });
 
-      // Update post shares counter
-      await this.postRepository.incrementSharesCount(postId);
+      // 8. Invalidate cache
+      await RedisCacheService.invalidatePostCounter(postId, "shares");
 
-      // Update cache (write-through)
-      await RedisCacheService.incrementPostShares(postId);
-
-      // Create outbox event
+      // 9. Create outbox event
       await this.outboxService.createOutboxEvent({
         aggregateType: OutboxAggregateType.SHARE,
         aggregateId: share.id,
         type: OutboxEventType.SHARE_CREATED,
-        topic: KAFKA_TOPICS.POST_SHARED,
+        topic: KAFKA_TOPICS.POST_SENT, // Using POST_SENT as replacement for POST_SHARED
         key: postId,
         payload: {
           shareId: share.id,
-          postId,
-          userId,
-          postAuthorId: post.userId,
+          originalPostId: postId,
+          originalAuthorId: post.userId,
+          sharedById: userId,
           shareType,
+          visibility: effectiveVisibility,
+          sharedToUserId: finalTargetId,
           caption: sanitizedCaption,
         },
       });
@@ -98,6 +146,7 @@ export class ShareService implements IShareService {
       logger.info(`Post ${postId} shared by user ${userId}`, {
         shareId: share.id,
         shareType,
+        visibility: effectiveVisibility,
       });
 
       return share;
@@ -112,6 +161,50 @@ export class ShareService implements IShareService {
         ? err
         : new CustomError(grpc.status.INTERNAL, "Failed to share post");
     }
+  }
+
+  private async validateSharePermission(
+    post: any,
+    userId: string,
+    shareType: ShareType,
+    requestedVisibility?: Visibility
+  ): Promise<void> {
+    // Can't share if original author disabled sharing
+    if (post.sharingDisabled) {
+      throw new CustomError(
+        grpc.status.PERMISSION_DENIED,
+        "Sharing disabled for this post"
+      );
+    }
+
+    // Can't share private post publicly
+    if (
+      post.visibility === "VISIBILITY_CONNECTIONS" &&
+      requestedVisibility === "PUBLIC"
+    ) {
+      throw new CustomError(
+        grpc.status.PERMISSION_DENIED,
+        "Cannot share private post publicly"
+      );
+    }
+  }
+
+  private calculateEffectiveVisibility(
+    originalVisibility: Visibility,
+    requestedVisibility: Visibility
+  ): Visibility {
+    // Share visibility cannot be more permissive than original
+    const visibilityHierarchy = {
+      VISIBILITY_CONNECTIONS: 0,
+      PUBLIC: 1,
+    };
+
+    const originalLevel = visibilityHierarchy[originalVisibility] ?? 0;
+    const requestedLevel = visibilityHierarchy[requestedVisibility] ?? 1;
+
+    return requestedLevel <= originalLevel
+      ? requestedVisibility
+      : originalVisibility;
   }
 
   async getShareCount(postId: string): Promise<number> {

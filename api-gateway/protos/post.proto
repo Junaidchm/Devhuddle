@@ -157,6 +157,8 @@ message SubmitPostRequest {
   string content = 1;
   string userId = 2;
   repeated string mediaIds = 3;
+  string visibility = 4; // ✅ FIXED P0-2: Add visibility (PUBLIC, VISIBILITY_CONNECTIONS)
+  string commentControl = 5; // ✅ FIXED P0-2: Add commentControl (ANYONE, CONNECTIONS, NONE)
 }
 
 message SubmitPostResponse {
