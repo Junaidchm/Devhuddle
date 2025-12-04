@@ -40,8 +40,21 @@ dotenv.config();
 
 app.use(helmet());
 app.use(compression());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Body parser middleware with proper limits and error handling
+app.use(express.json({
+  limit: '10mb', // 10MB limit for JSON payloads
+  verify: (req: any, res, buf) => {
+    // Store raw body for potential signature verification
+    req.rawBody = buf;
+  },
+}));
+
+app.use(express.urlencoded({
+  extended: true,
+  limit: '10mb',
+}));
+
 app.use(cookieParser());
 
 // Initialize repositories
@@ -102,7 +115,86 @@ app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({ status: "Project service is running" });
 });
 
+// Middleware to handle aborted requests gracefully
+app.use((req: Request, res: Response, next: NextFunction) => {
+  // Handle request aborted errors
+  req.on('aborted', () => {
+    logger.warn("Request aborted by client", {
+      method: req.method,
+      url: req.url,
+      ip: req.ip,
+    });
+  });
+
+  // Handle client disconnect
+  req.on('close', () => {
+    if (!res.headersSent) {
+      logger.debug("Client disconnected before response", {
+        method: req.method,
+        url: req.url,
+      });
+    }
+  });
+
+  next();
+});
+
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  // Handle request aborted errors specifically
+  if (err.message === 'request aborted' || err.message.includes('aborted')) {
+    logger.warn("Request aborted", {
+      method: req.method,
+      url: req.url,
+      ip: req.ip,
+    });
+    
+    // Don't send response if headers already sent or connection closed
+    if (!res.headersSent && !res.writableEnded) {
+      return res.status(400).json({
+        status: 400,
+        message: "Request was cancelled",
+        success: false,
+      });
+    }
+    return;
+  }
+
+  // Handle body parser errors
+  if (err instanceof SyntaxError && 'body' in err) {
+    logger.warn("Invalid JSON in request body", {
+      method: req.method,
+      url: req.url,
+      error: err.message,
+    });
+    
+    if (!res.headersSent && !res.writableEnded) {
+      return res.status(400).json({
+        status: 400,
+        message: "Invalid JSON in request body",
+        success: false,
+      });
+    }
+    return;
+  }
+
+  // Handle payload too large errors
+  if (err.message && err.message.includes('limit')) {
+    logger.warn("Request payload too large", {
+      method: req.method,
+      url: req.url,
+      error: err.message,
+    });
+    
+    if (!res.headersSent && !res.writableEnded) {
+      return res.status(413).json({
+        status: 413,
+        message: "Request payload too large",
+        success: false,
+      });
+    }
+    return;
+  }
+
   if (err instanceof CustomError) {
     // Convert gRPC status codes to HTTP status codes if needed
     // gRPC status codes are typically 0-16, HTTP status codes are 100-599
@@ -112,16 +204,27 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
       const { grpcToHttpStatus } = require("./utils/status.mapper");
       httpStatus = grpcToHttpStatus(err.status);
     }
-    sendErrorResponse(
-      res,
-      { status: httpStatus, message: err.message, success: false }
-    );
+    
+    if (!res.headersSent && !res.writableEnded) {
+      sendErrorResponse(
+        res,
+        { status: httpStatus, message: err.message, success: false }
+      );
+    }
   } else {
-    logger.error("Unhandled error", { error: err.message, stack: err.stack });
-    sendErrorResponse(
-      res,
-      { status: 500, message: err.message || "Internal server error", success: false }
-    );
+    logger.error("Unhandled error", {
+      error: err.message,
+      stack: err.stack,
+      method: req.method,
+      url: req.url,
+    });
+    
+    if (!res.headersSent && !res.writableEnded) {
+      sendErrorResponse(
+        res,
+        { status: 500, message: "Internal server error", success: false }
+      );
+    }
   }
 });
 

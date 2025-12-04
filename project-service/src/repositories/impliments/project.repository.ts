@@ -46,7 +46,7 @@ export class ProjectRepository
           }
         }
 
-        // Create project
+        // Create project - auto-publish by default so it appears in listings
         const newProject = await tx.project.create({
           data: {
             title: data.title,
@@ -57,7 +57,8 @@ export class ProjectRepository
             techStack: data.techStack || [],
             tags: data.tags || [],
             visibility: (data.visibility as any) || "PUBLIC",
-            status: (data.status as any) || "DRAFT",
+            status: (data.status as any) || "PUBLISHED", // Auto-publish so projects appear immediately
+            publishedAt: new Date(), // Set publishedAt when creating
           },
           include: {
             media: true,

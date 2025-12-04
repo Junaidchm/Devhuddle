@@ -126,10 +126,12 @@ export class ProjectController {
       const userId = req.headers["x-user-data"]
         ? getUserIdFromRequest(req)
         : undefined;
-      const { pageParam, filter, techStack, tags, period, limit } = req.query;
+      const { cursor, pageParam, filter, techStack, tags, period, limit } = req.query;
+      // Support both 'cursor' (from client) and 'pageParam' (legacy) for backward compatibility
+      const pageCursor = (cursor as string) || (pageParam as string) || undefined;
 
       const result = await this.projectService.listProjects({
-        pageParam: pageParam as string | undefined,
+        pageParam: pageCursor,
         userId,
         filter: filter as string | undefined,
         techStack: techStack
@@ -206,10 +208,12 @@ export class ProjectController {
       const userId = req.headers["x-user-data"]
         ? getUserIdFromRequest(req)
         : undefined;
-      const { pageParam, period, limit } = req.query;
+      const { cursor, pageParam, period, limit } = req.query;
+      // Support both 'cursor' (from client) and 'pageParam' (legacy) for backward compatibility
+      const pageCursor = (cursor as string) || (pageParam as string) || undefined;
 
       const result = await this.projectService.getTrendingProjects({
-        pageParam: pageParam as string | undefined,
+        pageParam: pageCursor,
         userId,
         limit: limit ? parseInt(limit as string) : 10,
         period: period as string | undefined,
@@ -233,10 +237,12 @@ export class ProjectController {
       const userId = req.headers["x-user-data"]
         ? getUserIdFromRequest(req)
         : undefined;
-      const { pageParam, period, limit } = req.query;
+      const { cursor, pageParam, period, limit } = req.query;
+      // Support both 'cursor' (from client) and 'pageParam' (legacy) for backward compatibility
+      const pageCursor = (cursor as string) || (pageParam as string) || undefined;
 
       const result = await this.projectService.getTopProjects({
-        pageParam: pageParam as string | undefined,
+        pageParam: pageCursor,
         userId,
         limit: limit ? parseInt(limit as string) : 10,
         period: period as string | undefined,
@@ -260,7 +266,9 @@ export class ProjectController {
       const userId = req.headers["x-user-data"]
         ? getUserIdFromRequest(req)
         : undefined;
-      const { query, pageParam, techStack, tags, limit } = req.query;
+      const { query, cursor, pageParam, techStack, tags, limit } = req.query;
+      // Support both 'cursor' (from client) and 'pageParam' (legacy) for backward compatibility
+      const pageCursor = (cursor as string) || (pageParam as string) || undefined;
 
       if (!query) {
         throw new CustomError(
@@ -271,7 +279,7 @@ export class ProjectController {
 
       const result = await this.projectService.searchProjects({
         query: query as string,
-        pageParam: pageParam as string | undefined,
+        pageParam: pageCursor,
         userId,
         techStack: techStack
           ? (Array.isArray(techStack) ? techStack.map(String) : [String(techStack)])

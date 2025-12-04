@@ -58,9 +58,21 @@ export class ProjectService implements IProjectService {
         techStack: req.techStack || [],
         tags: req.tags || [],
         visibility: req.visibility || "PUBLIC",
-        status: "DRAFT",
+        status: "PUBLISHED", // Auto-publish so projects appear immediately in listings
         mediaIds: req.mediaIds || [],
       });
+
+      // Calculate initial trending score for published projects
+      if (project.status === "PUBLISHED" && project.publishedAt) {
+        const trendingScore = calculateTrendingScore(
+          0, // likesCount
+          0, // commentsCount
+          0, // sharesCount
+          0, // viewsCount
+          project.publishedAt
+        );
+        await this.projectRepository.updateTrendingScore(project.id, trendingScore);
+      }
 
       // Publish event
       if (this.outboxService) {
@@ -75,6 +87,7 @@ export class ProjectService implements IProjectService {
             userId: project.userId,
             title: project.title,
             status: project.status,
+            publishedAt: project.publishedAt?.toISOString() || "",
           },
         });
       }
