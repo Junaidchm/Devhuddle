@@ -33,8 +33,19 @@ app.use(
 );
 
 // Body parser middleware (CRITICAL: Must be before proxy routes)
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Configure with proper limits to handle UploadThing callbacks and large payloads
+app.use(express.json({
+  limit: '10mb', // 10MB limit for JSON payloads (sufficient for UploadThing callbacks)
+  verify: (req: any, res, buf) => {
+    // Store raw body for potential signature verification
+    req.rawBody = buf;
+  },
+}));
+
+app.use(express.urlencoded({
+  extended: true,
+  limit: '10mb',
+}));
 
 // Rate Limiting
 // app.use(rateLimiter);

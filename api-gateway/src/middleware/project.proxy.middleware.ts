@@ -34,27 +34,121 @@ export const projectServiceProxy = app_config.projectServiceUrl
   ? createProxyMiddleware({
       target: app_config.projectServiceUrl,
       changeOrigin: true,
+      timeout: 30000, // 30 second timeout
       // Forward path as-is: /api/v1/projects/* -> /api/v1/projects/*
       // No pathRewrite needed since paths match exactly
-      onProxyReq: (proxyReq, req, res) => {
+      onProxyReq: (proxyReq, req: any, res) => {
+        // Forward user data from JWT middleware if available
+        if (req.user) {
+          proxyReq.setHeader("x-user-data", JSON.stringify(req.user));
+          logger.info(`[Project Proxy] User authenticated: ${req.user.id}`);
+        } else if (req.headers["x-user-data"]) {
+          // Forward existing x-user-data header if present
+          proxyReq.setHeader("x-user-data", req.headers["x-user-data"]);
+        }
+        
+        // CRITICAL: Handle request body for POST/PUT/PATCH requests
+        // When Express.json() parses the body, it consumes the request stream
+        // http-proxy-middleware will try to pipe the consumed stream (which is empty)
+        // We MUST manually write the parsed body to the proxy request
+        if (req.method !== "GET" && req.method !== "HEAD" && req.method !== "DELETE" && req.body) {
+          try {
+            const bodyData = JSON.stringify(req.body);
+            const bodyLength = Buffer.byteLength(bodyData);
+            
+            // CRITICAL: Remove any existing content-length header
+            // We'll set our own based on the serialized body
+            proxyReq.removeHeader("content-length");
+            
+            // Set headers for the new body
+            proxyReq.setHeader("content-type", "application/json");
+            proxyReq.setHeader("content-length", bodyLength.toString());
+            
+            // CRITICAL: Prevent http-proxy-middleware from piping the consumed stream
+            // Pause the original stream to prevent proxy from piping it
+            if (req.readable && !req.readableEnded) {
+              req.pause();
+            }
+            
+            // Write the parsed body manually
+            // This is REQUIRED because Express already consumed the original stream
+            proxyReq.write(bodyData);
+            
+            // CRITICAL: End the proxy request after writing to prevent proxy from piping empty stream
+            // This ensures http-proxy-middleware doesn't try to pipe the consumed original stream
+            proxyReq.end();
+            
+            logger.info(`[Project Proxy] Writing body to proxy request`, {
+              bodyLength: bodyLength,
+              bodyKeys: Object.keys(req.body),
+              url: req.originalUrl,
+            });
+          } catch (bodyError: any) {
+            logger.error("[Project Proxy] Error writing body to proxy request", {
+              error: bodyError.message,
+              url: req.originalUrl,
+            });
+            // Don't throw - let the proxy continue, but log the error
+          }
+        }
+        
         logger.info(
-          `[Project Proxy] Forwarding ${req.method} ${req.originalUrl} to ${app_config.projectServiceUrl}${req.url}`
+          `[Project Proxy] Forwarding ${req.method} ${req.originalUrl} to ${app_config.projectServiceUrl}${req.url}`,
+          {
+            target: app_config.projectServiceUrl,
+            targetPath: req.url,
+            originalPath: req.path,
+            hasBody: !!req.body,
+            bodyKeys: req.body ? Object.keys(req.body) : [],
+          }
         );
       },
       onProxyRes: (proxyRes, req, res) => {
-        // Log successful proxy responses (optional)
+        // Log successful proxy responses
         if (req.url?.includes("/projects")) {
           logger.debug(
             `[Project Proxy] Response ${proxyRes.statusCode} for ${req.method} ${req.originalUrl}`
           );
         }
       },
-      onError: (err, req, res) => {
-        logger.error("Project Service Proxy error:", { error: err.message });
-        if (typeof res.status === "function") {
-          res.status(500).json({ error: "Proxy failed", message: "Unable to connect to project service" });
+      onError: (err: any, req, res) => {
+        logger.error("[Project Proxy] Proxy error", {
+          error: err.message,
+          url: req.url,
+          method: req.method,
+          code: err.code,
+          stack: err.stack,
+        });
+        
+        // Handle different error types
+        const errorCode = err.code || err.errno;
+        if (errorCode === "ECONNREFUSED") {
+          if (typeof res.status === "function") {
+            res.status(503).json({
+              error: "Service Unavailable",
+              message: "Unable to connect to project service",
+            });
+          } else {
+            res.end("Service Unavailable");
+          }
+        } else if (errorCode === "ETIMEDOUT" || errorCode === "ECONNRESET") {
+          if (typeof res.status === "function") {
+            res.status(504).json({
+              error: "Gateway Timeout",
+              message: "Project service request timed out",
+            });
+          } else {
+            res.end("Gateway Timeout");
+          }
         } else {
-          res.end("Proxy failed");
+          if (typeof res.status === "function") {
+            res.status(500).json({
+              error: "Proxy failed",
+              message: "Unable to connect to project service",
+            });
+          } else {
+            res.end("Proxy failed");
+          }
         }
       },
     })
