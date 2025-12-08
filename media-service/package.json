@@ -1,0 +1,48 @@
+{
+  "name": "media-service",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsc-watch --onSuccess \"node dist/index.js\" --preserveWatchOutput",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "generate": "tsx src/generate.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/compression": "^1.8.1",
+    "@types/cookie-parser": "^1.4.9",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.15",
+    "@types/uuid": "^9.0.8",
+    "prisma": "^6.14.0",
+    "ts-proto": "^2.7.5",
+    "tsc-watch": "^7.1.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.700.0",
+    "@aws-sdk/s3-request-presigner": "^3.700.0",
+    "@grpc/grpc-js": "^1.13.4",
+    "@prisma/client": "^6.14.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
+    "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "nanoid": "^5.1.6",
+    "uuid": "^9.0.1",
+    "winston": "^3.17.0",
+    "zod": "^4.1.5"
+  }
+}
+

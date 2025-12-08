@@ -2,18 +2,21 @@ FROM node:lts-alpine
 
 WORKDIR /app
 
+# Copy package files first (for better layer caching)
 COPY package*.json ./
 COPY tsconfig.json ./
-RUN npm install
 
-COPY /src ./src
+# Install dependencies and clean npm cache in one layer
+RUN npm install && \
+    npm cache clean --force && \
+    rm -rf /tmp/*
 
-RUN npm run build
+# Create necessary directories
+RUN mkdir -p logs
 
-# RUN addgroup --system --gid 1001 nodejs
-# RUN adduser --system --uid 1001 nodejs
-# USER nodejs
+# Note: src is mounted as volume in docker-compose, so we don't copy it here
+# This significantly reduces image size
 
 EXPOSE 3002
 
-CMD [ "npm","run","dev" ]
+CMD ["npm", "run", "dev"]

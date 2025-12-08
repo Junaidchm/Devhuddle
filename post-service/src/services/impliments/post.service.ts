@@ -310,15 +310,15 @@ export class PostSerive implements IpostService {
         }));
 
         return {
-          ...post,
+        ...post,
           attachments, // ✅ Add attachments array
-          engagement: {
-            likesCount: post.likesCount ?? 0,
-            commentsCount: post.commentsCount ?? 0,
-            sharesCount: post.sharesCount ?? 0,
-            isLiked: userLikesMap[post.id] ?? false,
-            isShared: userSharesMap[post.id] ?? false,
-          },
+        engagement: {
+          likesCount: post.likesCount ?? 0,
+          commentsCount: post.commentsCount ?? 0,
+          sharesCount: post.sharesCount ?? 0,
+          isLiked: userLikesMap[post.id] ?? false,
+          isShared: userSharesMap[post.id] ?? false,
+        },
         };
       });
 

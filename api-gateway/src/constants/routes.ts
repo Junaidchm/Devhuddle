@@ -104,6 +104,18 @@ export const ROUTES = {
     MEDIA: '/feed/media',
   },
   
+  // Media Service Routes (HTTP Proxy)
+  MEDIA: {
+    BASE: `${API_VERSION}/media`,
+    UPLOAD_SESSION: `${API_VERSION}/media/upload-session`,
+    COMPLETE: (mediaId: string) => `${API_VERSION}/media/${mediaId}/complete`,
+    GET: (mediaId: string) => `${API_VERSION}/media/${mediaId}`,
+    DELETE: (mediaId: string) => `${API_VERSION}/media/${mediaId}`,
+    USER_MEDIA: `${API_VERSION}/media/user/media`,
+    VALIDATE: `${API_VERSION}/media/validate`,
+    LINK_TO_POST: `${API_VERSION}/media/link-to-post`,
+  },
+  
   // Project Service Routes (HTTP Proxy)
   PROJECTS: {
     BASE: `${API_VERSION}/projects`,

@@ -41,9 +41,10 @@ export class MediaService implements IMediaService {
 
       console.log(` Found ${unusedMedia.length} unused media items`);
 
-      await this.mediaRepository.deleteFilesFromUploadThing(
-        unusedMedia.map((m) => m.url as string)
-      );
+      // ✅ REMOVED: UploadThing deletion
+      // Media deletion is now handled by Media Service
+      // Unused media should be deleted via Media Service API
+      logger.warn("Media deletion should be handled by Media Service, not Post Service");
 
       const deletedCount = await this.mediaRepository.deleteUnusedMediaRepo(
         unusedMedia.map((m) => m.id as string)

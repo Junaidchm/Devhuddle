@@ -68,6 +68,7 @@ model Media {
   postId    String?
   type      MediaType
   url       String
+  thumbnail String?   // ✅ Added thumbnail support
   createdAt DateTime  @default(now())
   posts     posts?    @relation(fields: [postId], references: [id])
 }
