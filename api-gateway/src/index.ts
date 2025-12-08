@@ -10,6 +10,7 @@ import { authServiceProxy } from "./middleware/authserver.proxy.middleware";
 import { notificationServiceProxy } from "./middleware/notification.proxy.middleware";
 import { projectServiceProxy } from "./middleware/project.proxy.middleware";
 import { postServiceProxy } from "./middleware/post.proxy.middleware";
+import { mediaServiceProxy } from "./middleware/media.proxy.middleware";
 import { connectRedis } from "./utils/redis.util";
 import { app_config } from "./config/app.config";
 import conditionalJwtMiddleware from "./middleware/conditional-jwt.middleware";
@@ -47,8 +48,6 @@ app.use(express.urlencoded({
   limit: '10mb',
 }));
 
-// Rate Limiting
-// app.use(rateLimiter);
 
 // Log all requests
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -60,41 +59,34 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // HTTP Proxy Routes (forwarded to microservices)
 // ============================================
 
-// Unified Auth Service Proxy (handles all HTTP routes to auth service)
-// Uses conditional JWT middleware: public routes skip JWT, protected routes require JWT
-// Public routes: /api/v1/auth/google, /api/v1/auth/google/callback
-// Protected routes: /api/v1/auth/search, /api/v1/users/*, /api/v1/auth/admin/*
-// Note: Auth routes that were using gRPC (signup, login, verify-otp, etc.) are now proxied via HTTP
 app.use(ROUTES.AUTH.BASE, conditionalJwtMiddleware, authServiceProxy);
 app.use(ROUTES.USERS.BASE, conditionalJwtMiddleware, authServiceProxy);
 
-// Post Service Proxy (Feed Operations)
-// Handles all feed routes: /feed/submit, /feed/list, /feed/media, /feed/delete, /feed/medias
-// Note: Feed routes that were using gRPC are now proxied via HTTP
+
 app.use(ROUTES.FEED.BASE, conditionalJwtMiddleware, postServiceProxy);
 
-// Notification Service Routes (protected, JWT required)
+app.use(
+  ROUTES.MEDIA.BASE,
+  conditionalJwtMiddleware,
+  mediaServiceProxy
+);
+
 app.use(
   ROUTES.NOTIFICATIONS.BASE,
   conditionalJwtMiddleware,
   notificationServiceProxy
 );
 
-// Engagement Service Routes (protected, JWT required)
 app.use(
   ROUTES.ENGAGEMENT.BASE,
   conditionalJwtMiddleware,
   engagementServiceProxy
 );
 
-// Project Service Routes (conditional JWT: some public, some protected)
-// Public routes: GET /api/v1/projects, GET /api/v1/projects/:id, GET /api/v1/projects/trending, etc.
-// Protected routes: POST /api/v1/projects, PUT /api/v1/projects/:id, DELETE, etc.
+
 app.use(ROUTES.PROJECTS.BASE, conditionalJwtMiddleware, projectServiceProxy);
 
-// Admin Service Routes (protected, JWT required, superAdmin role required)
-// All admin routes require authentication and superAdmin role
-// Routes: /api/v1/admin/reports, /api/v1/admin/posts, /api/v1/admin/comments, /api/v1/admin/analytics
+
 app.use(ROUTES.ADMIN.BASE, conditionalJwtMiddleware, adminServiceProxy);
 
 // Health check

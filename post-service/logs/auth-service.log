@@ -8,3 +8,20 @@
 {"error":"connect ECONNREFUSED ::1:6379","level":"error","message":"Redis Client Error","timestamp":"2025-09-08T05:21:21.068Z"}
 {"error":"connect ECONNREFUSED ::1:6379","level":"error","message":"Redis Client Error","timestamp":"2025-09-08T05:21:22.719Z"}
 {"error":"connect ECONNREFUSED ::1:6379","level":"error","message":"Redis Client Error","timestamp":"2025-09-08T05:21:24.863Z"}
+{"level":"info","message":"Prisma connection established","timestamp":"2025-12-06T13:13:40.698Z"}
+{"level":"info","message":"✅ gRPC server running on port 50051","timestamp":"2025-12-06T13:13:40.708Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-12-06T13:13:40.710Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-12-06T13:13:40.717Z"}
+{"level":"info","message":"Kafka admin connected","timestamp":"2025-12-06T13:13:40.745Z"}
+{"error":"Connection error: ","level":"error","message":"Failed to initialize Kafka topics","timestamp":"2025-12-06T13:13:43.895Z"}
+{"level":"info","message":"Prisma connection established","timestamp":"2025-12-06T13:17:46.655Z"}
+{"level":"info","message":"✅ gRPC server running on port 50051","timestamp":"2025-12-06T13:17:46.664Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-12-06T13:17:46.665Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-12-06T13:17:46.670Z"}
+{"error":"Connection error: read ECONNRESET","level":"error","message":"Failed to initialize Kafka topics","timestamp":"2025-12-06T13:17:50.721Z"}
+{"level":"info","message":"Prisma connection established","timestamp":"2025-12-06T13:38:47.386Z"}
+{"level":"info","message":"✅ gRPC server running on port 50051","timestamp":"2025-12-06T13:38:47.395Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-12-06T13:38:47.397Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-12-06T13:38:47.399Z"}
+{"level":"info","message":"Kafka admin connected","timestamp":"2025-12-06T13:38:47.430Z"}
+{"error":"Connection error: ","level":"error","message":"Failed to initialize Kafka topics","timestamp":"2025-12-06T13:38:50.381Z"}

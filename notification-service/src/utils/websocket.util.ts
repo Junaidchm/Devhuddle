@@ -339,7 +339,7 @@ export class WebSocketService {
      
       // ✅ FIX: Convert BigInt values to strings before JSON serialization
       const serializedNotification = this.serializeBigInt(notification);
-      
+     
       const message = JSON.stringify({
         type: "new_notification",
         data: serializedNotification,

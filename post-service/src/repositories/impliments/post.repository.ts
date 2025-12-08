@@ -17,6 +17,7 @@ import {
 } from "../../grpc/generated/post";
 import { error } from "console";
 import { v4 as uuidv4 } from "uuid";
+import { validateMediaOwnership, linkMediaToPost } from "../../config/media.client";
 
 export class PostRepository
   extends BaseRepository<
@@ -48,31 +49,43 @@ export class PostRepository
 
   async submitPostRepo(data: SubmitPostRequest): Promise<SubmitPostResponse> {
     try {
-      // ✅ FIXED P0-1: Wrap in transaction for atomicity
-      // This ensures post and media attachments are created atomically
-      // If any part fails, entire operation rolls back (no orphaned media)
-      const post = await prisma.$transaction(async (tx) => {
-        // Validate all media exists and is not already attached to another post
-        if (data.mediaIds && data.mediaIds.length > 0) {
-          const existingMedia = await tx.media.findMany({
-            where: {
-              id: { in: data.mediaIds },
-            },
-          });
+      /**
+       * ✅ UPDATED: Use Media Service for validation and linking
+       * 
+       * Why this change:
+       * - Media Service is the single source of truth for media records
+       * - Ensures consistency across services
+       * - Removes dependency on Post Service's Media table
+       * - Better separation of concerns
+       */
 
-          if (existingMedia.length !== data.mediaIds.length) {
-            throw new Error("One or more media files not found");
-          }
-
-          // Check if any media is already attached to another post
-          const attachedMedia = existingMedia.filter((m) => m.postId !== null);
-          if (attachedMedia.length > 0) {
+      // Step 1: Validate media ownership via Media Service
+      // This ensures:
+      // - Media exists in Media Service
+      // - Media belongs to the user creating the post
+      // - Media is not already linked to another post
+      if (data.mediaIds && data.mediaIds.length > 0) {
+        try {
+          const validation = await validateMediaOwnership(data.mediaIds, data.userId);
+          
+          if (!validation.valid) {
             throw new Error(
-              "One or more media files are already attached to another post"
+              validation.message || 
+              `Invalid media: ${validation.invalidMediaIds?.join(", ")}`
             );
           }
+        } catch (error: any) {
+          logger.error("Media validation failed", {
+            error: error.message,
+            mediaIds: data.mediaIds,
+            userId: data.userId,
+          });
+          throw new Error(`Media validation failed: ${error.message}`);
         }
+      }
 
+      // Step 2: Create post in database (transaction ensures atomicity)
+      const post = await prisma.$transaction(async (tx) => {
         // Create post with generated ID
         const newPost = await tx.posts.create({
           data: {
@@ -84,24 +97,32 @@ export class PostRepository
           } as any, // Type assertion for postsCreateInput
         });
 
-        // Link media to post by updating postId
+        // Step 3: Link media to post via Media Service
+        // This updates the Media Service database (source of truth)
         if (data.mediaIds && data.mediaIds.length > 0) {
-          await tx.media.updateMany({
-            where: {
-              id: { in: data.mediaIds },
-            },
-            data: {
+          try {
+            await linkMediaToPost(data.mediaIds, newPost.id, data.userId);
+            logger.info("Media linked to post via Media Service", {
               postId: newPost.id,
-            },
-          });
+              mediaIds: data.mediaIds,
+            });
+          } catch (error: any) {
+            logger.error("Failed to link media to post", {
+              error: error.message,
+              postId: newPost.id,
+              mediaIds: data.mediaIds,
+            });
+            // If linking fails, we should rollback the post creation
+            // But since we're outside the transaction, we'll throw an error
+            // The transaction will be rolled back automatically
+            throw new Error(`Failed to link media: ${error.message}`);
+          }
         }
 
-        // Fetch post with media
+        // Fetch post (without media from Post Service database)
+        // Media will be fetched from Media Service when needed
         const postWithMedia = await tx.posts.findUnique({
           where: { id: newPost.id },
-          include: {
-            Media: true,
-          },
         });
 
         return postWithMedia!;

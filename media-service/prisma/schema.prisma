@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MediaType {
+  POST_IMAGE
+  POST_VIDEO
+  PROFILE_IMAGE
+}
+
+enum MediaStatus {
+  PENDING
+  UPLOADING
+  UPLOADED
+  PROCESSING
+  READY
+  FAILED
+}
+
+model Media {
+  id             String      @id @default(uuid())
+  userId         String      @map("user_id")
+  postId         String?     @map("post_id")
+  mediaType      MediaType   @map("media_type")
+  storageKey     String      @map("storage_key")
+  cdnUrl         String?     @map("cdn_url")
+  originalUrl    String?     @map("original_url")
+  fileName       String      @map("file_name")
+  fileSize       BigInt      @map("file_size")
+  mimeType       String      @map("mime_type")
+  width          Int?
+  height         Int?
+  duration       Int? // For videos (in seconds)
+  status         MediaStatus @default(PENDING)
+  metadata       Json? // EXIF data, video codec info, etc.
+  thumbnailUrls  Json?       @map("thumbnail_urls") // Array of thumbnail URLs by size
+  transcodedUrls Json?       @map("transcoded_urls") // For videos: { "360p": "url", "720p": "url" }
+  hlsUrl         String?     @map("hls_url") // HLS manifest URL for videos
+  uploadId       String?     @map("upload_id") // For multipart uploads
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  thumbnails     MediaThumbnail[]
+  videoQualities VideoQuality[]
+
+  @@index([userId])
+  @@index([postId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([mediaType])
+  @@map("media")
+}
+
+model MediaThumbnail {
+  id         String   @id @default(uuid())
+  mediaId    String   @map("media_id")
+  size       String // "150x150", "300x300", "600x600", "1200x1200"
+  storageKey String   @map("storage_key")
+  cdnUrl     String   @map("cdn_url")
+  width      Int
+  height     Int
+  createdAt  DateTime @default(now()) @map("created_at")
+  media      Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, size])
+  @@index([mediaId])
+  @@map("media_thumbnails")
+}
+
+model VideoQuality {
+  id             String   @id @default(uuid())
+  mediaId        String   @map("media_id")
+  quality        String // "360p", "720p", "1080p", "4K"
+  storageKey     String   @map("storage_key")
+  cdnUrl         String   @map("cdn_url")
+  hlsManifestUrl String?  @map("hls_manifest_url")
+  bitrate        Int // kbps
+  width          Int
+  height         Int
+  createdAt      DateTime @default(now()) @map("created_at")
+  media          Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, quality])
+  @@index([mediaId])
+  @@map("video_qualities")
+}

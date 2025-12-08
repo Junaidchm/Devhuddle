@@ -1,0 +1,43 @@
+{"level":"info","message":"Prisma connection established","timestamp":"2025-12-06T13:13:37.030Z"}
+{"level":"info","message":"✅ gRPC server running on port 50051","timestamp":"2025-12-06T13:13:37.044Z"}
+{"level":"info","message":"Connected to PostgreSQL","timestamp":"2025-12-06T13:13:37.553Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-12-06T13:13:37.557Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-12-06T13:13:37.562Z"}
+{"level":"info","message":"Kafka consumer connected with group: auth-compensation-group","timestamp":"2025-12-06T13:13:37.587Z"}
+{"level":"info","message":"Compensation consumer started","timestamp":"2025-12-06T13:13:50.466Z"}
+{"level":"info","message":"Auth Service running on port 3001","timestamp":"2025-12-06T13:13:50.475Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:13:51.512Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:14:06.541Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:14:21.583Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:14:36.645Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:14:51.688Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:15:06.730Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:15:21.775Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:15:36.829Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:15:51.872Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:16:06.931Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:16:21.953Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:16:36.999Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:16:52.043Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:17:07.099Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:17:22.149Z"}
+{"level":"info","message":"Prisma connection established","timestamp":"2025-12-06T13:17:44.081Z"}
+{"level":"info","message":"✅ gRPC server running on port 50051","timestamp":"2025-12-06T13:17:44.092Z"}
+{"level":"info","message":"Connected to PostgreSQL","timestamp":"2025-12-06T13:17:44.707Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-12-06T13:17:44.709Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-12-06T13:17:44.710Z"}
+{"error":"Connection error: getaddrinfo ENOTFOUND kafka","level":"error","message":"Failed to start server","stack":"KafkaJSNonRetriableError\n  Caused by: KafkaJSConnectionError: Connection error: getaddrinfo ENOTFOUND kafka\n    at Socket.onError (/app/node_modules/kafkajs/src/network/connection.js:210:23)\n    at Socket.emit (node:events:519:28)\n    at emitErrorNT (node:internal/streams/destroy:169:8)\n    at emitErrorCloseNT (node:internal/streams/destroy:128:3)\n    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)","timestamp":"2025-12-06T13:17:51.491Z"}
+{"level":"info","message":"Prisma connection established","timestamp":"2025-12-06T13:37:57.406Z"}
+{"level":"info","message":"✅ gRPC server running on port 50051","timestamp":"2025-12-06T13:37:57.417Z"}
+{"level":"info","message":"Connected to PostgreSQL","timestamp":"2025-12-06T13:37:57.910Z"}
+{"level":"info","message":"redis connected","timestamp":"2025-12-06T13:37:57.917Z"}
+{"level":"info","message":"Redis connection established","timestamp":"2025-12-06T13:37:57.929Z"}
+{"level":"info","message":"Kafka consumer connected with group: auth-compensation-group","timestamp":"2025-12-06T13:37:57.949Z"}
+{"level":"info","message":"Compensation consumer started","timestamp":"2025-12-06T13:38:14.849Z"}
+{"level":"info","message":"Auth Service running on port 3001","timestamp":"2025-12-06T13:38:14.852Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:38:18.902Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:38:33.982Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:38:49.014Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:39:04.079Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:39:19.154Z"}
+{"headers":{"userAgent":"Wget/1.21.4"},"level":"info","message":"HEAD /health","timestamp":"2025-12-06T13:39:34.206Z"}
