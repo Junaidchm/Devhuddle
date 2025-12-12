@@ -8,6 +8,14 @@ import { idempotencyMiddleware } from "../middlewares/idempotency.middleware";
 import { createRateLimiters } from "../middlewares/rateLimit.middleware";
 import { IIdempotencyRepository } from "../repositories/interface/IIdempotencyRepository";
 import { MentionController } from "../controllers/impliments/mention.controller";
+import { validateDto } from "../middleware/validation.middleware";
+import { 
+  CreateCommentDto, 
+  UpdateCommentDto, 
+  SendPostDto, 
+  ReportPostDto, 
+  ReportCommentDto 
+} from "../dto/post.dto";
 
 const router = Router();
 const rateLimiters = createRateLimiters();
@@ -80,6 +88,8 @@ export const setupEngagementRoutes = (
     "/posts/:postId/comments",
     // rateLimiters.strict,
     idempotencyMiddleware(idempotencyRepository),
+    idempotencyMiddleware(idempotencyRepository),
+    validateDto(CreateCommentDto),
     commentController.createComment.bind(commentController)
   );
 
@@ -87,6 +97,8 @@ export const setupEngagementRoutes = (
     "/comments/:commentId",
     // rateLimiters.strict,
     idempotencyMiddleware(idempotencyRepository),
+    idempotencyMiddleware(idempotencyRepository),
+    validateDto(UpdateCommentDto),
     commentController.updateComment.bind(commentController)
   );
 
@@ -132,6 +144,8 @@ export const setupEngagementRoutes = (
     "/posts/:postId/send",
     // rateLimiters.strict,
     idempotencyMiddleware(idempotencyRepository),
+    idempotencyMiddleware(idempotencyRepository),
+    validateDto(SendPostDto),
     sendController.sendPost.bind(sendController)
   );
 
@@ -140,6 +154,8 @@ export const setupEngagementRoutes = (
     "/posts/:postId/report",
     // rateLimiters.strict,
     idempotencyMiddleware(idempotencyRepository),
+    idempotencyMiddleware(idempotencyRepository),
+    validateDto(ReportPostDto),
     reportController.reportPost.bind(reportController)
   );
 
@@ -147,6 +163,8 @@ export const setupEngagementRoutes = (
     "/comments/:commentId/report",
     // rateLimiters.strict,
     idempotencyMiddleware(idempotencyRepository),
+    idempotencyMiddleware(idempotencyRepository),
+    validateDto(ReportCommentDto),
     reportController.reportComment.bind(reportController)
   );
 

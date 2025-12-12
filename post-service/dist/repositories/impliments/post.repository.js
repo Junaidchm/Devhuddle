@@ -9,6 +9,8 @@ const prisma_config_1 = require("../../config/prisma.config");
 const logger_util_1 = __importDefault(require("../../utils/logger.util"));
 const redis_config_1 = __importDefault(require("../../config/redis.config"));
 const grpc_client_1 = require("../../config/grpc.client");
+const uuid_1 = require("uuid");
+const media_client_1 = require("../../config/media.client");
 class PostRepository extends base_repository_1.BaseRepository {
     constructor() {
         super(prisma_config_1.prisma.posts);
@@ -27,44 +29,77 @@ class PostRepository extends base_repository_1.BaseRepository {
     }
     async submitPostRepo(data) {
         try {
-            // ✅ FIXED P0-1: Wrap in transaction for atomicity
-            // This ensures post and media attachments are created atomically
-            // If any part fails, entire operation rolls back (no orphaned media)
-            const post = await prisma_config_1.prisma.$transaction(async (tx) => {
-                // Validate all media exists and is not already attached to another post
-                if (data.mediaIds && data.mediaIds.length > 0) {
-                    const existingMedia = await tx.media.findMany({
-                        where: {
-                            id: { in: data.mediaIds },
-                        },
-                    });
-                    if (existingMedia.length !== data.mediaIds.length) {
-                        throw new Error("One or more media files not found");
-                    }
-                    // Check if any media is already attached to another post
-                    const attachedMedia = existingMedia.filter((m) => m.postId !== null);
-                    if (attachedMedia.length > 0) {
-                        throw new Error("One or more media files are already attached to another post");
+            /**
+             * ✅ UPDATED: Use Media Service for validation and linking
+             *
+             * Why this change:
+             * - Media Service is the single source of truth for media records
+             * - Ensures consistency across services
+             * - Removes dependency on Post Service's Media table
+             * - Better separation of concerns
+             */
+            // Step 1: Validate media ownership via Media Service
+            // This ensures:
+            // - Media exists in Media Service
+            // - Media belongs to the user creating the post
+            // - Media is not already linked to another post
+            if (data.mediaIds && data.mediaIds.length > 0) {
+                try {
+                    const validation = await (0, media_client_1.validateMediaOwnership)(data.mediaIds, data.userId);
+                    if (!validation.valid) {
+                        throw new Error(validation.message ||
+                            `Invalid media: ${validation.invalidMediaIds?.join(", ")}`);
                     }
                 }
-                // Create post with attachments atomically
+                catch (error) {
+                    logger_util_1.default.error("Media validation failed", {
+                        error: error.message,
+                        mediaIds: data.mediaIds,
+                        userId: data.userId,
+                    });
+                    throw new Error(`Media validation failed: ${error.message}`);
+                }
+            }
+            // Step 2: Create post in database (transaction ensures atomicity)
+            const post = await prisma_config_1.prisma.$transaction(async (tx) => {
+                // Create post with generated ID
                 const newPost = await tx.posts.create({
                     data: {
+                        id: (0, uuid_1.v4)(), // Generate ID using UUID v4
                         content: data.content,
                         userId: data.userId,
                         visibility: data.visibility, // Will be properly typed after proto update
                         commentControl: data.commentControl, // Will be properly typed after proto update
-                        attachments: data.mediaIds && data.mediaIds.length > 0
-                            ? {
-                                connect: data.mediaIds.map((id) => ({ id })),
-                            }
-                            : undefined,
-                    },
-                    include: {
-                        attachments: true,
-                    },
+                    }, // Type assertion for postsCreateInput
                 });
-                return newPost;
+                // Step 3: Link media to post via Media Service
+                // This updates the Media Service database (source of truth)
+                if (data.mediaIds && data.mediaIds.length > 0) {
+                    try {
+                        await (0, media_client_1.linkMediaToPost)(data.mediaIds, newPost.id, data.userId);
+                        logger_util_1.default.info("Media linked to post via Media Service", {
+                            postId: newPost.id,
+                            mediaIds: data.mediaIds,
+                        });
+                    }
+                    catch (error) {
+                        logger_util_1.default.error("Failed to link media to post", {
+                            error: error.message,
+                            postId: newPost.id,
+                            mediaIds: data.mediaIds,
+                        });
+                        // If linking fails, we should rollback the post creation
+                        // But since we're outside the transaction, we'll throw an error
+                        // The transaction will be rolled back automatically
+                        throw new Error(`Failed to link media: ${error.message}`);
+                    }
+                }
+                // Fetch post (without media from Post Service database)
+                // Media will be fetched from Media Service when needed
+                const postWithMedia = await tx.posts.findUnique({
+                    where: { id: newPost.id },
+                });
+                return postWithMedia;
             }, {
                 timeout: 10000, // 10 second timeout
                 maxWait: 5000, // Maximum wait time for transaction
@@ -115,7 +150,15 @@ class PostRepository extends base_repository_1.BaseRepository {
     }
     async getPostsRepo(postSelectOptions) {
         try {
-            const posts = await prisma_config_1.prisma.posts.findMany(postSelectOptions);
+            // ✅ FIX: Cast to Prisma's expected type - PostSelectOptions uses skip-based pagination (no cursor)
+            const prismaOptions = {
+                include: postSelectOptions.include,
+                take: postSelectOptions.take,
+                skip: postSelectOptions.skip,
+                orderBy: postSelectOptions.orderBy,
+                where: postSelectOptions.where,
+            };
+            const posts = await prisma_config_1.prisma.posts.findMany(prismaOptions);
             // console.log('this is the fetched data .......', posts)
             const enrichedPosts = await Promise.all(posts.map((post) => new Promise((resolve, reject) => {
                 grpc_client_1.userClient.getUserForFeedListing({ userId: post.userId }, (err, response) => {
@@ -306,6 +349,35 @@ class PostRepository extends base_repository_1.BaseRepository {
             logger_util_1.default.error("Error unlocking post for editing", {
                 error: error.message,
                 postId,
+            });
+            throw new Error("Database error");
+        }
+    }
+    // ✅ NEW: Get posts by IDs (for feed retrieval)
+    async getPostsByIds(postIds) {
+        try {
+            if (postIds.length === 0) {
+                return [];
+            }
+            const posts = await prisma_config_1.prisma.posts.findMany({
+                where: {
+                    id: { in: postIds },
+                    deletedAt: null, // Exclude soft-deleted posts
+                    isHidden: false, // Exclude hidden posts
+                },
+                include: {
+                    Media: true,
+                },
+                orderBy: {
+                    createdAt: "desc",
+                },
+            });
+            return posts;
+        }
+        catch (error) {
+            logger_util_1.default.error("Error getting posts by IDs", {
+                error: error.message,
+                postCount: postIds.length,
             });
             throw new Error("Database error");
         }

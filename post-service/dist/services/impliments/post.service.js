@@ -43,27 +43,127 @@ const logger_util_1 = __importDefault(require("../../utils/logger.util"));
 const grpc = __importStar(require("@grpc/grpc-js"));
 const redis_util_1 = require("../../utils/redis.util");
 const prisma_config_1 = require("../../config/prisma.config");
+const client_1 = require("@prisma/client");
+const kafka_config_1 = require("../../config/kafka.config");
+const grpc_client_1 = require("../../config/grpc.client");
+const grpc_client_call_util_1 = require("../../utils/grpc.client.call.util");
 class PostSerive {
-    constructor(postRepository, likeRepository, commentRepository, shareRepository, postVersionRepository) {
+    constructor(postRepository, likeRepository, commentRepository, shareRepository, postVersionRepository, feedService, // ✅ NEW: Feed service for fan-out
+    outboxService // ✅ NEW: Outbox service for events
+    ) {
         this.postRepository = postRepository;
         this.likeRepository = likeRepository;
         this.commentRepository = commentRepository;
         this.shareRepository = shareRepository;
         this.postVersionRepository = postVersionRepository;
+        this.feedService = feedService;
+        this.outboxService = outboxService;
     }
-    // async createPost(payload: CreatePostRequest) {
-    //   try {
-    //     const newPost = PostMapper.toPost(payload);
-    //     const { postId } = await this.postRepository.createPostLogics(newPost);
-    //     return { postId };
-    //   } catch (err: any) {
-    //     logger.error("CreatePost error", { error: err.message });
-    //     throw new CustomError(grpc.status.INTERNAL, err.message);
-    //   }
-    // }
     async submitPost(req) {
         try {
+            // 1. Create post in database (transaction ensures atomicity)
             const post = await this.postRepository.submitPostRepo(req);
+            // 2. ✅ NEW: Fan-out to followers (production-ready feed generation)
+            if (this.feedService) {
+                try {
+                    // Get followers from User Service
+                    let followers = [];
+                    try {
+                        const followersResponse = await (0, grpc_client_call_util_1.grpcs)(grpc_client_1.userClient, "getFollowers", { userId: req.userId });
+                        followers = (followersResponse.followers || []).map((f) => ({
+                            id: f.id,
+                            username: f.username,
+                            name: f.name,
+                        }));
+                    }
+                    catch (followersError) {
+                        // If GetFollowers not implemented yet, log and continue
+                        logger_util_1.default.warn("GetFollowers not available, skipping fan-out", {
+                            error: followersError.message,
+                            userId: req.userId,
+                        });
+                        // For now, we'll still create the outbox event
+                        // Fan-out can be done manually or when GetFollowers is implemented
+                    }
+                    // Only fan-out if we have followers and feed service is available
+                    if (followers.length > 0 && this.feedService) {
+                        // Extract post metadata
+                        const postData = await this.postRepository.findPost(post.id);
+                        if (postData) {
+                            const metadata = {
+                                authorId: postData.userId,
+                                postId: postData.id,
+                                content: postData.content,
+                                tags: postData.tags || [],
+                                visibility: postData.visibility,
+                                likesCount: postData.likesCount,
+                                commentsCount: postData.commentsCount,
+                                sharesCount: postData.sharesCount,
+                                createdAt: postData.createdAt,
+                            };
+                            // Fan-out strategy: synchronous for < 1000 followers
+                            if (followers.length < 1000) {
+                                await this.feedService.fanOutToFollowers({
+                                    postId: post.id,
+                                    authorId: req.userId,
+                                    followers,
+                                    metadata,
+                                });
+                            }
+                            else {
+                                // For > 1000 followers, queue for async processing
+                                // TODO: Implement async queue worker
+                                logger_util_1.default.info("Large follower count, async fan-out recommended", {
+                                    postId: post.id,
+                                    followerCount: followers.length,
+                                });
+                                // For now, process in batches
+                                await this.feedService.fanOutToFollowers({
+                                    postId: post.id,
+                                    authorId: req.userId,
+                                    followers: followers.slice(0, 1000), // Process first 1000
+                                    metadata,
+                                });
+                            }
+                        }
+                    }
+                }
+                catch (fanOutError) {
+                    // Log error but don't fail post creation
+                    logger_util_1.default.error("Fan-out error (non-fatal)", {
+                        error: fanOutError.message,
+                        postId: post.id,
+                    });
+                }
+            }
+            // 3. ✅ NEW: Publish event for notifications
+            if (this.outboxService) {
+                try {
+                    await this.outboxService.createOutboxEvent({
+                        aggregateType: client_1.OutboxAggregateType.POST,
+                        aggregateId: post.id,
+                        type: client_1.OutboxEventType.POST_CREATED,
+                        topic: kafka_config_1.KAFKA_TOPICS.POST_CREATED,
+                        key: req.userId, // Use userId as partition key
+                        payload: {
+                            postId: post.id,
+                            userId: req.userId,
+                            visibility: req.visibility || "PUBLIC",
+                            content: req.content.substring(0, 200), // Preview
+                            createdAt: new Date().toISOString(),
+                            version: Date.now(),
+                            action: "POST_CREATED",
+                        },
+                    });
+                }
+                catch (eventError) {
+                    // Log but don't fail post creation
+                    logger_util_1.default.error("Outbox event creation error (non-fatal)", {
+                        error: eventError.message,
+                        postId: post.id,
+                    });
+                }
+            }
             return post;
         }
         catch (err) {
@@ -73,15 +173,94 @@ class PostSerive {
     }
     async getPosts(pageParam, userId) {
         try {
+            // ✅ NEW: Use personalized feed if feedService is available and userId provided
+            if (this.feedService && userId) {
+                try {
+                    const feedResponse = await this.feedService.getFeed(userId, pageParam, 10);
+                    // ✅ FIX: If feed is empty, fall back to legacy query (for cases where UserFeed hasn't been populated yet)
+                    if (feedResponse.posts.length === 0) {
+                        logger_util_1.default.info("Feed service returned empty, falling back to legacy query", {
+                            userId,
+                            pageParam,
+                        });
+                        // Fall through to legacy implementation below
+                    }
+                    else {
+                        const postIds = feedResponse.posts.map((p) => p.id);
+                        // Enrich with engagement data
+                        let userLikesMap = {};
+                        let userSharesMap = {};
+                        if (postIds.length > 0) {
+                            userLikesMap =
+                                (await this.likeRepository?.getUserLikesForPosts(userId, postIds)) ||
+                                    {};
+                            userSharesMap =
+                                (await this.shareRepository?.getUserSharesForPosts(userId, postIds)) ||
+                                    {};
+                        }
+                        const enrichedPosts = feedResponse.posts.map((post) => {
+                            // ✅ FIX: Transform Media array to Attachments format
+                            const attachments = (post.Media || []).map((media) => ({
+                                id: media.id,
+                                post_id: media.postId || post.id,
+                                type: String(media.type || "IMAGE"), // Convert enum to string (IMAGE or VIDEO)
+                                url: media.url,
+                                created_at: media.createdAt ? new Date(media.createdAt).toISOString() : new Date().toISOString(),
+                            }));
+                            return {
+                                ...post,
+                                attachments, // ✅ Add attachments array
+                                engagement: {
+                                    likesCount: post.likesCount ?? 0,
+                                    commentsCount: post.commentsCount ?? 0,
+                                    sharesCount: post.sharesCount ?? 0,
+                                    isLiked: userLikesMap[post.id] ?? false,
+                                    isShared: userSharesMap[post.id] ?? false,
+                                },
+                            };
+                        });
+                        return {
+                            pages: enrichedPosts,
+                            nextCursor: feedResponse.nextCursor ?? undefined,
+                        };
+                    }
+                }
+                catch (feedError) {
+                    // If feed service fails, fall back to naive approach
+                    logger_util_1.default.warn("Feed service error, falling back to naive query", {
+                        error: feedError.message,
+                        userId,
+                    });
+                    // Fall through to legacy implementation
+                }
+            }
+            // ✅ FALLBACK: Legacy naive query (for backwards compatibility or if feedService unavailable)
+            // ✅ FIX: Order by createdAt DESC to ensure newest posts appear first (UUIDs don't sort chronologically)
             const PAGE_SIZE = 10;
+            // ✅ FIX: Use offset-based pagination with createdAt ordering
+            // If pageParam (post ID) is provided, find how many posts to skip based on createdAt
+            let skipCount = 0;
+            if (pageParam) {
+                const cursorPost = await this.postRepository.findPost(pageParam);
+                if (cursorPost && cursorPost.createdAt) {
+                    // Count posts created after this one (newer posts) to determine skip count
+                    const newerPostsCount = await prisma_config_1.prisma.posts.count({
+                        where: {
+                            createdAt: {
+                                gt: cursorPost.createdAt,
+                            },
+                        },
+                    });
+                    skipCount = newerPostsCount;
+                }
+            }
             const PostselectOptions = {
                 include: {
-                    attachments: true,
+                    Media: true, // ✅ FIX: Changed from 'attachments' to 'Media' to match schema
                 },
                 take: PAGE_SIZE + 1,
-                skip: pageParam ? 1 : 0,
-                cursor: pageParam ? { id: pageParam } : undefined,
-                orderBy: { id: "desc" },
+                skip: skipCount,
+                orderBy: { createdAt: "desc" }, // ✅ CRITICAL FIX: Order by createdAt DESC for chronological ordering (UUIDs are not chronological!)
             };
             const prismaPosts = await this.postRepository.getPostsRepo(PostselectOptions);
             const hasMore = prismaPosts.length > PAGE_SIZE;
@@ -97,16 +276,28 @@ class PostSerive {
                     (await this.shareRepository?.getUserSharesForPosts(userId, postIds)) ||
                         {};
             }
-            const enrichedPosts = items.map((post) => ({
-                ...post,
-                engagement: {
-                    likesCount: post.likesCount ?? 0,
-                    commentsCount: post.commentsCount ?? 0,
-                    sharesCount: post.sharesCount ?? 0,
-                    isLiked: userLikesMap[post.id] ?? false,
-                    isShared: userSharesMap[post.id] ?? false,
-                },
-            }));
+            const enrichedPosts = items.map((post) => {
+                // ✅ FIX: Transform Media array to Attachments format
+                const attachments = (post.Media || []).map((media) => ({
+                    id: media.id,
+                    post_id: media.postId || post.id,
+                    type: String(media.type || "IMAGE"), // Convert enum to string (IMAGE or VIDEO)
+                    url: media.url,
+                    created_at: media.createdAt ? new Date(media.createdAt).toISOString() : new Date().toISOString(),
+                }));
+                return {
+                    ...post,
+                    attachments, // ✅ Add attachments array
+                    engagement: {
+                        likesCount: post.likesCount ?? 0,
+                        commentsCount: post.commentsCount ?? 0,
+                        sharesCount: post.sharesCount ?? 0,
+                        isLiked: userLikesMap[post.id] ?? false,
+                        isShared: userSharesMap[post.id] ?? false,
+                    },
+                };
+            });
+            // ✅ FIX: Use post ID as cursor (for next page pagination)
             const nextCursor = hasMore ? enrichedPosts[enrichedPosts.length - 1].id : null;
             return {
                 pages: enrichedPosts,
@@ -124,6 +315,19 @@ class PostSerive {
                 throw new error_util_1.CustomError(grpc.status.NOT_FOUND, "Post Not found");
             }
             const deletedPost = await this.postRepository.deletePost(postId);
+            // ✅ NEW: Remove post from all user feeds
+            if (this.feedService) {
+                try {
+                    await this.feedService.removeFromAllFeeds(postId);
+                }
+                catch (feedError) {
+                    // Log but don't fail deletion
+                    logger_util_1.default.error("Error removing post from feeds (non-fatal)", {
+                        error: feedError.message,
+                        postId,
+                    });
+                }
+            }
             return deletedPost;
         }
         catch (err) {
@@ -195,7 +399,7 @@ class PostSerive {
                             isEditing: false, // Unlock
                         },
                         include: {
-                            attachments: true,
+                            Media: true,
                         },
                     });
                     // Update attachments

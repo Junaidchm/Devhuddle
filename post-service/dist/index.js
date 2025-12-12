@@ -15,7 +15,6 @@ const outbox_processor_1 = require("./services/impliments/outbox.processor");
 // Import repositories
 const like_repository_1 = require("./repositories/impliments/like.repository");
 const comment_repository_1 = require("./repositories/impliments/comment.repository");
-const share_repository_1 = require("./repositories/impliments/share.repository");
 const report_repository_1 = require("./repositories/impliments/report.repository");
 const post_repository_1 = require("./repositories/impliments/post.repository");
 const mention_repository_1 = require("./repositories/impliments/mention.repository");
@@ -25,7 +24,6 @@ const shareLink_repository_1 = require("./repositories/impliments/shareLink.repo
 // Import services
 const like_service_1 = require("./services/impliments/like.service");
 const comment_service_1 = require("./services/impliments/comment.service");
-const share_service_1 = require("./services/impliments/share.service");
 const report_service_1 = require("./services/impliments/report.service");
 const outbox_service_1 = require("./services/impliments/outbox.service");
 const mention_service_1 = require("./services/impliments/mention.service");
@@ -33,13 +31,15 @@ const shareLink_service_1 = require("./services/impliments/shareLink.service");
 // Import controllers
 const like_controller_1 = require("./controllers/impliments/like.controller");
 const comment_controller_1 = require("./controllers/impliments/comment.controller");
-const share_controller_1 = require("./controllers/impliments/share.controller");
 const report_controller_1 = require("./controllers/impliments/report.controller");
 const mention_controller_1 = require("./controllers/impliments/mention.controller");
+const send_controller_1 = require("./controllers/impliments/send.controller");
+const send_service_1 = require("./services/impliments/send.service");
 const shareLink_controller_1 = require("./controllers/impliments/shareLink.controller");
-;
 // Import routes
 const engagement_routes_1 = require("./routes/engagement.routes");
+const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
+const feed_routes_1 = __importDefault(require("./routes/feed.routes"));
 const kafka_util_1 = require("./utils/kafka.util");
 const kafka_util_2 = require("./utils/kafka.util");
 dotenv_1.default.config();
@@ -51,7 +51,6 @@ server_start_util_1.app.use((0, cookie_parser_1.default)());
 // Initialize repositories
 const likeRepository = new like_repository_1.LikeRepository();
 const commentRepository = new comment_repository_1.CommentRepository();
-const shareRepository = new share_repository_1.ShareRepository();
 const reportRepository = new report_repository_1.ReportRepository();
 const postRepository = new post_repository_1.PostRepository();
 const mentionRepository = new mention_repository_1.MentionRepository();
@@ -64,19 +63,21 @@ const outboxProcessor = new outbox_processor_1.OutboxProcessor(outboxRepository)
 const mentionService = new mention_service_1.MentionService(mentionRepository, outboxService);
 const likeService = new like_service_1.LikeService(likeRepository, postRepository, commentRepository, outboxService);
 const commentService = new comment_service_1.CommentService(commentRepository, postRepository, mentionService, outboxService, likeRepository);
-const shareService = new share_service_1.ShareService(shareRepository, postRepository, outboxService);
+const sendService = new send_service_1.SendService(postRepository, outboxService);
 const reportService = new report_service_1.ReportService(reportRepository, postRepository, commentRepository, outboxService);
 const shareLinkService = new shareLink_service_1.ShareLinkService(shareLinkRepository, postRepository);
 // Initialize controllers
 const likeController = new like_controller_1.LikeController(likeService);
 const commentController = new comment_controller_1.CommentController(commentService);
-const shareController = new share_controller_1.ShareController(shareService);
+const sendController = new send_controller_1.SendController(sendService);
 const reportController = new report_controller_1.ReportController(reportService);
 const mentionController = new mention_controller_1.MentionController(mentionRepository, mentionService);
 const shareLinkController = new shareLink_controller_1.ShareLinkController(shareLinkService);
 // Setup routes
-const engagementRouter = (0, engagement_routes_1.setupEngagementRoutes)(likeController, commentController, shareController, reportController, mentionController, idempotencyRepository, shareLinkController);
+const engagementRouter = (0, engagement_routes_1.setupEngagementRoutes)(likeController, commentController, sendController, reportController, mentionController, shareLinkController, idempotencyRepository);
 server_start_util_1.app.use("/api/v1", engagementRouter);
+server_start_util_1.app.use("/api/v1/admin", admin_routes_1.default);
+server_start_util_1.app.use("/api/v1/posts", feed_routes_1.default);
 server_start_util_1.app.get("/health", (req, res) => {
     res.status(200).json({ status: "Post service is running" });
 });

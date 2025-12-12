@@ -53,13 +53,27 @@ const media_repository_1 = require("./repositories/impliments/media.repository")
 const media_service_1 = require("./services/impliments/media.service");
 const media_controller_1 = require("./controllers/impliments/media.controller");
 const shareLink_service_1 = require("./services/impliments/shareLink.service");
+const outbox_service_1 = require("./services/impliments/outbox.service");
+const outbox_repository_1 = require("./repositories/impliments/outbox.repository");
 const grpc_helper_1 = require("./utils/grpc.helper");
+// ✅ NEW: Import feed-related services
+const feed_repository_1 = require("./repositories/impliments/feed.repository");
+const feed_ranking_service_1 = require("./services/impliments/feed-ranking.service");
+const feed_service_1 = require("./services/impliments/feed.service");
 const postRepository = new post_repository_1.PostRepository();
 const likeRepository = new like_repository_1.LikeRepository();
 const commentRepository = new comment_repository_1.CommentRepository();
 const shareRepository = new share_repository_1.ShareRepository();
 const postVersionRepository = new postVersion_repository_1.PostVersionRepository();
-const postService = new post_service_1.PostSerive(postRepository, likeRepository, commentRepository, shareRepository, postVersionRepository);
+const outboxRepository = new outbox_repository_1.OutboxRepository();
+const outboxService = new outbox_service_1.OutboxService(outboxRepository);
+// ✅ NEW: Initialize feed services
+const feedRepository = new feed_repository_1.FeedRepository();
+const feedRankingService = new feed_ranking_service_1.FeedRankingService(postRepository);
+const feedService = new feed_service_1.FeedService(feedRepository, feedRankingService, postRepository);
+const postService = new post_service_1.PostSerive(postRepository, likeRepository, commentRepository, shareRepository, postVersionRepository, feedService, // ✅ NEW: Inject feed service
+outboxService // ✅ NEW: Inject outbox service
+);
 const postController = new feed_controller_1.PostController(postService);
 // Share link service setup
 const shareLinkRepository = new shareLink_repository_1.ShareLinkRepository();

@@ -132,12 +132,7 @@ export class SendController {
         throw new CustomError(HttpStatus.BAD_REQUEST, "Post ID is required");
       }
 
-      if (!recipientIds || !Array.isArray(recipientIds) || recipientIds.length === 0) {
-        throw new CustomError(
-          HttpStatus.BAD_REQUEST,
-          "At least one recipient is required"
-        );
-      }
+      // Validation handled by DTO
 
       const result = await this.sendService.sendPost(
         postId,

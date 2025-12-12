@@ -5,7 +5,7 @@
 //   protoc               v3.21.12
 // source: user.proto
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserServiceClient = exports.UserServiceService = exports.CheckFollowResponse = exports.CheckFollowRequest = exports.ResolveUsernamesResponse = exports.ResolvedUser = exports.ResolveUsernamesRequest = exports.getUserForFeedListingResponse = exports.getUserForFeedListingRequest = exports.protobufPackage = void 0;
+exports.UserServiceClient = exports.UserServiceService = exports.GetFollowersResponse = exports.Follower = exports.GetFollowersRequest = exports.CheckFollowResponse = exports.CheckFollowRequest = exports.ResolveUsernamesResponse = exports.ResolvedUser = exports.ResolveUsernamesRequest = exports.getUserForFeedListingResponse = exports.getUserForFeedListingRequest = exports.protobufPackage = void 0;
 /* eslint-disable */
 const wire_1 = require("@bufbuild/protobuf/wire");
 const grpc_js_1 = require("@grpc/grpc-js");
@@ -469,6 +469,195 @@ exports.CheckFollowResponse = {
         return message;
     },
 };
+function createBaseGetFollowersRequest() {
+    return { userId: "" };
+}
+exports.GetFollowersRequest = {
+    encode(message, writer = new wire_1.BinaryWriter()) {
+        if (message.userId !== "") {
+            writer.uint32(10).string(message.userId);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof wire_1.BinaryReader ? input : new wire_1.BinaryReader(input);
+        const end = length === undefined ? reader.len : reader.pos + length;
+        const message = createBaseGetFollowersRequest();
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1: {
+                    if (tag !== 10) {
+                        break;
+                    }
+                    message.userId = reader.string();
+                    continue;
+                }
+            }
+            if ((tag & 7) === 4 || tag === 0) {
+                break;
+            }
+            reader.skip(tag & 7);
+        }
+        return message;
+    },
+    fromJSON(object) {
+        return { userId: isSet(object.userId) ? globalThis.String(object.userId) : "" };
+    },
+    toJSON(message) {
+        const obj = {};
+        if (message.userId !== "") {
+            obj.userId = message.userId;
+        }
+        return obj;
+    },
+    create(base) {
+        return exports.GetFollowersRequest.fromPartial(base ?? {});
+    },
+    fromPartial(object) {
+        const message = createBaseGetFollowersRequest();
+        message.userId = object.userId ?? "";
+        return message;
+    },
+};
+function createBaseFollower() {
+    return { id: "", username: "", name: "" };
+}
+exports.Follower = {
+    encode(message, writer = new wire_1.BinaryWriter()) {
+        if (message.id !== "") {
+            writer.uint32(10).string(message.id);
+        }
+        if (message.username !== "") {
+            writer.uint32(18).string(message.username);
+        }
+        if (message.name !== "") {
+            writer.uint32(26).string(message.name);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof wire_1.BinaryReader ? input : new wire_1.BinaryReader(input);
+        const end = length === undefined ? reader.len : reader.pos + length;
+        const message = createBaseFollower();
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1: {
+                    if (tag !== 10) {
+                        break;
+                    }
+                    message.id = reader.string();
+                    continue;
+                }
+                case 2: {
+                    if (tag !== 18) {
+                        break;
+                    }
+                    message.username = reader.string();
+                    continue;
+                }
+                case 3: {
+                    if (tag !== 26) {
+                        break;
+                    }
+                    message.name = reader.string();
+                    continue;
+                }
+            }
+            if ((tag & 7) === 4 || tag === 0) {
+                break;
+            }
+            reader.skip(tag & 7);
+        }
+        return message;
+    },
+    fromJSON(object) {
+        return {
+            id: isSet(object.id) ? globalThis.String(object.id) : "",
+            username: isSet(object.username) ? globalThis.String(object.username) : "",
+            name: isSet(object.name) ? globalThis.String(object.name) : "",
+        };
+    },
+    toJSON(message) {
+        const obj = {};
+        if (message.id !== "") {
+            obj.id = message.id;
+        }
+        if (message.username !== "") {
+            obj.username = message.username;
+        }
+        if (message.name !== "") {
+            obj.name = message.name;
+        }
+        return obj;
+    },
+    create(base) {
+        return exports.Follower.fromPartial(base ?? {});
+    },
+    fromPartial(object) {
+        const message = createBaseFollower();
+        message.id = object.id ?? "";
+        message.username = object.username ?? "";
+        message.name = object.name ?? "";
+        return message;
+    },
+};
+function createBaseGetFollowersResponse() {
+    return { followers: [] };
+}
+exports.GetFollowersResponse = {
+    encode(message, writer = new wire_1.BinaryWriter()) {
+        for (const v of message.followers) {
+            exports.Follower.encode(v, writer.uint32(10).fork()).join();
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof wire_1.BinaryReader ? input : new wire_1.BinaryReader(input);
+        const end = length === undefined ? reader.len : reader.pos + length;
+        const message = createBaseGetFollowersResponse();
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1: {
+                    if (tag !== 10) {
+                        break;
+                    }
+                    message.followers.push(exports.Follower.decode(reader, reader.uint32()));
+                    continue;
+                }
+            }
+            if ((tag & 7) === 4 || tag === 0) {
+                break;
+            }
+            reader.skip(tag & 7);
+        }
+        return message;
+    },
+    fromJSON(object) {
+        return {
+            followers: globalThis.Array.isArray(object?.followers)
+                ? object.followers.map((e) => exports.Follower.fromJSON(e))
+                : [],
+        };
+    },
+    toJSON(message) {
+        const obj = {};
+        if (message.followers?.length) {
+            obj.followers = message.followers.map((e) => exports.Follower.toJSON(e));
+        }
+        return obj;
+    },
+    create(base) {
+        return exports.GetFollowersResponse.fromPartial(base ?? {});
+    },
+    fromPartial(object) {
+        const message = createBaseGetFollowersResponse();
+        message.followers = object.followers?.map((e) => exports.Follower.fromPartial(e)) || [];
+        return message;
+    },
+};
 exports.UserServiceService = {
     /** User-related methods */
     getUserForFeedListing: {
@@ -497,6 +686,16 @@ exports.UserServiceService = {
         requestDeserialize: (value) => exports.CheckFollowRequest.decode(value),
         responseSerialize: (value) => Buffer.from(exports.CheckFollowResponse.encode(value).finish()),
         responseDeserialize: (value) => exports.CheckFollowResponse.decode(value),
+    },
+    /** ✅ NEW: Get followers for feed fan-out */
+    getFollowers: {
+        path: "/UserService/GetFollowers",
+        requestStream: false,
+        responseStream: false,
+        requestSerialize: (value) => Buffer.from(exports.GetFollowersRequest.encode(value).finish()),
+        requestDeserialize: (value) => exports.GetFollowersRequest.decode(value),
+        responseSerialize: (value) => Buffer.from(exports.GetFollowersResponse.encode(value).finish()),
+        responseDeserialize: (value) => exports.GetFollowersResponse.decode(value),
     },
 };
 exports.UserServiceClient = (0, grpc_js_1.makeGenericClientConstructor)(exports.UserServiceService, "UserService");

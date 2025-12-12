@@ -79,27 +79,17 @@ export class AuthController implements IAuthController {
   }
 
   async register(req: RegisterRequest): Promise<RegisterResponse> {
+    // Validation is now handled by validateDto middleware
     const { name, username, email, password } = req;
-    if (!email || !username || !password) {
-      throw new CustomError(
-        grpc.status.INVALID_ARGUMENT,
-        Messages.EMAIL_USERNAME_PASSWORD_REQUIRED
-      );
-    }
     await this.authService.register({ email, username, name, password });
 
     return { message: Messages.VERIFY_EMAIL_WITH_OTP };
   }
 
   async verifyOTP(req: VerifyOTPRequest): Promise<VerifyOTPResponse> {
-    const { email, otp } = req;
-    if (!email || !otp) {
-      throw new CustomError(
-        grpc.status.INVALID_ARGUMENT,
-        Messages.EMAIL_OTP_REQUIRED
-      );
-    }
+    // Validation handled by DTO
 
+    const { email, otp } = req;
     const jwtpayload: JwtPayload = await this.authService.verifyOTP(req);
     return {
       message: Messages.EMAIL_VERIFIED,
@@ -109,14 +99,7 @@ export class AuthController implements IAuthController {
 
   async login(req: LogingRequest): Promise<LogingResponse> {
     const { email, password } = req;
-
-    if (!email || !password) {
-      throw new CustomError(
-        grpc.status.INVALID_ARGUMENT,
-        Messages.EMAIL_PASSWORD_REQUIRED
-      );
-    }
-
+    // Validation handled by DTO
     const jwtpayload: GetJwtUserResponse = await this.authService.login({
       email,
       password,
@@ -130,12 +113,7 @@ export class AuthController implements IAuthController {
 
   async resendOTP(req: ResentOTPRequest): Promise<ResentOTPResponse> {
     const { email } = req;
-    if (!email) {
-      throw new CustomError(
-        grpc.status.INVALID_ARGUMENT,
-        Messages.EMAIL_MISSING
-      );
-    }
+    // Validation handled by DTO
     await this.authService.resendOTP(email);
     return { message: Messages.OTP_RESENT };
   }
@@ -149,26 +127,15 @@ export class AuthController implements IAuthController {
     req: PasswordResetRequest
   ): Promise<PasswordResetResponse> {
     const { email } = req;
-    if (!email) {
-      throw new CustomError(
-        grpc.status.INVALID_ARGUMENT,
-        Messages.EMAIL_MISSING
-      );
-    }
-
+    // Validation handled by DTO
     await this.authService.requestPasswordReset({ email });
     return { message: Messages.PASSWORD_SENDTO_MAIL };
   }
 
   async resetPassword(req: PasswordResetConfirmRequest) {
-    const { token, newPassword } = req;
-    if (!token || !newPassword) {
-      throw new CustomError(
-        grpc.status.INVALID_ARGUMENT,
-        Messages.PASSWORD_RESET_TOKEN_PASSWORD
-      );
-    }
+    // Validation handled by DTO
 
+    const { token, newPassword } = req;
     await this.authService.resetPassword({ token, newPassword });
     return { message: Messages.PASSWORD_UPDATED };
   }
@@ -221,9 +188,11 @@ export class AuthController implements IAuthController {
   async verifyRefreshToken(
     call: VerifyRefreshTokenRequest
   ): Promise<VerifyRefreshTokenResponse> {
+    // Validation handled by DTO (for HTTP) or GRPC validation
     const { email } = call;
-
+    // Validation handled by DTO (for HTTP) or GRPC validation
     if (!email) {
+       // Keep this for GRPC calls if they don't go through middleware
       throw new CustomError(grpc.status.INVALID_ARGUMENT, "Email is required");
     }
 
@@ -253,12 +222,7 @@ export class AuthController implements IAuthController {
   ): Promise<GeneratePresignedUrlResponse> {
     const { userId, operation, fileName, fileType, key } = call;
 
-    if (!["PUT", "GET"].includes(operation)) {
-      throw new CustomError(
-        grpc.status.INVALID_ARGUMENT,
-        Messages.PRESIGNED_URL_GETPUT_ERROR
-      );
-    }
+    // Validation handled by DTO
 
     if (!userId) {
       throw new CustomError(
