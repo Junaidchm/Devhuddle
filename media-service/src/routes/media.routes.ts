@@ -1,11 +1,13 @@
 import { Router } from "express";
 import { MediaController } from "../controllers/impliments/media.controller";
+import { validateDto } from "../middlewares/validation.middleware";
+import { CreateUploadSessionDto, ValidateMediaDto, LinkMediaToPostDto } from "../dtos/media.dto";
 
 export const setupMediaRoutes = (mediaController: MediaController): Router => {
   const router = Router();
 
   // Upload session - create presigned URL
-  router.post("/upload-session", (req, res) => 
+  router.post("/upload-session", validateDto(CreateUploadSessionDto), (req, res) => 
     mediaController.createUploadSession(req, res)
   );
 
@@ -30,12 +32,12 @@ export const setupMediaRoutes = (mediaController: MediaController): Router => {
   );
 
   // Validate media ownership (called by Post Service)
-  router.post("/validate", (req, res) => 
+  router.post("/validate", validateDto(ValidateMediaDto), (req, res) => 
     mediaController.validateMediaOwnership(req, res)
   );
 
   // Link media to post (called by Post Service)
-  router.post("/link-to-post", (req, res) => 
+  router.post("/link-to-post", validateDto(LinkMediaToPostDto), (req, res) => 
     mediaController.linkMediaToPost(req, res)
   );
 

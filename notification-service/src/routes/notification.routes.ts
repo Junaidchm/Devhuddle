@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { NotificationController } from "../controllers/impliments/notification.controller";
+import { validateDto } from "../middlewares/validation.middleware";
+import { NotificationOwnerDto } from "../dtos/notification.dto";
 import { NotificationService } from "../services/impliments/notification.service";
 import { NotificationsRepository } from "../repository/impliments/notifications.repository";
 
@@ -15,10 +17,12 @@ router
   )
   .patch(
     "/:id/read",
+    validateDto(NotificationOwnerDto),
     notificationController.markAsRead.bind(notificationController)
   )
   .delete(
     "/:id",
+    validateDto(NotificationOwnerDto),
     notificationController.deleteNotification.bind(notificationController)
   )
   .get(

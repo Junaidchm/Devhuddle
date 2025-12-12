@@ -26,16 +26,7 @@ export class CommentController {
         );
       }
 
-      if (
-        !content ||
-        typeof content !== "string" ||
-        content.trim().length === 0
-      ) {
-        throw new CustomError(
-          HttpStatus.BAD_REQUEST,
-          Messages.COMMENT_CONTENT_REQUIRED
-        );
-      }
+      // Validation handled by DTO
 
       const comment = await this._commentService.createComment(
         postId,
@@ -71,16 +62,7 @@ export class CommentController {
         );
       }
 
-      if (
-        !content ||
-        typeof content !== "string" ||
-        content.trim().length === 0
-      ) {
-        throw new CustomError(
-          HttpStatus.BAD_REQUEST,
-          Messages.COMMENT_CONTENT_REQUIRED
-        );
-      }
+      // Validation handled by DTO
 
       const comment = await this._commentService.updateComment(
         commentId,

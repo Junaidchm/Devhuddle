@@ -6,6 +6,8 @@ import { ProjectReportController } from "../controllers/impliments/project.repor
 import { ProjectMediaController } from "../controllers/impliments/project.media.controller";
 import { idempotencyMiddleware } from "../middlewares/idempotency.middleware";
 import { IIdempotencyRepository } from "../repositories/interface/IIdempotencyRepository";
+import { validateDto } from "../middlewares/validation.middleware";
+import { CreateProjectDto, UpdateProjectDto, UploadProjectMediaDto, ShareProjectDto, ReportProjectDto } from "../dtos/project.dto";
 
 const router = Router();
 
@@ -21,6 +23,7 @@ export const setupProjectRoutes = (
   router.post(
     "/projects",
     idempotencyMiddleware(idempotencyRepository),
+    validateDto(CreateProjectDto),
     projectController.createProject.bind(projectController)
   );
 
@@ -52,6 +55,7 @@ export const setupProjectRoutes = (
   router.put(
     "/projects/:projectId",
     idempotencyMiddleware(idempotencyRepository),
+    validateDto(UpdateProjectDto),
     projectController.updateProject.bind(projectController)
   );
 
@@ -88,18 +92,21 @@ export const setupProjectRoutes = (
   router.post(
     "/projects/:projectId/share",
     idempotencyMiddleware(idempotencyRepository),
+    validateDto(ShareProjectDto),
     shareController.shareProject.bind(shareController)
   );
 
   router.post(
     "/projects/:projectId/report",
     idempotencyMiddleware(idempotencyRepository),
+    validateDto(ReportProjectDto),
     reportController.reportProject.bind(reportController)
   );
 
   // Media upload route
   router.post(
     "/projects/media",
+    validateDto(UploadProjectMediaDto),
     mediaController.uploadProjectMediaHttp.bind(mediaController)
   );
 

@@ -21,10 +21,8 @@ export class MediaController implements IMediaController {
       const { fileName, fileType, fileSize, mediaType } = req.body;
 
       if (!fileName || !fileType || !fileSize || !mediaType) {
-        return sendErrorResponse(res, {
-          status: 400,
-          message: "Missing required fields: fileName, fileType, fileSize, mediaType",
-        });
+        // Validation handled by DTO
+        
       }
 
       const result = await this.mediaService.createUploadSession({
@@ -195,17 +193,11 @@ export class MediaController implements IMediaController {
       const { mediaIds, userId } = req.body;
 
       if (!mediaIds || !Array.isArray(mediaIds) || mediaIds.length === 0) {
-        return sendErrorResponse(res, {
-          status: 400,
-          message: "mediaIds array is required",
-        });
+         // Validation handled by DTO
       }
 
       if (!userId) {
-        return sendErrorResponse(res, {
-          status: 400,
-          message: "userId is required",
-        });
+         // Validation handled by DTO
       }
 
       const result = await this.mediaService.validateMediaOwnership({
@@ -239,24 +231,15 @@ export class MediaController implements IMediaController {
       const { mediaIds, postId, userId } = req.body;
 
       if (!mediaIds || !Array.isArray(mediaIds) || mediaIds.length === 0) {
-        return sendErrorResponse(res, {
-          status: 400,
-          message: "mediaIds array is required",
-        });
+        // Validation handled by DTO
       }
 
       if (!postId) {
-        return sendErrorResponse(res, {
-          status: 400,
-          message: "postId is required",
-        });
+        // Validation handled by DTO
       }
 
       if (!userId) {
-        return sendErrorResponse(res, {
-          status: 400,
-          message: "userId is required",
-        });
+        // Validation handled by DTO
       }
 
       await this.mediaService.linkMediaToPost(mediaIds, postId, userId);

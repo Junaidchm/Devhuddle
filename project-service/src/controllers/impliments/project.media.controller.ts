@@ -28,27 +28,16 @@ export class ProjectMediaController {
 
     try {
       // Validate request body exists
-      if (!req.body || typeof req.body !== 'object') {
-        throw new CustomError(HttpStatus.BAD_REQUEST, "Request body is required");
-      }
+      // Validation handled by DTO
 
       const { url, type, thumbnailUrl, width, height, fileSize, mimeType, duration } = req.body;
 
-      if (!url || !type) {
-        throw new CustomError(HttpStatus.BAD_REQUEST, "URL and type are required");
-      }
+      // Validation handled by DTO
 
       // Validate type
-      if (type !== "IMAGE" && type !== "VIDEO") {
-        throw new CustomError(HttpStatus.BAD_REQUEST, "Type must be IMAGE or VIDEO");
-      }
+      // Validation handled by DTO
 
-      // Validate URL format
-      try {
-        new URL(url);
-      } catch {
-        throw new CustomError(HttpStatus.BAD_REQUEST, "Invalid URL format");
-      }
+      // Validation handled by DTO
 
       logger.info("Processing project media upload", {
         type,

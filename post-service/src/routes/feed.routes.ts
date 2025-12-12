@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { PostController } from "../controllers/impliments/feed.controller";
+import { validateDto } from "../middleware/validation.middleware";
+import { CreatePostDto } from "../dto/post.dto";
 import { MediaController } from "../controllers/impliments/media.controller";
 import { PostSerive } from "../services/impliments/post.service";
 import { MediaService } from "../services/impliments/media.service";
@@ -48,7 +50,7 @@ const mediaController = new MediaController(mediaService);
 // Note: Authentication is handled by API Gateway, so no jwtMiddleware needed here
 router
   // Submit post
-  .post("/submit", postController.submitPostHttp.bind(postController))
+  .post("/submit", validateDto(CreatePostDto), postController.submitPostHttp.bind(postController))
 
   // List posts
   .get("/list", postController.listPostsHttp.bind(postController))

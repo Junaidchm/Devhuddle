@@ -16,9 +16,7 @@ export class ProjectReportController {
       const reporterId = getUserIdFromRequest(req);
       const { reason, metadata } = req.body;
 
-      if (!reason) {
-        throw new Error("Report reason is required");
-      }
+      // Validation handled by DTO
 
       const result = await this.reportService.reportProject({
         projectId,

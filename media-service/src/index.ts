@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import logger from "./utils/logger.util";
 import { CustomError, sendErrorResponse } from "./utils/error.util";
 import { app, startServer } from "./utils/server.start.util";
+import { extractUserFromHeader } from "./middlewares/auth.middleware";
 
 // Import repositories
 import { MediaRepository } from "./repositories/impliments/media.repository";
@@ -38,6 +39,9 @@ const mediaController = new MediaController(mediaService);
 
 // Setup routes
 const mediaRouter = setupMediaRoutes(mediaController);
+
+// Register auth middleware
+app.use(extractUserFromHeader);
 
 app.use("/api/v1/media", mediaRouter);
 

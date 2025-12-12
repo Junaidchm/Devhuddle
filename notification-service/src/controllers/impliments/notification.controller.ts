@@ -43,12 +43,12 @@ export class NotificationController {
       const { id } = req.params;
       const { recipientId } = req.body;
 
-      if (!id || !recipientId) {
-        res
-          .status(400)
-          .json({ error: "Notification ID and recipient ID are required" });
+      if (!id) {
+        res.status(400).json({ error: "Notification ID is required" });
         return;
       }
+      
+      // recipientId validation handled by DTO
 
       await this._notificationService.markAsRead(id, recipientId);
 
@@ -72,12 +72,12 @@ export class NotificationController {
       const { id } = req.params;
       const { recipientId } = req.body;
 
-      if (!id || !recipientId) {
-        res
-          .status(400)
-          .json({ error: "Notification ID and recipient ID are required" });
-        return;
+      if (!id) {
+         res.status(400).json({ error: "Notification ID is required" });
+         return;
       }
+
+      // recipientId validation handled by DTO
 
       await this._notificationService.deleteNotification(id, recipientId);
 

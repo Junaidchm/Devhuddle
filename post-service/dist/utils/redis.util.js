@@ -318,6 +318,37 @@ class RedisCacheService {
             logger_util_1.default.error("Error invalidating post caches", { error, postId });
         }
     }
+    // ✅ NEW: Generic cache methods for feed caching
+    static async get(key) {
+        try {
+            return await redis_config_1.default.get(key);
+        }
+        catch (error) {
+            logger_util_1.default.error("Error getting from Redis cache", { error, key });
+            return null;
+        }
+    }
+    static async set(key, value, ttl) {
+        try {
+            if (ttl) {
+                await redis_config_1.default.setEx(key, ttl, value);
+            }
+            else {
+                await redis_config_1.default.set(key, value);
+            }
+        }
+        catch (error) {
+            logger_util_1.default.error("Error setting Redis cache", { error, key });
+        }
+    }
+    static async delete(key) {
+        try {
+            await redis_config_1.default.del(key);
+        }
+        catch (error) {
+            logger_util_1.default.error("Error deleting from Redis cache", { error, key });
+        }
+    }
 }
 exports.RedisCacheService = RedisCacheService;
 RedisCacheService.CACHE_KEYS = {

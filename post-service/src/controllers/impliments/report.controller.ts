@@ -22,9 +22,7 @@ export class ReportController implements IReportController {
         throw new CustomError(HttpStatus.BAD_REQUEST, "Post ID is required");
       }
 
-      if (!reason || !Object.values(ReportReason).includes(reason)) {
-        throw new CustomError(HttpStatus.BAD_REQUEST, "Valid report reason is required");
-      }
+      // Validation handled by DTO
 
       const report = await this.reportService.reportPost(
         postId,
@@ -56,9 +54,7 @@ export class ReportController implements IReportController {
         throw new CustomError(HttpStatus.BAD_REQUEST, "Comment ID is required");
       }
 
-      if (!reason || !Object.values(ReportReason).includes(reason)) {
-        throw new CustomError(HttpStatus.BAD_REQUEST, "Valid report reason is required");
-      }
+      // Validation handled by DTO
 
       const report = await this.reportService.reportComment(commentId, reporterId, reason, metadata);
 

@@ -101,9 +101,8 @@ export class PostController implements IfeedController {
       };
 
       // Validate required fields
-      if (!submitRequest.content || submitRequest.content.trim().length === 0) {
-        throw new CustomError(HttpStatus.BAD_REQUEST, "Post content is required");
-      }
+      // Validate required fields
+      // Validation handled by DTO
 
       logger.info("Submitting post", {
         userId: submitRequest.userId,

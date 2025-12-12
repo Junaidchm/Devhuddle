@@ -1,5 +1,17 @@
 import { Router } from "express";
 import { AuthController } from "../controllers/implimentation/auth.controller";
+import { validateDto } from "../middleware/validation.middleware";
+import { 
+  RegisterDto, 
+  LoginDto, 
+  VerifyOtpDto, 
+  ResendOtpDto, 
+  RequestPasswordResetDto, 
+  ResetPasswordDto, 
+  UpdateProfileDto, 
+  RefreshTokenDto, 
+  GeneratePresignedUrlDto 
+} from "../dtos/auth.dto";
 import { AuthService } from "../services/impliments/auth.service";
 import { UserRepository } from "../repositories/impliments/user.repository";
 
@@ -17,39 +29,39 @@ router
   .get("/google/callback", authController.googleCallback.bind(authController))
 
   // Signup
-  .post("/signup", authController.signupHttp.bind(authController))
+  .post("/signup", validateDto(RegisterDto), authController.signupHttp.bind(authController))
   
   // Verify OTP
-  .post("/verify-otp", authController.verifyOtpHttp.bind(authController))
+  .post("/verify-otp", validateDto(VerifyOtpDto), authController.verifyOtpHttp.bind(authController))
   
   // Resend OTP
-  .post("/resend", authController.resendOtpHttp.bind(authController))
+  .post("/resend", validateDto(ResendOtpDto), authController.resendOtpHttp.bind(authController))
   
   // Get current user (me) - userId comes from x-user-data header (API Gateway)
   .get("/me", authController.getMeHttp.bind(authController))
   
   // Login
-  .post("/login", authController.loginHttp.bind(authController))
+  .post("/login", validateDto(LoginDto), authController.loginHttp.bind(authController))
   
   // Logout - userId comes from x-user-data header (API Gateway)
   .post("/logout", authController.logoutHttp.bind(authController))
   
   // Request password reset
-  .post("/password-reset", authController.requestPasswordResetHttp.bind(authController))
+  .post("/password-reset", validateDto(RequestPasswordResetDto), authController.requestPasswordResetHttp.bind(authController))
   
   // Confirm password reset
-  .post("/password-reset/confirm", authController.confirmPasswordResetHttp.bind(authController))
+  .post("/password-reset/confirm", validateDto(ResetPasswordDto), authController.confirmPasswordResetHttp.bind(authController))
   
   // Get profile - userId comes from x-user-data header (API Gateway)
   .get("/profile", authController.getProfileHttp.bind(authController))
   
   // Update profile - userId comes from x-user-data header (API Gateway)
-  .patch("/profile", authController.updateProfileHttp.bind(authController))
+  .patch("/profile", validateDto(UpdateProfileDto), authController.updateProfileHttp.bind(authController))
   
   // Refresh token - email comes from x-user-data header (API Gateway)
-  .post("/refresh", authController.refreshTokenHttp.bind(authController))
+  .post("/refresh", validateDto(RefreshTokenDto), authController.refreshTokenHttp.bind(authController))
   
   // Generate presigned URL - userId comes from x-user-data header (API Gateway)
-  .post("/generate-presigned-url", authController.generatePresignedUrlHttp.bind(authController));
+  .post("/generate-presigned-url", validateDto(GeneratePresignedUrlDto), authController.generatePresignedUrlHttp.bind(authController));
 
 export default router;
