@@ -30,7 +30,7 @@ class PostRepository extends base_repository_1.BaseRepository {
     async submitPostRepo(data) {
         try {
             /**
-             * ✅ UPDATED: Use Media Service for validation and linking
+             *  UPDATED: Use Media Service for validation and linking
              *
              * Why this change:
              * - Media Service is the single source of truth for media records
@@ -38,14 +38,12 @@ class PostRepository extends base_repository_1.BaseRepository {
              * - Removes dependency on Post Service's Media table
              * - Better separation of concerns
              */
+            let validation;
             // Step 1: Validate media ownership via Media Service
-            // This ensures:
-            // - Media exists in Media Service
-            // - Media belongs to the user creating the post
-            // - Media is not already linked to another post
+            // ...
             if (data.mediaIds && data.mediaIds.length > 0) {
                 try {
-                    const validation = await (0, media_client_1.validateMediaOwnership)(data.mediaIds, data.userId);
+                    validation = await (0, media_client_1.validateMediaOwnership)(data.mediaIds, data.userId);
                     if (!validation.valid) {
                         throw new Error(validation.message ||
                             `Invalid media: ${validation.invalidMediaIds?.join(", ")}`);
@@ -62,15 +60,31 @@ class PostRepository extends base_repository_1.BaseRepository {
             }
             // Step 2: Create post in database (transaction ensures atomicity)
             const post = await prisma_config_1.prisma.$transaction(async (tx) => {
+                // Use checked media from validation step
+                const mediaToCreate = (validation?.validMedia || []).map((m) => ({
+                    id: m.id,
+                    type: m.mediaType === "POST_VIDEO" ? "VIDEO" : "IMAGE", // Map enum
+                    url: m.cdnUrl || m.originalUrl,
+                    thumbnail: m.thumbnailUrls?.[0]?.cdnUrl || m.thumbnail, // Handle different thumbnail structures
+                }));
                 // Create post with generated ID
                 const newPost = await tx.posts.create({
                     data: {
                         id: (0, uuid_1.v4)(), // Generate ID using UUID v4
                         content: data.content,
                         userId: data.userId,
-                        visibility: data.visibility, // Will be properly typed after proto update
-                        commentControl: data.commentControl, // Will be properly typed after proto update
-                    }, // Type assertion for postsCreateInput
+                        visibility: data.visibility,
+                        commentControl: data.commentControl,
+                        // Create local media records (Read Model)
+                        Media: {
+                            create: mediaToCreate.map((m) => ({
+                                id: m.id,
+                                type: m.type, // "IMAGE" | "VIDEO"
+                                url: m.url,
+                                thumbnail: m.thumbnail,
+                            })),
+                        },
+                    },
                 });
                 // Step 3: Link media to post via Media Service
                 // This updates the Media Service database (source of truth)
@@ -150,7 +164,7 @@ class PostRepository extends base_repository_1.BaseRepository {
     }
     async getPostsRepo(postSelectOptions) {
         try {
-            // ✅ FIX: Cast to Prisma's expected type - PostSelectOptions uses skip-based pagination (no cursor)
+            //  FIX: Cast to Prisma's expected type - PostSelectOptions uses skip-based pagination (no cursor)
             const prismaOptions = {
                 include: postSelectOptions.include,
                 take: postSelectOptions.take,
@@ -353,7 +367,7 @@ class PostRepository extends base_repository_1.BaseRepository {
             throw new Error("Database error");
         }
     }
-    // ✅ NEW: Get posts by IDs (for feed retrieval)
+    //  NEW: Get posts by IDs (for feed retrieval)
     async getPostsByIds(postIds) {
         try {
             if (postIds.length === 0) {
