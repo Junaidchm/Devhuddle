@@ -249,10 +249,12 @@ export class MediaService implements IMediaService {
 
   async validateMediaOwnership(
     request: { mediaIds: string[]; userId: string }
-  ): Promise<{ valid: boolean; invalidMediaIds?: string[]; message?: string }> {
+  ): Promise<{ valid: boolean; invalidMediaIds?: string[]; message?: string; validMedia?: any[] }> {
     try {
       const invalidMediaIds: string[] = [];
 
+      const validMediaValues: any[] = [];
+      
       // Check each media
       for (const mediaId of request.mediaIds) {
         const media = await this.mediaRepository.findById(mediaId);
@@ -273,6 +275,11 @@ export class MediaService implements IMediaService {
           invalidMediaIds.push(mediaId);
           continue;
         }
+
+        validMediaValues.push({
+          ...media,
+          fileSize: media.fileSize.toString(),
+        });
       }
 
       if (invalidMediaIds.length > 0) {
@@ -285,6 +292,7 @@ export class MediaService implements IMediaService {
 
       return {
         valid: true,
+        validMedia: validMediaValues,
       };
     } catch (error: any) {
       logger.error("Failed to validate media ownership", {

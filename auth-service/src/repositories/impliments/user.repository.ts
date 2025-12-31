@@ -283,11 +283,11 @@ export class UserRepository
     console.log('🔍 DEBUG findFollowers - userId:', userId, 'currentUserId:', currentUserId);
     
     // First, let's check if there are ANY follow records for this user
-    const allFollows = await prisma.follow.findMany({
-      where: { followingId: userId },
-    });
-    console.log('🔍 DEBUG - All follows for followingId:', userId, 'count:', allFollows.length);
-    console.log('🔍 DEBUG - Sample follow records:', allFollows.slice(0, 3));
+    // const allFollows = await prisma.follow.findMany({
+    //   where: { followingId: userId },
+    // });
+    // console.log('🔍 DEBUG - All follows for followingId:', userId, 'count:', allFollows.length);
+    // console.log('🔍 DEBUG - Sample follow records:', allFollows.slice(0, 3));
     
     // Now get all follower relations with deletedAt check
     const followerRelations = await prisma.follow.findMany({

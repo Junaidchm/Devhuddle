@@ -285,6 +285,8 @@ model posts {
   hiddenAt        DateTime?
   hiddenReason    String?
   sharingDisabled Boolean         @default(false)
+
+
   canonicalUrl    String?
   Comment         Comment[]
   Media           Media[]

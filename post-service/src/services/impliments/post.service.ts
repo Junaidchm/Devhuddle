@@ -49,8 +49,8 @@ export class PostSerive implements IpostService {
     private commentRepository?: ICommentRepository,
     private shareRepository?: IShareRepository,
     private postVersionRepository?: IPostVersionRepository,
-    private feedService?: IFeedService, // ✅ NEW: Feed service for fan-out
-    private outboxService?: IOutboxService // ✅ NEW: Outbox service for events
+    private feedService?: IFeedService, //  NEW: Feed service for fan-out
+    private outboxService?: IOutboxService //  NEW: Outbox service for events
   ) {}
 
   
@@ -62,7 +62,7 @@ export class PostSerive implements IpostService {
         req
       );
 
-      // 2. ✅ NEW: Fan-out to followers (production-ready feed generation)
+      // 2.  NEW: Fan-out to followers (production-ready feed generation)
       if (this.feedService) {
         try {
           // Get followers from User Service
@@ -141,7 +141,7 @@ export class PostSerive implements IpostService {
         }
       }
 
-      // 3. ✅ NEW: Publish event for notifications
+      // 3.  NEW: Publish event for notifications
       if (this.outboxService) {
         try {
           await this.outboxService.createOutboxEvent({
@@ -178,7 +178,7 @@ export class PostSerive implements IpostService {
 
   async getPosts(pageParam?: string, userId?: string): Promise<ListPostsResponse> {
     try {
-      // ✅ NEW: Use personalized feed if feedService is available and userId provided
+      //  NEW: Use personalized feed if feedService is available and userId provided
       if (this.feedService && userId) {
         try {
           const feedResponse = await this.feedService.getFeed(
@@ -187,7 +187,7 @@ export class PostSerive implements IpostService {
             10
           );
 
-          // ✅ FIX: If feed is empty, fall back to legacy query (for cases where UserFeed hasn't been populated yet)
+          //  FIX: If feed is empty, fall back to legacy query (for cases where UserFeed hasn't been populated yet)
           if (feedResponse.posts.length === 0) {
             logger.info("Feed service returned empty, falling back to legacy query", {
               userId,
@@ -211,7 +211,7 @@ export class PostSerive implements IpostService {
             }
 
             const enrichedPosts = feedResponse.posts.map((post: any) => {
-              // ✅ FIX: Transform Media array to Attachments format
+              //  FIX: Transform Media array to Attachments format
               const attachments = (post.Media || []).map((media: any) => ({
                 id: media.id,
                 post_id: media.postId || post.id,
@@ -222,7 +222,7 @@ export class PostSerive implements IpostService {
 
               return {
                 ...post,
-                attachments, // ✅ Add attachments array
+                attachments, //  Add attachments array
                 engagement: {
                   likesCount: post.likesCount ?? 0,
                   commentsCount: post.commentsCount ?? 0,
@@ -248,11 +248,11 @@ export class PostSerive implements IpostService {
         }
       }
 
-      // ✅ FALLBACK: Legacy naive query (for backwards compatibility or if feedService unavailable)
-      // ✅ FIX: Order by createdAt DESC to ensure newest posts appear first (UUIDs don't sort chronologically)
+      //  FALLBACK: Legacy naive query (for backwards compatibility or if feedService unavailable)
+      //  FIX: Order by createdAt DESC to ensure newest posts appear first (UUIDs don't sort chronologically)
       const PAGE_SIZE = 10;
       
-      // ✅ FIX: Use offset-based pagination with createdAt ordering
+      //  FIX: Use offset-based pagination with createdAt ordering
       // If pageParam (post ID) is provided, find how many posts to skip based on createdAt
       let skipCount = 0;
       if (pageParam) {
@@ -272,11 +272,11 @@ export class PostSerive implements IpostService {
       
       const PostselectOptions: PostSelectOptions = {
         include: {
-          Media: true, // ✅ FIX: Changed from 'attachments' to 'Media' to match schema
+          Media: true, //  FIX: Changed from 'attachments' to 'Media' to match schema
         },
         take: PAGE_SIZE + 1,
         skip: skipCount,
-        orderBy: { createdAt: "desc" }, // ✅ CRITICAL FIX: Order by createdAt DESC for chronological ordering (UUIDs are not chronological!)
+        orderBy: { createdAt: "desc" }, //  CRITICAL FIX: Order by createdAt DESC for chronological ordering (UUIDs are not chronological!)
       };
 
       const prismaPosts: any = await this.postRepository.getPostsRepo(
@@ -300,7 +300,7 @@ export class PostSerive implements IpostService {
       }
 
       const enrichedPosts = items.map((post: any) => {
-        // ✅ FIX: Transform Media array to Attachments format
+        //  FIX: Transform Media array to Attachments format
         const attachments = (post.Media || []).map((media: any) => ({
           id: media.id,
           post_id: media.postId || post.id,
@@ -311,7 +311,7 @@ export class PostSerive implements IpostService {
 
         return {
         ...post,
-          attachments, // ✅ Add attachments array
+          attachments, //  Add attachments array
         engagement: {
           likesCount: post.likesCount ?? 0,
           commentsCount: post.commentsCount ?? 0,
@@ -322,7 +322,7 @@ export class PostSerive implements IpostService {
         };
       });
 
-      // ✅ FIX: Use post ID as cursor (for next page pagination)
+      //  FIX: Use post ID as cursor (for next page pagination)
       const nextCursor = hasMore ? enrichedPosts[enrichedPosts.length - 1].id : (null as string | null);
 
       return {
@@ -344,7 +344,7 @@ export class PostSerive implements IpostService {
 
       const deletedPost = await this.postRepository.deletePost(postId);
 
-      // ✅ NEW: Remove post from all user feeds
+      //  NEW: Remove post from all user feeds
       if (this.feedService) {
         try {
           await this.feedService.removeFromAllFeeds(postId);

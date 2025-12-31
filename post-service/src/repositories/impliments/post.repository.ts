@@ -50,7 +50,7 @@ export class PostRepository
   async submitPostRepo(data: SubmitPostRequest): Promise<SubmitPostResponse> {
     try {
       /**
-       * ✅ UPDATED: Use Media Service for validation and linking
+       *  UPDATED: Use Media Service for validation and linking
        * 
        * Why this change:
        * - Media Service is the single source of truth for media records
@@ -59,14 +59,13 @@ export class PostRepository
        * - Better separation of concerns
        */
 
+      let validation: any;
+
       // Step 1: Validate media ownership via Media Service
-      // This ensures:
-      // - Media exists in Media Service
-      // - Media belongs to the user creating the post
-      // - Media is not already linked to another post
+      // ...
       if (data.mediaIds && data.mediaIds.length > 0) {
         try {
-          const validation = await validateMediaOwnership(data.mediaIds, data.userId);
+          validation = await validateMediaOwnership(data.mediaIds, data.userId);
           
           if (!validation.valid) {
             throw new Error(
@@ -86,15 +85,33 @@ export class PostRepository
 
       // Step 2: Create post in database (transaction ensures atomicity)
       const post = await prisma.$transaction(async (tx) => {
+        // Use checked media from validation step
+        const mediaToCreate = (validation?.validMedia || []).map((m: any) => ({
+          id: m.id,
+          type: m.mediaType === "POST_VIDEO" ? "VIDEO" : "IMAGE", // Map enum
+          url: m.cdnUrl || m.originalUrl,
+          thumbnail: m.thumbnailUrls?.[0]?.cdnUrl || m.thumbnail, // Handle different thumbnail structures
+        }));
+        
+
         // Create post with generated ID
         const newPost = await tx.posts.create({
           data: {
             id: uuidv4(), // Generate ID using UUID v4
             content: data.content,
             userId: data.userId,
-            visibility: data.visibility as any, // Will be properly typed after proto update
-            commentControl: data.commentControl as any, // Will be properly typed after proto update
-          } as any, // Type assertion for postsCreateInput
+            visibility: data.visibility as any,
+            commentControl: data.commentControl as any,
+            // Create local media records (Read Model)
+            Media: {
+              create: mediaToCreate.map((m: any) => ({
+                id: m.id,
+                type: m.type as any, // "IMAGE" | "VIDEO"
+                url: m.url,
+                thumbnail: m.thumbnail,
+              })),
+            },
+          } as any, 
         });
 
         // Step 3: Link media to post via Media Service
@@ -178,7 +195,7 @@ export class PostRepository
 
   async getPostsRepo(postSelectOptions: PostSelectOptions): Promise<any> {
     try {
-      // ✅ FIX: Cast to Prisma's expected type - PostSelectOptions uses skip-based pagination (no cursor)
+      //  FIX: Cast to Prisma's expected type - PostSelectOptions uses skip-based pagination (no cursor)
       const prismaOptions: Prisma.postsFindManyArgs = {
         include: postSelectOptions.include,
         take: postSelectOptions.take,
@@ -397,7 +414,7 @@ export class PostRepository
     }
   }
 
-  // ✅ NEW: Get posts by IDs (for feed retrieval)
+  //  NEW: Get posts by IDs (for feed retrieval)
   async getPostsByIds(postIds: string[]): Promise<posts[]> {
     try {
       if (postIds.length === 0) {

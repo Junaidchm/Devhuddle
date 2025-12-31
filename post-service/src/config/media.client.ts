@@ -27,6 +27,7 @@ export interface MediaValidationResponse {
   valid: boolean;
   invalidMediaIds?: string[];
   message?: string;
+  validMedia?: any[];
 }
 
 /**
@@ -58,7 +59,8 @@ export async function validateMediaOwnership(
       throw new Error(error.message || `HTTP ${response.status}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    return result.data || result;
   } catch (error: any) {
     // If Media Service is unavailable, log and allow (graceful degradation)
     // In production, you might want to fail fast instead

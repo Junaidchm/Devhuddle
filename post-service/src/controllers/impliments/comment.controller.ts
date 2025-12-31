@@ -7,6 +7,7 @@ import logger from "../../utils/logger.util";
 import { getUserIdFromRequest } from "../../utils/request.util";
 
 export class CommentController {
+
   constructor(private _commentService: ICommentService) {}
 
   async createComment(
