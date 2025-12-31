@@ -3,6 +3,8 @@ import {
   getUserForFeedListingResponse,
   CheckFollowRequest,
   CheckFollowResponse,
+  GetFollowersRequest,
+  GetFollowersResponse,
   UserServiceServer,
 } from "../grpc/generated/user";
 import * as grpc from "@grpc/grpc-js";
@@ -12,6 +14,7 @@ import { CustomError } from "../utils/error.util";
 import { UserRepository } from "../repositories/impliments/user.repository";
 import { AuthService } from "../services/impliments/auth.service";
 import { FollowsRepository } from "../repositories/impliments/follows.repository";
+import prisma from "../config/prisma.config";
 
 const userRepository: UserRepository = new UserRepository();
 const followsRepository: FollowsRepository = new FollowsRepository();
@@ -69,6 +72,63 @@ export const userServic: UserServiceServer = {
         stack: err.stack,
         followerId: call.request.followerId,
         followingId: call.request.followingId,
+      });
+      callback({
+        code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,
+        message: err.message || "Internal server error",
+      });
+    }
+  },
+  getFollowers: async (
+    call: grpc.ServerUnaryCall<GetFollowersRequest, GetFollowersResponse>,
+    callback: grpc.sendUnaryData<GetFollowersResponse>
+  ) => {
+    try {
+      const request = call.request;
+      const { userId } = request;
+
+      logger.info("gRPC getFollowers called", { userId });
+
+      // Get follower IDs
+      const followerIds = await followsRepository.getFollowerIds(userId);
+
+      // If no followers, return empty array
+      if (followerIds.length === 0) {
+        logger.info("No followers found", { userId });
+        callback(null, { followers: [] });
+        return;
+      }
+
+      // Fetch follower details using prisma directly
+      const followerUsers = await prisma.user.findMany({
+        where: {
+          id: { in: followerIds },
+          isBlocked: false,
+        },
+        select: {
+          id: true,
+          username: true,
+          name: true,
+        },
+      });
+
+      const followers = followerUsers.map((user) => ({
+        id: user.id,
+        username: user.username,
+        name: user.name,
+      }));
+
+      logger.info("Followers fetched successfully", {
+        userId,
+        followerCount: followers.length,
+      });
+
+      callback(null, { followers });
+    } catch (err: any) {
+      logger.error("gRPC getFollowers error", {
+        error: err.message,
+        stack: err.stack,
+        userId: call.request.userId,
       });
       callback({
         code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,
