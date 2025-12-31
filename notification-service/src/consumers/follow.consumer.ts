@@ -7,6 +7,18 @@ import { WebSocketService } from "../utils/websocket.util";
 
 const GROUP_ID = "notification-follow-group";
 
+interface FollowEvent {
+  followerId: string;
+  followingId: string;
+  dedupeId: string;
+  version: number;
+}
+
+interface CompensationEvent {
+  originalDedupeId: string;
+  compensationReason: string;
+}
+
 export async function startFollowConsumer(wsService: WebSocketService): Promise<void> {
   const repo = new NotificationsRepository(wsService);
   const consumer = await getConsumer(GROUP_ID);
@@ -24,7 +36,11 @@ export async function startFollowConsumer(wsService: WebSocketService): Promise<
     eachMessage: async ({ topic, message }) => {
       if (!message.value) return;
 
-      const event = JSON.parse(message.value.toString());
+      // Handle raw parsing safely
+      const rawEvent = JSON.parse(message.value.toString());
+      
+      // Basic validation/typing could go here, for now cast
+      const event = rawEvent as FollowEvent; 
       const {
         followerId: issuerId,
         followingId: recipientId,
@@ -50,9 +66,15 @@ export async function startFollowConsumer(wsService: WebSocketService): Promise<
           logger.info(`Follow notification deleted for ${recipientId}`);
         } else if (topic === KAFKA_TOPICS.NOTIFICATION_FAILED) {
           // Handle compensation events
-          await handleCompensationEvent(event);
+          await handleCompensationEvent(rawEvent as CompensationEvent);
         }
-      } catch (error: any) {}
+      } catch (error: unknown) {
+        logger.error("Error processing follow event", {
+          error: (error as Error).message,
+          topic,
+          dedupeId,
+        });
+      }
     },
   });
 }
@@ -60,7 +82,7 @@ export async function startFollowConsumer(wsService: WebSocketService): Promise<
 /**
  * Handle compensation events for Saga pattern
  */
-async function handleCompensationEvent(event: any): Promise<void> {
+async function handleCompensationEvent(event: CompensationEvent): Promise<void> {
   try {
     logger.info(`Processing compensation event`, {
       originalDedupeId: event.originalDedupeId,
@@ -72,9 +94,9 @@ async function handleCompensationEvent(event: any): Promise<void> {
     // This would typically involve calling the auth service API or publishing a revert event
 
     logger.info(`Compensation event processed successfully`);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error(`Error processing compensation event`, {
-      error: error.message,
+      error: (error as Error).message,
       event,
     });
   }

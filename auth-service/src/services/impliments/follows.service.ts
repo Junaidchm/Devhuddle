@@ -29,8 +29,8 @@ export class FollowsService implements IFollowsService {
       await RedisCacheService.cacheSuggestions(userId, suggestedUsers);
 
       return { suggestedUsers };
-    } catch (error: any) {
-      logger.error("Error fetching  suggestedUsers", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error fetching  suggestedUsers", { error: (error as Error).message });
       throw error instanceof CustomError
         ? error
         : new CustomError(500, "Server error");
@@ -85,9 +85,9 @@ export class FollowsService implements IFollowsService {
       });
 
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error in follow operation", {
-        error: error.message,
+        error: (error as Error).message,
         followerId,
         followingId,
       });
@@ -136,8 +136,8 @@ export class FollowsService implements IFollowsService {
       await publishEvent(KAFKA_TOPICS.USER_UNFOLLOWED, event, dedupeId);
 
       return result;
-    } catch (error: any) {
-      logger.error("Error unfollowing user", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error unfollowing user", { error: (error as Error).message });
       throw error instanceof CustomError
         ? error
         : new CustomError(500, "Server error");

@@ -5,6 +5,7 @@ import { BaseRepository } from "./base.repository";
 import bcrypt from "bcrypt";
 import { User } from "../../types/auth";
 import { IUserRepository } from "../interfaces/IUserRepository";
+import { UserProfile, UserWithFollowStatus } from "../../types/common.types";
 
 export class UserRepository
   extends BaseRepository<
@@ -190,7 +191,7 @@ export class UserRepository
   async findProfileByUsername(
     username: string,
     currentUserId: string
-  ): Promise<any | null> {
+  ): Promise<UserProfile | null> {
     // Profile pages require authentication (social media app - no public profiles)
     if (!currentUserId || typeof currentUserId !== 'string' || currentUserId.trim().length === 0) {
       throw new Error("Authentication required to view profiles");
@@ -250,36 +251,32 @@ export class UserRepository
 
     // If currentUserId was provided, check following status; otherwise default to false
     let isFollowing = false;
-    if (hasCurrentUserId && 'followers' in user) {
-      const followers = (user as any).followers;
+    
+    // We know followers are included because hasCurrentUserId is true and we selected it
+    const userWithFollowers = user as typeof user & { followers: { followerId: string }[] };
+    
+    if (hasCurrentUserId && userWithFollowers.followers) {
+      const followers = userWithFollowers.followers;
       isFollowing = Array.isArray(followers) && followers.length > 0;
     }
 
     // Create a clean, serializable object
-    const userObj = user as any;
-    const result: any = {
-      id: userObj.id,
-      email: userObj.email,
-      username: userObj.username,
-      name: userObj.name,
-      role: userObj.role,
-      emailVerified: userObj.emailVerified,
-      profilePicture: userObj.profilePicture,
-      location: userObj.location,
-      bio: userObj.bio,
-      jobTitle: userObj.jobTitle,
-      company: userObj.company,
-      skills: userObj.skills,
-      yearsOfExperience: userObj.yearsOfExperience,
-      createdAt: userObj.createdAt,
-      _count: userObj._count,
+    const result: UserProfile = {
+      ...user,
+      profilePicture: user.profilePicture || null,
+      location: user.location || null,
+      bio: user.bio || null,
+      jobTitle: user.jobTitle || null,
+      company: user.company || null,
+      yearsOfExperience: user.yearsOfExperience || null,
+      skills: user.skills || [],
       isFollowing,
     };
     
     return result;
   }
 
-  async findFollowers(userId: string, currentUserId: string): Promise<any[]> {
+  async findFollowers(userId: string, currentUserId: string): Promise<UserWithFollowStatus[]> {
     console.log('🔍 DEBUG findFollowers - userId:', userId, 'currentUserId:', currentUserId);
     
     // First, let's check if there are ANY follow records for this user
@@ -341,7 +338,7 @@ export class UserRepository
     return followers;
   }
 
-  async findFollowing(userId: string, currentUserId: string): Promise<any[]> {
+  async findFollowing(userId: string, currentUserId: string): Promise<UserWithFollowStatus[]> {
     console.log('🔍 DEBUG findFollowing - userId:', userId, 'currentUserId:', currentUserId);
     
     // First, let's check if there are ANY follow records for this user

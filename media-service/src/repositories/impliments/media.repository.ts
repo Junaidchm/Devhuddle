@@ -25,9 +25,9 @@ export class MediaRepository implements IMediaRepository {
 
       logger.info("Media record created", { mediaId: media.id, userId: data.userId });
       return media;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to create media record", {
-        error: error.message,
+        error: (error as Error).message,
         data,
       });
       throw error;
@@ -39,9 +39,9 @@ export class MediaRepository implements IMediaRepository {
       return await prisma.media.findUnique({
         where: { id },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to find media by ID", {
-        error: error.message,
+        error: (error as Error).message,
         id,
       });
       throw error;
@@ -60,9 +60,9 @@ export class MediaRepository implements IMediaRepository {
         take: limit,
         skip: offset,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to find media by user ID", {
-        error: error.message,
+        error: (error as Error).message,
         userId,
       });
       throw error;
@@ -75,9 +75,9 @@ export class MediaRepository implements IMediaRepository {
         where: { postId },
         orderBy: { createdAt: "asc" },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to find media by post ID", {
-        error: error.message,
+        error: (error as Error).message,
         postId,
       });
       throw error;
@@ -106,9 +106,9 @@ export class MediaRepository implements IMediaRepository {
           transcodedUrls: true,
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to find unused media", {
-        error: error.message,
+        error: (error as Error).message,
       });
       throw error;
     }
@@ -126,9 +126,9 @@ export class MediaRepository implements IMediaRepository {
 
       logger.info("Media record updated", { mediaId: id, updates: Object.keys(data) });
       return media;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to update media record", {
-        error: error.message,
+        error: (error as Error).message,
         id,
         data,
       });
@@ -142,9 +142,9 @@ export class MediaRepository implements IMediaRepository {
         where: { id },
       });
       logger.info("Media record deleted", { mediaId: id });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to delete media record", {
-        error: error.message,
+        error: (error as Error).message,
         id,
       });
       throw error;
@@ -162,9 +162,9 @@ export class MediaRepository implements IMediaRepository {
       });
       logger.info("Media records deleted", { count: result.count });
       return result.count;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to delete media records", {
-        error: error.message,
+        error: (error as Error).message,
         count: ids.length,
       });
       throw error;
@@ -174,9 +174,9 @@ export class MediaRepository implements IMediaRepository {
   async updateStatus(id: string, status: MediaStatus): Promise<Media> {
     try {
       return await this.update(id, { status });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to update media status", {
-        error: error.message,
+        error: (error as Error).message,
         id,
         status,
       });

@@ -11,6 +11,7 @@ import {
 import redisClient from "../../config/redis.config";
 import { WebSocketService } from "../../utils/websocket.util";
 import { INotificationRepository } from "../interface/INotificationRepository";
+import { UserInfo, NotificationWithDetails, ActorInfo, NotificationSummary } from "../../types/common.types";
 
 export class NotificationsRepository
   extends BaseRepository<
@@ -24,7 +25,7 @@ export class NotificationsRepository
 {
   private wsService: WebSocketService | null = null;
   // ✅ FIXED: In-memory cache for user info to avoid repeated fetches
-  private userInfoCache: Map<string, { data: any; timestamp: number }> = new Map();
+  private userInfoCache: Map<string, { data: UserInfo; timestamp: number }> = new Map();
   private readonly USER_INFO_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor(wsService?: WebSocketService) {
@@ -81,9 +82,9 @@ export class NotificationsRepository
       });
 
       return notification?.notificationObject || null;
-    } catch (error: any) {
-      logger.error("Error getting like notification", {
-        error: error.message,
+    } catch (error: unknown) {
+      logger.error("Error", {
+        error: (error as Error).message,
         recipientId,
         entityId,
       });
@@ -277,12 +278,17 @@ export class NotificationsRepository
    * ✅ FIXED: Uses internal endpoint for service-to-service calls
    * ✅ FIXED: Added in-memory caching to avoid repeated fetches
    */
-  private async fetchUserInfo(userId: string): Promise<any> {
+  private async fetchUserInfo(userId: string): Promise<UserInfo | null> {
+    const timeoutMsg = `Timeout fetching user info for ${userId}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
     try {
       // Check cache first
       const cached = this.userInfoCache.get(userId);
       if (cached && Date.now() - cached.timestamp < this.USER_INFO_CACHE_TTL) {
         logger.debug(`Using cached user info for ${userId}`);
+        clearTimeout(timeoutId);
         return cached.data;
       }
 
@@ -291,10 +297,6 @@ export class NotificationsRepository
       
       logger.debug(`Fetching user info from: ${url}`);
       
-      // ✅ FIXED: Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
       try {
         // Use internal endpoint for service-to-service calls
         const response = await fetch(url, {
@@ -314,17 +316,9 @@ export class NotificationsRepository
         }
 
         const result = await response.json();
-        logger.debug(`Received user info for ${userId}:`, { 
-          hasData: !!result?.data,
-          hasName: !!result?.data?.name,
-          name: result?.data?.name 
-        });
         
         // Handle both { success: true, data: {...} } and direct data formats
         const userData = result?.data || result || null;
-        if (userData && !userData.name) {
-          logger.warn(`User data for ${userId} missing name field:`, userData);
-        }
 
         // Cache the result
         if (userData) {
@@ -335,23 +329,24 @@ export class NotificationsRepository
         }
 
         return userData;
-      } catch (error: any) {
+      } catch (error: unknown) {
         clearTimeout(timeoutId);
+        const err = error as Error;
         // Handle timeout and other errors
-        if (error.name === 'AbortError' || error.name === 'TimeoutError') {
-          logger.warn(`Timeout fetching user info for ${userId}`);
+        if (err.name === 'AbortError' || err.name === 'TimeoutError') {
+          logger.warn(timeoutMsg);
         } else {
-          logger.error(`Error fetching user info for ${userId}`, {
-            error: error.message,
-            stack: error.stack,
+          logger.error(`Error fetching user info request for ${userId}`, {
+            error: err.message,
           });
         }
         return null;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      clearTimeout(timeoutId);
       logger.error(`Error in fetchUserInfo for ${userId}`, {
-        error: error.message,
-        stack: error.stack,
+        error: (error as Error).message,
+        stack: (error as Error).stack,
       });
       return null;
     }
@@ -361,8 +356,8 @@ export class NotificationsRepository
    * Batch fetch user info for multiple actor IDs
    * ✅ FIXED: Better error handling and logging
    */
-  private async fetchActorsInfo(actorIds: string[]): Promise<Map<string, any>> {
-    const actorMap = new Map<string, any>();
+  private async fetchActorsInfo(actorIds: string[]): Promise<Map<string, UserInfo>> {
+    const actorMap = new Map<string, UserInfo>();
     const uniqueActorIds = [...new Set(actorIds)];
 
     if (uniqueActorIds.length === 0) {
@@ -393,9 +388,9 @@ export class NotificationsRepository
             profilePicture: null,
           });
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error(`Error fetching user info for actor ${actorId}`, {
-          error: error.message,
+          error: (error as Error).message,
         });
         // Fallback on error
         actorMap.set(actorId, {
@@ -407,7 +402,6 @@ export class NotificationsRepository
       }
     });
 
-    await Promise.all(actorPromises);
     logger.info(`Successfully fetched user info for ${actorMap.size} actors`);
     return actorMap;
   }
@@ -423,7 +417,7 @@ export class NotificationsRepository
     limit: number = 20,
     offset: number = 0
   ): Promise<{
-    notifications: any[];
+    notifications: NotificationWithDetails[];
     total: number;
     hasMore: boolean;
   }> {
@@ -496,7 +490,7 @@ export class NotificationsRepository
         // ✅ FIXED: Update summary with actor names and regenerate summary text
         let summary = n.notificationObject.summary;
         if (summary && typeof summary === "object" && "json" in summary) {
-          const summaryData = (summary as any).json || summary;
+          const summaryData = (summary as Record<string, unknown>).json || summary;
           
           // Determine action verb from notification type and entity type
           const actionVerb = this._getActionVerbFromNotification(
@@ -530,7 +524,7 @@ export class NotificationsRepository
           entityType: n.notificationObject.entityType,
           entityId: n.notificationObject.entityId,
           contextId: n.notificationObject.contextId,
-          summary,
+          summary: summary as unknown as NotificationSummary,
           metadata: n.notificationObject.metadata,
           aggregatedCount: n.notificationObject.aggregatedCount,
           read: n.read,
@@ -550,7 +544,7 @@ export class NotificationsRepository
       await redisClient.setEx(cacheKey, 30, JSON.stringify(result));
 
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error fetching notifications", {
         error: (error as Error).message,
         recipientId,
@@ -591,7 +585,7 @@ export class NotificationsRepository
       logger.info(
         `Notification ${notificationId} marked as read for user ${recipientId}`
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error marking notification as read", {
         error: (error as Error).message,
         notificationId,
@@ -630,7 +624,7 @@ export class NotificationsRepository
       logger.info(
         `Notification ${notificationId} deleted for user ${recipientId}`
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error deleting notification", {
         error: (error as Error).message,
         notificationId,
@@ -668,7 +662,7 @@ export class NotificationsRepository
       await redisClient.setEx(cacheKey, 3600, count.toString());
 
       return count;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error getting unread count", {
         error: (error as Error).message,
         recipientId,
@@ -705,7 +699,7 @@ export class NotificationsRepository
       await this._updateAndBroadcastUnreadCount(recipientId);
 
       logger.info(`All notifications marked as read for user ${recipientId}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error marking all notifications as read", {
         error: (error as Error).message,
         recipientId,
@@ -730,9 +724,9 @@ export class NotificationsRepository
         }
         logger.info(`Invalidated ${keys.length} notification cache keys for user ${recipientId}`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error invalidating notification cache", {
-        error: error.message,
+        error: (error as Error).message,
         recipientId,
       });
     }
@@ -741,7 +735,7 @@ export class NotificationsRepository
   /**
    * Get notification with full actor info for WebSocket broadcast
    */
-  private async _getNotificationWithActorInfo(notificationObjectId: string): Promise<any | null> {
+  private async _getNotificationWithActorInfo(notificationObjectId: string): Promise<NotificationWithDetails | null> {
     try {
       const notification = await prisma.notificationObject.findUnique({
         where: { id: notificationObjectId },
@@ -770,7 +764,7 @@ export class NotificationsRepository
       // Update summary with actor info
       let summary = notification.summary;
       if (summary && typeof summary === "object" && "json" in summary) {
-        const summaryData = (summary as any).json || summary;
+        const summaryData = (summary as Record<string, unknown>).json || summary;
         summary = {
           ...summaryData,
           actors: actors.map((a) => ({
@@ -784,12 +778,14 @@ export class NotificationsRepository
 
       return {
         ...notification,
-        summary,
+        summary: summary as unknown as NotificationSummary,
         actors,
+        read: false, // Default for broadcast
+        readAt: null, // Default
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error getting notification with actor info", {
-        error: error.message,
+        error: (error as Error).message,
         notificationObjectId,
       });
       return null;
@@ -816,8 +812,11 @@ export class NotificationsRepository
 
       // Broadcast the updated count
       this.wsService?.broadcastUnreadCount(recipientId, count);
-    } catch (error) {
-      logger.error("Error updating unread count cache", { error, recipientId });
+    } catch (error: unknown) {
+      logger.error("Error updating unread count cache", {
+        error: (error as Error).message,
+        recipientId,
+      });
     }
   }
 
@@ -939,7 +938,7 @@ export class NotificationsRepository
             entityType,
             entityId,
             aggregatedCount: 1,
-            version: versionBigInt as any,
+            version: versionBigInt,
             summary: {
               json: {
                 actors: [issuerId],
@@ -986,9 +985,9 @@ export class NotificationsRepository
       logger.info(
         `${notificationType} notification created/updated for ${recipientId}`
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Error creating/updating ${notificationType} notification`, {
-        error: error.message,
+        error: (error as Error).message,
         issuerId,
         recipientId,
         entityId,
@@ -1068,7 +1067,7 @@ export class NotificationsRepository
 
         await super.update(existing.id, {
           aggregatedCount: remainingActorsCount,
-          version: versionBigInt as any,
+          version: versionBigInt,
           summary: {
             json: {
               actors: remainingActors.map((a) => a.actorId).slice(0, 3),
@@ -1088,9 +1087,9 @@ export class NotificationsRepository
       logger.info(
         `${notificationType} notification actor removed for recipient ${recipientId}`
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Error removing ${notificationType} notification actor`, {
-        error: error.message,
+        error: (error as Error).message,
         issuerId,
         recipientId,
         entityId,
@@ -1170,9 +1169,9 @@ export class NotificationsRepository
       logger.info(
         `Deleted ${notifications.length} ${notificationType} notification(s) for entity ${entityId} affecting ${allRecipientIds.size} recipients`
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error deleting notifications by entity", {
-        error: error.message,
+        error: (error as Error).message,
         entityId,
         notificationType,
         entityType,

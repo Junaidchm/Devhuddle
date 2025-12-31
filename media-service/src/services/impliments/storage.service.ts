@@ -44,9 +44,9 @@ export class StorageService implements IStorageService {
         key,
         expiresAt: Date.now() + expiresIn * 1000,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to generate presigned PUT URL", {
-        error: error.message,
+        error: (error as Error).message,
         key,
       });
       throw error;
@@ -74,9 +74,9 @@ export class StorageService implements IStorageService {
         key,
         expiresAt: Date.now() + expiresIn * 1000,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to generate presigned GET URL", {
-        error: error.message,
+        error: (error as Error).message,
         key,
       });
       throw error;
@@ -92,12 +92,13 @@ export class StorageService implements IStorageService {
 
       await r2Client.send(command);
       return true;
-    } catch (error: any) {
-      if (error.name === "NotFound" || error.$metadata?.httpStatusCode === 404) {
+    } catch (error: unknown) {
+      const err = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+      if (err.name === "NotFound" || err.$metadata?.httpStatusCode === 404) {
         return false;
       }
       logger.error("Failed to verify file existence", {
-        error: error.message,
+        error: (error as Error).message,
         key,
       });
       throw error;
@@ -122,9 +123,9 @@ export class StorageService implements IStorageService {
         contentType: response.ContentType || "application/octet-stream",
         etag: response.ETag?.replace(/"/g, "") || "",
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to get file metadata", {
-        error: error.message,
+        error: (error as Error).message,
         key,
       });
       throw error;
@@ -140,9 +141,9 @@ export class StorageService implements IStorageService {
 
       await r2Client.send(command);
       logger.info("File deleted from storage", { key });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to delete file", {
-        error: error.message,
+        error: (error as Error).message,
         key,
       });
       throw error;
@@ -153,9 +154,9 @@ export class StorageService implements IStorageService {
     try {
       await Promise.all(keys.map((key) => this.deleteFile(key)));
       logger.info("Files deleted from storage", { count: keys.length });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to delete files", {
-        error: error.message,
+        error: (error as Error).message,
         count: keys.length,
       });
       throw error;
@@ -183,9 +184,9 @@ export class StorageService implements IStorageService {
         uploadId: response.UploadId,
         key,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to initialize multipart upload", {
-        error: error.message,
+        error: (error as Error).message,
         key,
       });
       throw error;
@@ -210,9 +211,9 @@ export class StorageService implements IStorageService {
       });
 
       return url;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to generate presigned part URL", {
-        error: error.message,
+        error: (error as Error).message,
         key,
         uploadId,
         partNumber,
@@ -247,9 +248,9 @@ export class StorageService implements IStorageService {
 
       logger.info("Multipart upload completed", { key, uploadId });
       return response.Location;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to complete multipart upload", {
-        error: error.message,
+        error: (error as Error).message,
         key,
         uploadId,
       });
@@ -267,9 +268,9 @@ export class StorageService implements IStorageService {
 
       await r2Client.send(command);
       logger.info("Multipart upload aborted", { key, uploadId });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to abort multipart upload", {
-        error: error.message,
+        error: (error as Error).message,
         key,
         uploadId,
       });

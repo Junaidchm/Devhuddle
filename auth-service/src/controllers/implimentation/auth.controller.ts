@@ -69,8 +69,8 @@ export class AuthController implements IAuthController {
         currentUserId
       );
       res.status(HttpStatus.OK).json(users);
-    } catch (err: any) {
-      logger.error("Search users error", { error: err.message });
+    } catch (err: unknown) {
+      logger.error("Search users error", { error: (err as Error).message });
       sendErrorResponse(
         res,
         err instanceof CustomError ? err : { status: 500, message: "Server error" }
@@ -280,9 +280,9 @@ export class AuthController implements IAuthController {
           await setAuthToken(user, res);
 
           res.redirect(`${process.env.FRONTEND_URL}/success`);
-        } catch (err: any) {
+        } catch (err: unknown) {
           logger.error("Google callback processing error", {
-            error: err.message,
+            error: (err as Error).message,
           });
           sendErrorResponse(
             res,
@@ -318,12 +318,12 @@ export class AuthController implements IAuthController {
     try {
       const response = await this.register(req.body);
       res.status(HttpStatus.CREATED).json({ message: response.message });
-    } catch (err: any) {
-      logger.error("Error in /auth/signup", { error: err.message });
-      const statusCode = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
+    } catch (err: unknown) {
+      logger.error("Error in /auth/signup", { error: (err as Error).message });
+      const statusCode = (err as any).status || HttpStatus.INTERNAL_SERVER_ERROR;
       sendErrorResponse(res, {
         status: statusCode,
-        message: err.message || "Server error",
+        message: (err as Error).message || "Server error",
       });
     }
   }
@@ -349,12 +349,12 @@ export class AuthController implements IAuthController {
           user: {},
         });
       }
-    } catch (err: any) {
-      logger.error("Error in /auth/verify-otp", { error: err.message });
-      const statusCode = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
+    } catch (err: unknown) {
+      logger.error("Error in /auth/verify-otp", { error: (err as Error).message });
+      const statusCode = (err as any).status || HttpStatus.INTERNAL_SERVER_ERROR;
       sendErrorResponse(res, {
         status: statusCode,
-        message: err.message || "Server error",
+        message: (err as Error).message || "Server error",
       });
     }
   }
@@ -363,12 +363,12 @@ export class AuthController implements IAuthController {
     try {
       const response = await this.resendOTP(req.body);
       res.status(HttpStatus.OK).json({ message: response.message });
-    } catch (err: any) {
-      logger.error("Error in /auth/resend-otp", { error: err.message });
-      const statusCode = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
+    } catch (err: unknown) {
+      logger.error("Error in /auth/resend-otp", { error: (err as Error).message });
+      const statusCode = (err as any).status || HttpStatus.INTERNAL_SERVER_ERROR;
       sendErrorResponse(res, {
         status: statusCode,
-        message: err.message || "Server error",
+        message: (err as Error).message || "Server error",
       });
     }
   }
@@ -387,12 +387,12 @@ export class AuthController implements IAuthController {
       }
       const response = await this.getCurrentUser({ userId });
       res.status(HttpStatus.OK).json(response);
-    } catch (err: any) {
-      logger.error("Error in /auth/me", { error: err.message });
-      const statusCode = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
+    } catch (err: unknown) {
+      logger.error("Error in /auth/me", { error: (err as Error).message });
+      const statusCode = (err as any).status || HttpStatus.INTERNAL_SERVER_ERROR;
       sendErrorResponse(res, {
         status: statusCode,
-        message: err.message || "Server error",
+        message: (err as Error).message || "Server error",
       });
     }
   }
@@ -422,12 +422,12 @@ export class AuthController implements IAuthController {
           user: {},
         });
       }
-    } catch (err: any) {
-      logger.error("Error in /auth/login", { error: err.message });
-      const statusCode = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
+    } catch (err: unknown) {
+      logger.error("Error in /auth/login", { error: (err as Error).message });
+      const statusCode = (err as any).status || HttpStatus.INTERNAL_SERVER_ERROR;
       sendErrorResponse(res, {
         status: statusCode,
-        message: err.message || "Server error",
+        message: (err as Error).message || "Server error",
       });
     }
   }
@@ -439,12 +439,12 @@ export class AuthController implements IAuthController {
       setJtiAsBlackListed(cookies);
       clearCookies(res);
       res.status(HttpStatus.OK).json({ success: true, message: Messages.LOGOUT_SUCCESS });
-    } catch (err: any) {
-      logger.error("Error in /auth/logout", { error: err.message });
-      const statusCode = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
+    } catch (err: unknown) {
+      logger.error("Error in /auth/logout", { error: (err as Error).message });
+      const statusCode = (err as any).status || HttpStatus.INTERNAL_SERVER_ERROR;
       sendErrorResponse(res, {
         status: statusCode,
-        message: err.message || "Server error",
+        message: (err as Error).message || "Server error",
       });
     }
   }
@@ -454,12 +454,12 @@ export class AuthController implements IAuthController {
       logger.info("Received /auth/password-reset request", { body: req.body });
       const response = await this.requestPasswordReset(req.body);
       res.status(HttpStatus.OK).json({ message: response.message });
-    } catch (err: any) {
-      logger.error("Error in /auth/password-reset", { error: err.message });
-      const statusCode = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
+    } catch (err: unknown) {
+      logger.error("Error in /auth/password-reset", { error: (err as Error).message });
+      const statusCode = (err as any).status || HttpStatus.INTERNAL_SERVER_ERROR;
       sendErrorResponse(res, {
         status: statusCode,
-        message: err.message || "Server error",
+        message: (err as Error).message || "Server error",
       });
     }
   }
@@ -469,12 +469,12 @@ export class AuthController implements IAuthController {
       logger.info("Received /auth/password-reset/confirm", { body: req.body });
       const response = await this.resetPassword(req.body);
       res.status(HttpStatus.OK).json({ message: response.message });
-    } catch (err: any) {
-      logger.error("Error in /auth/password-reset/confirm", { error: err.message });
-      const statusCode = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
+    } catch (err: unknown) {
+      logger.error("Error in /auth/password-reset/confirm", { error: (err as Error).message });
+      const statusCode = (err as any).status || HttpStatus.INTERNAL_SERVER_ERROR;
       sendErrorResponse(res, {
         status: statusCode,
-        message: err.message || "Server error",
+        message: (err as Error).message || "Server error",
       });
     }
   }
@@ -494,12 +494,12 @@ export class AuthController implements IAuthController {
       }
       const response = await this.getProfile({ userId });
       res.status(HttpStatus.OK).json(response);
-    } catch (err: any) {
-      logger.error("Error in /auth/profile", { error: err.message });
-      const statusCode = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
+    } catch (err: unknown) {
+      logger.error("Error in /auth/profile", { error: (err as Error).message });
+      const statusCode = (err as any).status || HttpStatus.INTERNAL_SERVER_ERROR;
       sendErrorResponse(res, {
         status: statusCode,
-        message: err.message || "Server error",
+        message: (err as Error).message || "Server error",
       });
     }
   }
@@ -519,12 +519,12 @@ export class AuthController implements IAuthController {
       }
       const response = await this.updateProfile({ ...req.body, userId });
       res.status(HttpStatus.OK).json(response);
-    } catch (err: any) {
-      logger.error("Error in /auth/profile PATCH", { error: err.message });
-      const statusCode = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
+    } catch (err: unknown) {
+      logger.error("Error in /auth/profile PATCH", { error: (err as Error).message });
+      const statusCode = (err as any).status || HttpStatus.INTERNAL_SERVER_ERROR;
       sendErrorResponse(res, {
         status: statusCode,
-        message: err.message || "Server error",
+        message: (err as Error).message || "Server error",
       });
     }
   }
@@ -574,12 +574,12 @@ export class AuthController implements IAuthController {
           user: {},
         });
       }
-    } catch (err: any) {
-      logger.error("Error in /auth/refresh", { error: err.message });
-      const statusCode = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
+    } catch (err: unknown) {
+      logger.error("Error in /auth/refresh", { error: (err as Error).message });
+      const statusCode = (err as any).status || HttpStatus.INTERNAL_SERVER_ERROR;
       sendErrorResponse(res, {
         status: statusCode,
-        message: err.message || "Server error",
+        message: (err as Error).message || "Server error",
       });
     }
   }
@@ -605,12 +605,12 @@ export class AuthController implements IAuthController {
         key: response.key,
         expiresAt: response.expiresAt,
       });
-    } catch (err: any) {
-      logger.error("Error in /auth/generate-presigned-url", { error: err.message });
-      const statusCode = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
+    } catch (err: unknown) {
+      logger.error("Error in /auth/generate-presigned-url", { error: (err as Error).message });
+      const statusCode = (err as any).status || HttpStatus.INTERNAL_SERVER_ERROR;
       sendErrorResponse(res, {
         status: statusCode,
-        message: err.message || "Server error",
+        message: (err as Error).message || "Server error",
       });
     }
   }

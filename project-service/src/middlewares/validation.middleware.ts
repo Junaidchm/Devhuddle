@@ -3,7 +3,7 @@ import { validate, ValidationError } from 'class-validator';
 import { Request, Response, NextFunction } from 'express';
 import { CustomError } from '../utils/error.util';
 
-export function validateDto(dtoClass: any) {
+export function validateDto(dtoClass: new (...args: any[]) => any) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const dtoObject = plainToInstance(dtoClass, req.body);
     const errors: ValidationError[] = await validate(dtoObject, { 

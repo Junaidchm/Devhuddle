@@ -59,9 +59,9 @@ export class FeedService implements IFeedService {
                 createdAt: new Date(),
                 scoreUpdatedAt: new Date(),
               };
-            } catch (error: any) {
+            } catch (error: unknown) {
               logger.error("Error calculating score for follower", {
-                error: error.message,
+                error: (error as Error).message,
                 followerId: follower.id,
                 postId,
               });
@@ -86,9 +86,9 @@ export class FeedService implements IFeedService {
         postId,
         followerCount: followers.length,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error in fan-out process", {
-        error: error.message,
+        error: (error as Error).message,
         postId: options.postId,
       });
       throw new Error("Failed to fan-out post to followers");
@@ -152,9 +152,9 @@ export class FeedService implements IFeedService {
       );
 
       return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error getting feed", {
-        error: error.message,
+        error: (error as Error).message,
         userId,
       });
       throw new Error("Failed to get feed");
@@ -220,9 +220,9 @@ export class FeedService implements IFeedService {
         postId,
         affectedUsers: feedEntries.length,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error recalculating post scores", {
-        error: error.message,
+        error: (error as Error).message,
         postId,
       });
       throw new Error("Failed to recalculate post scores");
@@ -236,9 +236,9 @@ export class FeedService implements IFeedService {
     try {
       await this.feedRepository.removeFromFeeds(postId);
       logger.info("Post removed from all feeds", { postId });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error removing post from feeds", {
-        error: error.message,
+        error: (error as Error).message,
         postId,
       });
       throw new Error("Failed to remove post from feeds");

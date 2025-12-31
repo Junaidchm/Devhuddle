@@ -68,27 +68,27 @@ export class PostSerive implements IpostService {
           // Get followers from User Service
           let followers: Array<{ id: string; username?: string; name?: string }> = [];
           
-          try {
-            const followersResponse = await grpcs<
-              UserServiceClient,
-              GetFollowersRequest,
-              GetFollowersResponse
-            >(userClient, "getFollowers", { userId: req.userId });
-            
-            followers = (followersResponse.followers || []).map((f) => ({
-              id: f.id,
-              username: f.username,
-              name: f.name,
-            }));
-          } catch (followersError: any) {
-            // If GetFollowers not implemented yet, log and continue
-            logger.warn("GetFollowers not available, skipping fan-out", {
-              error: followersError.message,
-              userId: req.userId,
-            });
-            // For now, we'll still create the outbox event
-            // Fan-out can be done manually or when GetFollowers is implemented
-          }
+            try {
+              const followersResponse = await grpcs<
+                UserServiceClient,
+                GetFollowersRequest,
+                GetFollowersResponse
+              >(userClient, "getFollowers", { userId: req.userId });
+              
+              followers = (followersResponse.followers || []).map((f) => ({
+                id: f.id,
+                username: f.username,
+                name: f.name,
+              }));
+            } catch (followersError: unknown) {
+              // If GetFollowers not implemented yet, log and continue
+              logger.warn("GetFollowers not available, skipping fan-out", {
+                error: (followersError as Error).message,
+                userId: req.userId,
+              });
+              // For now, we'll still create the outbox event
+              // Fan-out can be done manually or when GetFollowers is implemented
+            }
 
           // Only fan-out if we have followers and feed service is available
           if (followers.length > 0 && this.feedService) {
@@ -132,10 +132,10 @@ export class PostSerive implements IpostService {
               }
             }
           }
-        } catch (fanOutError: any) {
+        } catch (fanOutError: unknown) {
           // Log error but don't fail post creation
           logger.error("Fan-out error (non-fatal)", {
-            error: fanOutError.message,
+            error: (fanOutError as Error).message,
             postId: post.id,
           });
         }
@@ -160,19 +160,19 @@ export class PostSerive implements IpostService {
               action: "POST_CREATED",
             },
           });
-        } catch (eventError: any) {
+        } catch (eventError: unknown) {
           // Log but don't fail post creation
           logger.error("Outbox event creation error (non-fatal)", {
-            error: eventError.message,
+            error: (eventError as Error).message,
             postId: post.id,
           });
         }
       }
 
       return post;
-    } catch (err: any) {
-      logger.error("CreatePost error", { error: err.message });
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+    } catch (err: unknown) {
+      logger.error("CreatePost error", { error: (err as Error).message });
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 
@@ -238,10 +238,10 @@ export class PostSerive implements IpostService {
               nextCursor: feedResponse.nextCursor ?? undefined,
             };
           }
-        } catch (feedError: any) {
+        } catch (feedError: unknown) {
           // If feed service fails, fall back to naive approach
           logger.warn("Feed service error, falling back to naive query", {
-            error: feedError.message,
+            error: (feedError as Error).message,
             userId,
           });
           // Fall through to legacy implementation
@@ -279,13 +279,13 @@ export class PostSerive implements IpostService {
         orderBy: { createdAt: "desc" }, //  CRITICAL FIX: Order by createdAt DESC for chronological ordering (UUIDs are not chronological!)
       };
 
-      const prismaPosts: any = await this.postRepository.getPostsRepo(
+      const prismaPosts = await this.postRepository.getPostsRepo(
         PostselectOptions
       );
 
       const hasMore = prismaPosts.length > PAGE_SIZE;
       const items = prismaPosts.slice(0, PAGE_SIZE);
-      const postIds = items.map((post: any) => post.id);
+      const postIds = items.map((post) => post.id);
 
       let userLikesMap: Record<string, boolean> = {};
       let userSharesMap: Record<string, boolean> = {};
@@ -299,38 +299,45 @@ export class PostSerive implements IpostService {
           {};
       }
 
-      const enrichedPosts = items.map((post: any) => {
+      const enrichedPosts = items.map((post) => {
         //  FIX: Transform Media array to Attachments format
-        const attachments = (post.Media || []).map((media: any) => ({
+        const attachments = (post.Media || []).map((media) => ({
           id: media.id,
-          post_id: media.postId || post.id,
-          type: String(media.type || "IMAGE"), // Convert enum to string (IMAGE or VIDEO)
+          postId: media.postId || post.id,
+          type: String(media.type || "IMAGE"),
           url: media.url,
-          created_at: media.createdAt ? new Date(media.createdAt).toISOString() : new Date().toISOString(),
+          createdAt: media.createdAt ? new Date(media.createdAt).toISOString() : new Date().toISOString(),
         }));
 
         return {
-        ...post,
-          attachments, //  Add attachments array
-        engagement: {
-          likesCount: post.likesCount ?? 0,
-          commentsCount: post.commentsCount ?? 0,
-          sharesCount: post.sharesCount ?? 0,
-          isLiked: userLikesMap[post.id] ?? false,
-          isShared: userSharesMap[post.id] ?? false,
-        },
+          ...post,
+          createdAt: post.createdAt.toISOString(),
+          updatedAt: post.updatedAt.toISOString(),
+          deletedAt: post.deletedAt ? post.deletedAt.toISOString() : null,
+          pinnedAt: post.pinnedAt ? post.pinnedAt.toISOString() : null,
+          editedAt: post.lastEditedAt ? post.lastEditedAt.toISOString() : null,
+          scheduledAt: null, // Field not in current Prisma model
+          attachments,
+          user: post.user ? { ...post.user, id: post.userId } : { id: post.userId, username: "Unknown", name: "Unknown", avatar: "" },
+          engagement: {
+            likesCount: post.likesCount ?? 0,
+            commentsCount: post.commentsCount ?? 0,
+            sharesCount: post.sharesCount ?? 0,
+            isLiked: userLikesMap[post.id] ?? false,
+            isShared: userSharesMap[post.id] ?? false,
+          },
         };
       });
 
       //  FIX: Use post ID as cursor (for next page pagination)
-      const nextCursor = hasMore ? enrichedPosts[enrichedPosts.length - 1].id : (null as string | null);
+      const nextCursor = hasMore ? enrichedPosts[enrichedPosts.length - 1].id : undefined;
 
       return {
         pages: enrichedPosts,
         nextCursor,
       };
-    } catch (err: any) {
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+    } catch (err: unknown) {
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 
@@ -348,19 +355,19 @@ export class PostSerive implements IpostService {
       if (this.feedService) {
         try {
           await this.feedService.removeFromAllFeeds(postId);
-        } catch (feedError: any) {
+        } catch (feedError: unknown) {
           // Log but don't fail deletion
           logger.error("Error removing post from feeds (non-fatal)", {
-            error: feedError.message,
+            error: (feedError as Error).message,
             postId,
           });
         }
       }
 
       return deletedPost;
-    } catch (err: any) {
-      logger.error("delete Post error", { error: err.message });
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+    } catch (err: unknown) {
+      logger.error("delete Post error", { error: (err as Error).message });
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 
@@ -483,9 +490,9 @@ export class PostSerive implements IpostService {
         await this.postRepository.unlockEditing(req.postId);
         throw error;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("Error editing post", {
-        error: err.message,
+        error: (err as Error).message,
         postId: req.postId,
         userId: req.userId,
       });
@@ -528,9 +535,9 @@ export class PostSerive implements IpostService {
           editedById: v.editedById,
         })),
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("Error getting post versions", {
-        error: err.message,
+        error: (err as Error).message,
         postId: req.postId,
       });
       throw err instanceof CustomError
@@ -582,9 +589,9 @@ export class PostSerive implements IpostService {
         success: true,
         post: editResult.post,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("Error restoring post version", {
-        error: err.message,
+        error: (err as Error).message,
         postId: req.postId,
         versionNumber: req.versionNumber,
       });

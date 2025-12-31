@@ -36,8 +36,8 @@ export class AdminController implements IAdminController {
           totalPages: Math.ceil(total / limit),
         },
       });
-    } catch (err: any) {
-      logger.error("Get users error", { error: err.message });
+    } catch (err: unknown) {
+      logger.error("Get users error", { error: (err as Error).message });
       sendErrorResponse(
         res,
         err instanceof CustomError
@@ -55,8 +55,8 @@ export class AdminController implements IAdminController {
         success: true,
         data: user,
       });
-    } catch (err: any) {
-      logger.error("Get usersFullDetails error", { error: err.message });
+    } catch (err: unknown) {
+      logger.error("Get usersFullDetails error", { error: (err as Error).message });
       sendErrorResponse(
         res,
         err instanceof CustomError
@@ -75,8 +75,8 @@ export class AdminController implements IAdminController {
       logger.info(`Toogling user ${id}`);
       await this.adminService.toogleUserState(id);
       res.status(HttpStatus.OK).json({ success: true});
-    } catch (err: any) {
-      logger.error("Toogling user error", { error: err.message });
+    } catch (err: unknown) {
+      logger.error("Toogling user error", { error: (err as Error).message });
       sendErrorResponse(
         res,
         err instanceof CustomError

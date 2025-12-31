@@ -88,7 +88,7 @@ export class AuthService implements IAuthService {
       await sendVerificationEmail(email, otp);
 
       logger.info("User registered, OTP sent", { email, username });
-    } catch (err: any) {
+    } catch (err: unknown) {
       throw err instanceof CustomError
         ? err
         : new CustomError(grpc.status.INTERNAL, Messages.REGISTRATION_FAILD);
@@ -111,7 +111,7 @@ export class AuthService implements IAuthService {
 
       logger.info("Email verified", { email });
       return filterUserJwtPayload(user);
-    } catch (err: any) {
+    } catch (err: unknown) {
       throw err instanceof CustomError
         ? err
         : new CustomError(
@@ -133,7 +133,7 @@ export class AuthService implements IAuthService {
       const otp = generateOTP();
       await storeOTP(email, otp);
       await sendVerificationEmail(email, otp);
-    } catch (err: any) {
+    } catch (err: unknown) {
       throw err instanceof CustomError
         ? err
         : new CustomError(
@@ -152,7 +152,7 @@ export class AuthService implements IAuthService {
         throw new CustomError(grpc.status.NOT_FOUND, Messages.USER_NOT_FOUND);
       }
       return filterUserProfileData(user, "jwt") as GetJwtUserResponse;
-    } catch (err: any) {
+    } catch (err: unknown) {
       throw err instanceof CustomError
         ? err
         : new CustomError(grpc.status.INTERNAL, Messages.FAILD_TO_FETCH_USER);
@@ -194,7 +194,7 @@ export class AuthService implements IAuthService {
       }
 
       return filterUserJwtPayload(user);
-    } catch (err: any) {
+    } catch (err: unknown) {
       throw err instanceof CustomError
         ? err
         : new CustomError(grpc.status.INTERNAL, Messages.LOGING_FAILD);
@@ -216,7 +216,7 @@ export class AuthService implements IAuthService {
       const token = await generatePasswordResetToken(email);
       await sendPasswordResetEmail(email, token);
       logger.info("Password reset token sent", { email });
-    } catch (err: any) {
+    } catch (err: unknown) {
       throw err instanceof CustomError
         ? err
         : new CustomError(
@@ -250,7 +250,7 @@ export class AuthService implements IAuthService {
 
       await this.userRepository.updatePassword(decoded.email, newPassword);
       logger.info("Password reset successful", { email: decoded.email });
-    } catch (err: any) {
+    } catch (err: unknown) {
       throw err instanceof CustomError
         ? err
         : new CustomError(grpc.status.INTERNAL, "Password reset failed");
@@ -270,7 +270,7 @@ export class AuthService implements IAuthService {
       }
       logger.info("OAuth login successful", { email: oauthUser.email });
       return filterUserJwtPayload(user);
-    } catch (err: any) {
+    } catch (err: unknown) {
       throw err instanceof CustomError
         ? err
         : new CustomError(500, "OAuth login failed");
@@ -297,7 +297,7 @@ export class AuthService implements IAuthService {
       }
 
       return filterUserJwtPayload(user);
-    } catch (err: any) {
+    } catch (err: unknown) {
       throw err instanceof CustomError
         ? err
         : new CustomError(grpc.status.INTERNAL, "Refresh creation faild");
@@ -312,7 +312,7 @@ export class AuthService implements IAuthService {
         throw new CustomError(grpc.status.NOT_FOUND, Messages.USER_NOT_FOUND);
       }
       return filterUserProfileData(user, "profile") as GetProfileResponse;
-    } catch (err: any) {
+    } catch (err: unknown) {
       throw err instanceof CustomError
         ? err
         : new CustomError(grpc.status.INTERNAL, Messages.FAILD_TO_FETCH_USER);
@@ -330,7 +330,7 @@ export class AuthService implements IAuthService {
           username: user.username,
           avatar: user.profilePicture || "",
         };
-      } catch (err: any) {
+      } catch (err: unknown) {
         throw err instanceof CustomError
           ? err
           : new CustomError(grpc.status.INTERNAL, Messages.FAILD_TO_FETCH_USER);
@@ -532,9 +532,9 @@ export class AuthService implements IAuthService {
           "Invalid operation. Use PUT or GET"
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to generate presigned URL", {
-        error: error.message,
+        error: (error as Error).message,
       });
       throw error instanceof CustomError
         ? error

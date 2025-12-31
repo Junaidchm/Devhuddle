@@ -16,11 +16,13 @@ export interface PostSelectOptions {
   // Removed cursor - using skip-based pagination for simplicity
 }
 
+import { EnrichedPost } from "../../types/common.types";
+
 export interface IPostRepository {
   createPostLogics(
     data: Partial<Prisma.postsCreateInput>
   ): Promise<{ postId: string }>;
-  getPostsRepo(postSelectOptions: PostSelectOptions): Promise<posts[]>;
+  getPostsRepo(postSelectOptions: PostSelectOptions): Promise<EnrichedPost[]>;
   submitPostRepo(data: SubmitPostRequest): Promise<SubmitPostResponse>;
   findPost(postId: string): Promise<posts | null>;
   deletePost(postId: string): Promise<any>;

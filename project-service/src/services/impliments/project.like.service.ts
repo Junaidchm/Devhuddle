@@ -69,10 +69,10 @@ export class ProjectLikeService implements IProjectLikeService {
         isLiked: true,
         likesCount,
       };
-    } catch (err: any) {
-      logger.error("LikeProject error", { error: err.message });
+    } catch (err: unknown) {
+      logger.error("LikeProject error", { error: (err as Error).message });
       if (err instanceof CustomError) throw err;
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 
@@ -121,10 +121,10 @@ export class ProjectLikeService implements IProjectLikeService {
         isLiked: false,
         likesCount,
       };
-    } catch (err: any) {
-      logger.error("UnlikeProject error", { error: err.message });
+    } catch (err: unknown) {
+      logger.error("UnlikeProject error", { error: (err as Error).message });
       if (err instanceof CustomError) throw err;
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 }

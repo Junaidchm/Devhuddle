@@ -1,6 +1,7 @@
 import { INotificationRepository } from "../../repository/interface/INotificationRepository";
 import logger from "../../utils/logger.util";
 import { INotificationService } from "../interfaces/INotificationService";
+import { NotificationWithDetails } from "../../types/common.types";
 
 export class NotificationService implements INotificationService {
   constructor(private _notificationRepository: INotificationRepository) {}
@@ -19,9 +20,9 @@ export class NotificationService implements INotificationService {
       logger.info(
         `Follow notification created for user ${recipientId} by ${issuerId}`
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error in notification service - createFollowNotification", {
-        error: error.message,
+        error: (error as Error).message,
         issuerId,
         recipientId,
       });
@@ -41,9 +42,9 @@ export class NotificationService implements INotificationService {
       logger.info(
         `Follow notification deleted for user ${recipientId} by ${issuerId}`
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error in notification service - deleteFollowNotification", {
-        error: error.message,
+        error: (error as Error).message,
         issuerId,
         recipientId,
       });
@@ -62,9 +63,9 @@ export class NotificationService implements INotificationService {
       logger.info(
         `Like notification created for user ${recipientId} by ${issuerId} on post ${postId}`
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error in notification service - createLikeNotification", {
-        error: error.message,
+        error: (error as Error).message,
         issuerId,
         recipientId,
         postId,
@@ -83,9 +84,9 @@ export class NotificationService implements INotificationService {
       logger.info(
         `Like notification deleted for user ${recipientId} by ${issuerId} on post ${postId}`
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error in notification service - deleteLikeNotification", {
-        error: error.message,
+        error: (error as Error).message,
         issuerId,
         recipientId,
         postId,
@@ -106,11 +107,11 @@ export class NotificationService implements INotificationService {
       logger.info(
         `Comment notification created for user ${recipientId} by ${issuerId} on post ${postId}`
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(
         "Error in notification service - createCommentNotification",
         {
-          error: error.message,
+          error: (error as Error).message,
           issuerId,
           recipientId,
           postId,
@@ -126,7 +127,7 @@ export class NotificationService implements INotificationService {
     limit: number,
     offset: number
   ): Promise<{
-    notifications: any[];
+    notifications: NotificationWithDetails[];
     total: number;
     hasMore: boolean;
   }> {
@@ -136,9 +137,9 @@ export class NotificationService implements INotificationService {
         limit,
         offset
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error in notification service - getNotifications", {
-        error: error.message,
+        error: (error as Error).message,
         recipientId,
       });
       throw error;
@@ -154,9 +155,9 @@ export class NotificationService implements INotificationService {
       logger.info(
         `Notification ${notificationId} marked as read for user ${recipientId}`
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error in notification service - markAsRead", {
-        error: error.message,
+        error: (error as Error).message,
         notificationId,
         recipientId,
       });
@@ -176,9 +177,9 @@ export class NotificationService implements INotificationService {
       logger.info(
         `Notification ${notificationId} deleted for user ${recipientId}`
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error in notification service - deleteNotification", {
-        error: error.message,
+        error: (error as Error).message,
         notificationId,
         recipientId,
       });
@@ -189,9 +190,9 @@ export class NotificationService implements INotificationService {
   async getUnreadCount(recipientId: string): Promise<number> {
     try {
       return await this._notificationRepository.getUnreadCount(recipientId);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error in notification service - getUnreadCount", {
-        error: error.message,
+        error: (error as Error).message,
         recipientId,
       });
       throw error;
@@ -202,9 +203,9 @@ export class NotificationService implements INotificationService {
     try {
       await this._notificationRepository.markAllAsRead(recipientId);
       logger.info(`All notifications marked as read for user ${recipientId}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error in notification service - markAllAsRead", {
-        error: error.message,
+        error: (error as Error).message,
         recipientId,
       });
       throw error;

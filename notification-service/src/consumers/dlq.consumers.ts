@@ -5,6 +5,15 @@ import prisma from "../config/prisma.config";
 
 const GROUP_ID = "notification-dlq-group";
 
+interface DLQEvent {
+  originalTopic: string;
+  errorMessage: string;
+  dlqReason: string;
+  retryCount?: number;
+  dlqTimestamp?: string;
+  [key: string]: unknown;
+}
+
 export async function startDLQConsumer(): Promise<void> {
   const consumer = await getConsumer(GROUP_ID);
   
@@ -24,7 +33,8 @@ export async function startDLQConsumer(): Promise<void> {
     eachMessage: async ({ topic, message }) => {
       if (!message.value) return;
       
-      const event = JSON.parse(message.value.toString());
+      const rawEvent = JSON.parse(message.value.toString());
+      const event = rawEvent as DLQEvent;
       
       logger.error(`DLQ Event received`, {
         topic,
@@ -40,7 +50,7 @@ export async function startDLQConsumer(): Promise<void> {
           data: {
             originalTopic: event.originalTopic,
             dlqTopic: topic,
-            eventData: event,
+            eventData: rawEvent,
             errorMessage: event.errorMessage,
             dlqReason: event.dlqReason,
             retryCount: event.retryCount || 0,
@@ -57,9 +67,9 @@ export async function startDLQConsumer(): Promise<void> {
         // Send alert to monitoring system (if configured)
         await sendDLQAlert(event, topic);
 
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error(`Error processing DLQ event`, {
-          error: error.message,
+          error: (error as Error).message,
           topic,
           event,
         });
@@ -71,7 +81,7 @@ export async function startDLQConsumer(): Promise<void> {
 /**
  * Send alert for DLQ events
  */
-async function sendDLQAlert(event: any, dlqTopic: string): Promise<void> {
+async function sendDLQAlert(event: DLQEvent, dlqTopic: string): Promise<void> {
   try {
     
     logger.error(`DLQ ALERT: Event failed permanently`, {
@@ -83,7 +93,7 @@ async function sendDLQAlert(event: any, dlqTopic: string): Promise<void> {
     });
 
    
-  } catch (error:any) {
-    logger.error('Failed to send DLQ alert', { error: error.message });
+  } catch (error: unknown) {
+    logger.error('Failed to send DLQ alert', { error: (error as Error).message });
   }
 }

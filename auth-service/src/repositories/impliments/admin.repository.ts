@@ -24,7 +24,7 @@ export class AdminRepository extends BaseRepository<
     try {
       const skip = (page - 1) * limit;
 
-      const where: any = {
+      const where: Prisma.UserWhereInput = {
         NOT: { role: "superAdmin" },
       };
 
@@ -87,7 +87,7 @@ export class AdminRepository extends BaseRepository<
         this.model.count({ where }),
       ]);
       return { users, total };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error fetching paginated users", {
         error: (error as Error).message,
       });
@@ -119,7 +119,7 @@ export class AdminRepository extends BaseRepository<
       });
 
       return user;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error fetching user full details", {
         error: (error as Error).message,
       });
@@ -141,7 +141,7 @@ export class AdminRepository extends BaseRepository<
         },
       });
       return updatedUser;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error Toogling Block Unblock users", {
         error: (error as Error).message,
       });
