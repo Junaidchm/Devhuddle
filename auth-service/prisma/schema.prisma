@@ -49,4 +49,4 @@ model Follow {
   @@index([followerId])
   @@index([followingId])
   @@map("follows")
-}
+} 
