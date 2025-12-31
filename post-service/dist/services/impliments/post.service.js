@@ -280,14 +280,21 @@ class PostSerive {
                 //  FIX: Transform Media array to Attachments format
                 const attachments = (post.Media || []).map((media) => ({
                     id: media.id,
-                    post_id: media.postId || post.id,
-                    type: String(media.type || "IMAGE"), // Convert enum to string (IMAGE or VIDEO)
+                    postId: media.postId || post.id,
+                    type: String(media.type || "IMAGE"),
                     url: media.url,
-                    created_at: media.createdAt ? new Date(media.createdAt).toISOString() : new Date().toISOString(),
+                    createdAt: media.createdAt ? new Date(media.createdAt).toISOString() : new Date().toISOString(),
                 }));
                 return {
                     ...post,
-                    attachments, //  Add attachments array
+                    createdAt: post.createdAt.toISOString(),
+                    updatedAt: post.updatedAt.toISOString(),
+                    deletedAt: post.deletedAt ? post.deletedAt.toISOString() : null,
+                    pinnedAt: post.pinnedAt ? post.pinnedAt.toISOString() : null,
+                    editedAt: post.lastEditedAt ? post.lastEditedAt.toISOString() : null,
+                    scheduledAt: null, // Field not in current Prisma model
+                    attachments,
+                    user: post.user ? { ...post.user, id: post.userId } : { id: post.userId, username: "Unknown", name: "Unknown", avatar: "" },
                     engagement: {
                         likesCount: post.likesCount ?? 0,
                         commentsCount: post.commentsCount ?? 0,
@@ -298,7 +305,7 @@ class PostSerive {
                 };
             });
             //  FIX: Use post ID as cursor (for next page pagination)
-            const nextCursor = hasMore ? enrichedPosts[enrichedPosts.length - 1].id : null;
+            const nextCursor = hasMore ? enrichedPosts[enrichedPosts.length - 1].id : undefined;
             return {
                 pages: enrichedPosts,
                 nextCursor,

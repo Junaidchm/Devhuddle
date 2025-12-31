@@ -27,8 +27,8 @@ export class AdminService implements IAdminService {
         search,
         date
       );
-    } catch (error: any) {
-      logger.error("Error fetching users", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error fetching users", { error: (error as Error).message });
       throw error instanceof CustomError
         ? error
         : new CustomError(500, "Server error");
@@ -44,8 +44,8 @@ export class AdminService implements IAdminService {
       }
 
       return user;
-    } catch (error: any) {
-      logger.error("Error fetching users", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error fetching users", { error: (error as Error).message });
       throw error instanceof CustomError
         ? error
         : new CustomError(500, "Server error");
@@ -63,8 +63,8 @@ export class AdminService implements IAdminService {
       const updatedUser = await this.adminRepository.toogleUserBlock(userId);
       await setUsertoBlockBlackList(updatedUser.id,updatedUser.isBlocked)
 
-    } catch (error: any) {
-      logger.error(`Error Toogling user: ${userId}`, { error: error.message });
+    } catch (error: unknown) {
+      logger.error(`Error Toogling user: ${userId}`, { error: (error as Error).message });
       throw error instanceof CustomError
         ? error
         : new CustomError(500, "Server error");

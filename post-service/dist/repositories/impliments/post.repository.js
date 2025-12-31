@@ -63,23 +63,23 @@ class PostRepository extends base_repository_1.BaseRepository {
                 // Use checked media from validation step
                 const mediaToCreate = (validation?.validMedia || []).map((m) => ({
                     id: m.id,
-                    type: m.mediaType === "POST_VIDEO" ? "VIDEO" : "IMAGE", // Map enum
+                    type: (m.mediaType === "POST_VIDEO" ? "VIDEO" : "IMAGE"),
                     url: m.cdnUrl || m.originalUrl,
-                    thumbnail: m.thumbnailUrls?.[0]?.cdnUrl || m.thumbnail, // Handle different thumbnail structures
+                    thumbnail: m.thumbnailUrls?.[0]?.cdnUrl || m.thumbnail,
                 }));
                 // Create post with generated ID
                 const newPost = await tx.posts.create({
                     data: {
-                        id: (0, uuid_1.v4)(), // Generate ID using UUID v4
+                        id: (0, uuid_1.v4)(),
                         content: data.content,
                         userId: data.userId,
-                        visibility: data.visibility,
+                        visibility: data.visibility, // Cast to any to avoid enum type mismatch
                         commentControl: data.commentControl,
                         // Create local media records (Read Model)
                         Media: {
                             create: mediaToCreate.map((m) => ({
                                 id: m.id,
-                                type: m.type, // "IMAGE" | "VIDEO"
+                                type: m.type,
                                 url: m.url,
                                 thumbnail: m.thumbnail,
                             })),

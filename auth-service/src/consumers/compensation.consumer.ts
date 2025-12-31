@@ -7,6 +7,10 @@ import logger from '../utils/logger.util';
 const GROUP_ID = "auth-compensation-group";
 const repo = new FollowsRepository();
 
+import { CompensationEvent } from '../types/common.types';
+
+// ...
+
 export async function startCompensationConsumer(): Promise<void> {
   const consumer = await getConsumer(GROUP_ID);
   
@@ -19,7 +23,7 @@ export async function startCompensationConsumer(): Promise<void> {
     eachMessage: async ({ topic, message }) => {
       if (!message.value) return;
       
-      const event = JSON.parse(message.value.toString());
+      const event: CompensationEvent = JSON.parse(message.value.toString());
       const { 
         followerId, 
         followingId, 
@@ -49,9 +53,9 @@ export async function startCompensationConsumer(): Promise<void> {
           compensationReason,
         });
 
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error(`Error processing compensation event`, {
-          error: error.message,
+          error: (error as Error).message,
           followerId,
           followingId,
           compensationReason,
@@ -71,7 +75,7 @@ export async function startCompensationConsumer(): Promise<void> {
 async function handleFollowCompensation(
   followerId: string, 
   followingId: string, 
-  event: any
+  event: CompensationEvent
 ): Promise<void> {
   try {
     // Check if the follow relationship still exists
@@ -96,9 +100,9 @@ async function handleFollowCompensation(
         followingId,
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error(`Error reverting follow relationship`, {
-      error: error.message,
+      error: (error as Error).message,
       followerId,
       followingId,
     });
@@ -112,7 +116,7 @@ async function handleFollowCompensation(
 async function handleNotificationCreationCompensation(
   followerId: string,
   followingId: string,
-  event: any
+  event: CompensationEvent
 ): Promise<void> {
   try {
     // This might involve:
@@ -131,9 +135,9 @@ async function handleNotificationCreationCompensation(
     // 2. Attempt retry with different parameters
     // 3. Notify administrators via Slack/email
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error(`Error handling notification creation compensation`, {
-      error: error.message,
+      error: (error as Error).message,
       followerId,
       followingId,
     });
@@ -144,12 +148,12 @@ async function handleNotificationCreationCompensation(
 /**
  * Handle compensation failure
  */
-async function handleCompensationFailure(event: any, error: any): Promise<void> {
+async function handleCompensationFailure(event: CompensationEvent, error: unknown): Promise<void> {
   try {
     // Log the compensation failure for manual review
     logger.error(`COMPENSATION FAILURE - Manual intervention required`, {
       event,
-      error: error.message,
+      error: (error as Error).message,
       timestamp: new Date().toISOString(),
     });
 
@@ -159,10 +163,10 @@ async function handleCompensationFailure(event: any, error: any): Promise<void> 
     // 3. Update monitoring dashboards
     // 4. Possibly trigger additional recovery mechanisms
     
-  } catch (compensationError: any) {
+  } catch (compensationError: unknown) {
     logger.error(`Error handling compensation failure`, {
-      error: compensationError.message,
-      originalError: error.message,
+      error: (compensationError as Error).message,
+      originalError: (error as Error).message,
     });
   }
 }

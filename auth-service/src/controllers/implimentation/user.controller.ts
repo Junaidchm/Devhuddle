@@ -43,13 +43,16 @@ export class UserController {
         currentUserId
       );
       res.status(HttpStatus.OK).json(profile);
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("Get profile error", { 
-        error: err.message,
-        stack: err.stack,
+        error: (err as Error).message,
+        stack: (err as Error).stack,
         username: req.params.username 
       });
-      sendErrorResponse(res, err);
+      sendErrorResponse(
+        res,
+        err instanceof CustomError ? err : { status: 500, message: "Server error" }
+      );
     }
   }
 
@@ -62,9 +65,12 @@ export class UserController {
         currentUserId
       );
       res.status(HttpStatus.OK).json(followers);
-    } catch (err: any) {
-      logger.error("Get followers error", { error: err.message });
-      sendErrorResponse(res, err);
+    } catch (err: unknown) {
+      logger.error("Get followers error", { error: (err as Error).message });
+      sendErrorResponse(
+        res,
+        err instanceof CustomError ? err : { status: 500, message: "Server error" }
+      );
     }
   }
 
@@ -77,9 +83,12 @@ export class UserController {
         currentUserId
       );
       res.status(HttpStatus.OK).json(following);
-    } catch (err: any) {
-      logger.error("Get following error", { error: err.message });
-      sendErrorResponse(res, err);
+    } catch (err: unknown) {
+      logger.error("Get following error", { error: (err as Error).message });
+      sendErrorResponse(
+        res,
+        err instanceof CustomError ? err : { status: 500, message: "Server error" }
+      );
     }
   }
 
@@ -105,9 +114,12 @@ export class UserController {
         currentUserId
       );
       res.status(HttpStatus.OK).json(following);
-    } catch (err: any) {
-      logger.error("Get my following error", { error: err.message });
-      sendErrorResponse(res, err);
+    } catch (err: unknown) {
+      logger.error("Get my following error", { error: (err as Error).message });
+      sendErrorResponse(
+        res,
+        err instanceof CustomError ? err : { status: 500, message: "Server error" }
+      );
     }
   }
 
@@ -126,8 +138,8 @@ export class UserController {
         currentUserId
       );
       res.status(HttpStatus.OK).json(users);
-    } catch (err: any) {
-      logger.error("Search users error", { error: err.message });
+    } catch (err: unknown) {
+      logger.error("Search users error", { error: (err as Error).message });
       sendErrorResponse(
         res,
         err instanceof CustomError ? err : { status: 500, message: "Server error" }
@@ -176,8 +188,8 @@ export class UserController {
           profilePicture: user.profilePicture,
         },
       });
-    } catch (err: any) {
-      logger.error("Get user by ID internal error", { error: err.message });
+    } catch (err: unknown) {
+      logger.error("Get user by ID internal error", { error: (err as Error).message });
       sendErrorResponse(
         res,
         err instanceof CustomError ? err : { status: 500, message: "Server error" }

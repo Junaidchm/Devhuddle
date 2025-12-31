@@ -89,8 +89,8 @@ const startServer = async () => {
       logger.info(`Notification service running on port ${PORT}`);
       logger.info(`WebSocket server running on ws://localhost:${PORT}`);
     });
-  } catch (error) {
-    logger.error("Failed to start notification server:", error);
+  } catch (error: unknown) {
+    logger.error("Failed to start notification server:", { error: (error as Error).message });
     process.exit(1);
   }
 };

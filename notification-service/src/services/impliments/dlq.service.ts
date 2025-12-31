@@ -7,7 +7,7 @@ export interface DLQMessage {
   id: string;
   originalTopic: string;
   dlqTopic: string;
-  eventData: any;
+  eventData: Record<string, unknown>;
   errorMessage: string;
   dlqReason: string;
   retryCount: number;
@@ -66,9 +66,9 @@ export class DLQService {
         total,
         hasMore: query.offset + query.limit < total,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error fetching DLQ messages", {
-        error: error.message,
+        error: (error as Error).message,
         query,
       });
       throw error;
@@ -104,9 +104,9 @@ export class DLQService {
         success: true,
         message: `Event republished to ${dlqMessage.originalTopic}`,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error retrying DLQ message", {
-        error: error.message,
+        error: (error as Error).message,
         dlqId,
       });
       throw error;
@@ -123,9 +123,9 @@ export class DLQService {
         updatedAt: new Date(),
       });
       logger.info(`DLQ message resolved`, { dlqId, resolution });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error resolving DLQ message", {
-        error: error.message,
+        error: (error as Error).message,
         dlqId,
       });
       throw error;
@@ -164,8 +164,8 @@ export class DLQService {
         byTopic: byTopicMap,
         recentFailures,
       };
-    } catch (error: any) {
-      logger.error("Error fetching DLQ stats", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error fetching DLQ stats", { error: (error as Error).message });
       throw error;
     }
   }
@@ -175,9 +175,9 @@ export class DLQService {
       const deleted = await this.repo.deleteOldResolved(daysOld);
       logger.info(`Cleaned up ${deleted} old DLQ messages`);
       return deleted;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error cleaning up old DLQ messages", {
-        error: error.message,
+        error: (error as Error).message,
       });
       throw error;
     }

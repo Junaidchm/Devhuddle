@@ -1,6 +1,11 @@
 import { IsString, IsOptional, IsArray, IsEnum, MinLength, ArrayMinSize, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
 
+export interface ReportMetadata {
+  [key: string]: string | number | boolean;
+}
+
+
 export enum Visibility {
   PUBLIC = 'PUBLIC',
   VISIBILITY_CONNECTIONS = 'VISIBILITY_CONNECTIONS',
@@ -76,7 +81,7 @@ export class ReportPostDto {
 
   @IsOptional()
   @IsObject()
-  metadata?: any;
+  metadata?: ReportMetadata;
 
   @IsOptional()
   @IsString()

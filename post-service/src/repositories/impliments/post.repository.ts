@@ -7,6 +7,7 @@ import { prisma } from "../../config/prisma.config";
 import logger from "../../utils/logger.util";
 import redisClient from "../../config/redis.config";
 import { posts, Prisma } from ".prisma/client";
+import { Visibility, CommentControl } from "../../dto/post.dto";
 
 import { userClient } from "../../config/grpc.client";
 import {
@@ -17,6 +18,7 @@ import {
 import { error } from "console";
 import { v4 as uuidv4 } from "uuid";
 import { validateMediaOwnership, linkMediaToPost } from "../../config/media.client";
+import { MediaValidationResponse, ValidatedMedia, EnrichedPost } from "../../types/common.types";
 
 export class PostRepository
   extends BaseRepository<
@@ -38,7 +40,7 @@ export class PostRepository
     try {
       const { id: postId } = await super.create(data);
       return { postId };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error creating entity", {
         error: (error as Error).message,
       });
@@ -58,7 +60,7 @@ export class PostRepository
        * - Better separation of concerns
        */
 
-      let validation: any;
+      let validation: MediaValidationResponse | undefined;
 
       // Step 1: Validate media ownership via Media Service
       // ...
@@ -72,45 +74,45 @@ export class PostRepository
               `Invalid media: ${validation.invalidMediaIds?.join(", ")}`
             );
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           logger.error("Media validation failed", {
-            error: error.message,
+            error: (error as Error).message,
             mediaIds: data.mediaIds,
             userId: data.userId,
           });
-          throw new Error(`Media validation failed: ${error.message}`);
+          throw new Error(`Media validation failed: ${(error as Error).message}`);
         }
       }
 
       // Step 2: Create post in database (transaction ensures atomicity)
       const post = await prisma.$transaction(async (tx) => {
         // Use checked media from validation step
-        const mediaToCreate = (validation?.validMedia || []).map((m: any) => ({
+        const mediaToCreate = (validation?.validMedia || []).map((m: ValidatedMedia) => ({
           id: m.id,
-          type: m.mediaType === "POST_VIDEO" ? "VIDEO" : "IMAGE", // Map enum
+          type: (m.mediaType === "POST_VIDEO" ? "VIDEO" : "IMAGE") as any,
           url: m.cdnUrl || m.originalUrl,
-          thumbnail: m.thumbnailUrls?.[0]?.cdnUrl || m.thumbnail, // Handle different thumbnail structures
+          thumbnail: m.thumbnailUrls?.[0]?.cdnUrl || m.thumbnail,
         }));
         
 
         // Create post with generated ID
         const newPost = await tx.posts.create({
           data: {
-            id: uuidv4(), // Generate ID using UUID v4
+            id: uuidv4(),
             content: data.content,
             userId: data.userId,
-            visibility: data.visibility as any,
-            commentControl: data.commentControl as any,
+            visibility: data.visibility as unknown as any, // Cast to any to avoid enum type mismatch
+            commentControl: data.commentControl as unknown as any,
             // Create local media records (Read Model)
             Media: {
-              create: mediaToCreate.map((m: any) => ({
+              create: mediaToCreate.map((m) => ({
                 id: m.id,
-                type: m.type as any, // "IMAGE" | "VIDEO"
+                type: m.type,
                 url: m.url,
                 thumbnail: m.thumbnail,
               })),
             },
-          } as any, 
+          }, 
         });
 
         // Step 3: Link media to post via Media Service
@@ -122,16 +124,16 @@ export class PostRepository
               postId: newPost.id,
               mediaIds: data.mediaIds,
             });
-          } catch (error: any) {
+          } catch (error: unknown) {
             logger.error("Failed to link media to post", {
-              error: error.message,
+              error: (error as Error).message,
               postId: newPost.id,
               mediaIds: data.mediaIds,
             });
             // If linking fails, we should rollback the post creation
             // But since we're outside the transaction, we'll throw an error
             // The transaction will be rolled back automatically
-            throw new Error(`Failed to link media: ${error.message}`);
+            throw new Error(`Failed to link media: ${(error as Error).message}`);
           }
         }
 
@@ -148,14 +150,14 @@ export class PostRepository
       });
 
       return post;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error creating post", {
         error: (error as Error).message,
         stack: (error as Error).stack,
         userId: data.userId,
         mediaIds: data.mediaIds,
       });
-      throw new Error(error.message || "Database error");
+      throw new Error((error as Error).message || "Database error");
     }
   }
 
@@ -167,7 +169,7 @@ export class PostRepository
         },
       });
       return post;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error find entity", {
         error: (error as Error).message,
       });
@@ -184,7 +186,7 @@ export class PostRepository
       });
 
       return post;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error delete entity", {
         error: (error as Error).message,
       });
@@ -192,7 +194,7 @@ export class PostRepository
     }
   }
 
-  async getPostsRepo(postSelectOptions: PostSelectOptions): Promise<any> {
+  async getPostsRepo(postSelectOptions: PostSelectOptions): Promise<EnrichedPost[]> {
     try {
       //  FIX: Cast to Prisma's expected type - PostSelectOptions uses skip-based pagination (no cursor)
       const prismaOptions: Prisma.postsFindManyArgs = {
@@ -231,8 +233,8 @@ export class PostRepository
         )
       );
 
-      return enrichedPosts;
-    } catch (err: any) {
+      return enrichedPosts as unknown as EnrichedPost[];
+    } catch (err: unknown) {
       logger.error("Error fetching the posts ", {
         error: (err as Error).message,
       });
@@ -251,7 +253,7 @@ export class PostRepository
           },
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error incrementing likes count", {
         error: (error as Error).message,
       });
@@ -270,7 +272,7 @@ export class PostRepository
           },
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error decrementing likes count", {
         error: (error as Error).message,
       });
@@ -288,7 +290,7 @@ export class PostRepository
           },
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error incrementing comments count", {
         error: (error as Error).message,
       });
@@ -306,7 +308,7 @@ export class PostRepository
           },
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error decrementing comments count", {
         error: (error as Error).message,
       });
@@ -324,7 +326,7 @@ export class PostRepository
           },
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error incrementing shares count", {
         error: (error as Error).message,
       });
@@ -342,7 +344,7 @@ export class PostRepository
           },
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error incrementing reports count", {
         error: (error as Error).message,
       });
@@ -356,7 +358,7 @@ export class PostRepository
         where: { id: postId },
         data,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error updating post", {
         error: (error as Error).message,
         postId,
@@ -374,7 +376,7 @@ export class PostRepository
       const result: string | null = await redisClient.set(lockKey, "1", {
         EX: 300, // 5 minute expiration
         NX: true, // Only set if not exists
-      } as any);
+      });
 
       // Redis SET with NX returns "OK" if set, null if key exists
       if (result !== "OK") {
@@ -386,7 +388,7 @@ export class PostRepository
         where: { id: postId },
         data: { isEditing: true },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error locking post for editing", {
         error: (error as Error).message,
         postId,
@@ -404,7 +406,7 @@ export class PostRepository
         where: { id: postId },
         data: { isEditing: false },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error unlocking post for editing", {
         error: (error as Error).message,
         postId,
@@ -435,7 +437,7 @@ export class PostRepository
       });
 
       return posts;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error getting posts by IDs", {
         error: (error as Error).message,
         postCount: postIds.length,

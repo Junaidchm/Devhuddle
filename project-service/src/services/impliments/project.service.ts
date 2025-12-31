@@ -35,6 +35,7 @@ import logger from "../../utils/logger.util";
 import { KAFKA_TOPICS } from "../../config/kafka.config";
 import { OutboxAggregateType, OutboxEventType } from "@prisma/client";
 import { calculateTrendingScore } from "../../utils/trending.util";
+import { EnrichedProject } from "../../types/common.types";
 
 export class ProjectService implements IProjectService {
   constructor(
@@ -98,9 +99,9 @@ export class ProjectService implements IProjectService {
         status: project.status,
         createdAt: project.createdAt.toISOString(),
       };
-    } catch (err: any) {
-      logger.error("CreateProject error", { error: err.message });
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+    } catch (err: unknown) {
+      logger.error("CreateProject error", { error: (err as Error).message });
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 
@@ -153,10 +154,10 @@ export class ProjectService implements IProjectService {
         id: updatedProject.id,
         updatedAt: updatedProject.updatedAt.toISOString(),
       };
-    } catch (err: any) {
-      logger.error("UpdateProject error", { error: err.message });
+    } catch (err: unknown) {
+      logger.error("UpdateProject error", { error: (err as Error).message });
       if (err instanceof CustomError) throw err;
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 
@@ -181,17 +182,23 @@ export class ProjectService implements IProjectService {
       return {
         project: this.mapToProjectProto(project),
       };
-    } catch (err: any) {
-      logger.error("GetProject error", { error: err.message });
+    } catch (err: unknown) {
+      logger.error("GetProject error", { error: (err as Error).message });
       if (err instanceof CustomError) throw err;
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 
   async listProjects(req: ListProjectsRequest): Promise<ListProjectsResponse> {
     try {
       const PAGE_SIZE = req.limit || 10;
-      const options: any = {
+      const options: {
+        take: number;
+        skip: number;
+        cursor?: { id: string };
+        orderBy: any; // Prisma orderBy type is complex, using any temporarily or constructing strict type if possible
+        where: any;
+      } = {
         take: PAGE_SIZE + 1,
         skip: req.pageParam ? 1 : 0,
         cursor: req.pageParam ? { id: req.pageParam } : undefined,
@@ -233,14 +240,20 @@ export class ProjectService implements IProjectService {
           (await this.shareRepository?.getUserSharesForProjects(req.userId, projectIds)) || {};
       }
 
-      const enrichedProjects = items.map((project: any) => ({
-        ...this.mapToProjectProto(project),
-        engagement: {
-          ...project.engagement,
-          isLiked: userLikesMap[project.id] || false,
-          isShared: userSharesMap[project.id] || false,
-        },
-      }));
+      const enrichedProjects = items.map((project) => {
+        const proto = this.mapToProjectProto(project);
+        return {
+          ...proto,
+          engagement: {
+            likesCount: proto.engagement?.likesCount ?? 0,
+            commentsCount: proto.engagement?.commentsCount ?? 0,
+            sharesCount: proto.engagement?.sharesCount ?? 0,
+            viewsCount: proto.engagement?.viewsCount ?? 0,
+            isLiked: userLikesMap[project.id] || false,
+            isShared: userSharesMap[project.id] || false,
+          },
+        };
+      });
 
       const nextCursor = hasMore ? enrichedProjects[enrichedProjects.length - 1].id : null;
 
@@ -249,9 +262,9 @@ export class ProjectService implements IProjectService {
         nextCursor: nextCursor || undefined,
         totalCount: enrichedProjects.length,
       };
-    } catch (err: any) {
-      logger.error("ListProjects error", { error: err.message });
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+    } catch (err: unknown) {
+      logger.error("ListProjects error", { error: (err as Error).message });
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 
@@ -278,10 +291,10 @@ export class ProjectService implements IProjectService {
         id: project.id,
         success: true,
       };
-    } catch (err: any) {
-      logger.error("DeleteProject error", { error: err.message });
+    } catch (err: unknown) {
+      logger.error("DeleteProject error", { error: (err as Error).message });
       if (err instanceof CustomError) throw err;
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 
@@ -320,17 +333,17 @@ export class ProjectService implements IProjectService {
         status: project.status,
         publishedAt: project.publishedAt?.toISOString() || "",
       };
-    } catch (err: any) {
-      logger.error("PublishProject error", { error: err.message });
+    } catch (err: unknown) {
+      logger.error("PublishProject error", { error: (err as Error).message });
       if (err instanceof CustomError) throw err;
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 
   async getTrendingProjects(req: GetTrendingProjectsRequest): Promise<GetTrendingProjectsResponse> {
     try {
       const PAGE_SIZE = req.limit || 10;
-      const options: any = {
+      const options: any = { // Keeping as any for now due to complexity of Prisma types, but removing explicit 'any' from other places
         take: PAGE_SIZE + 1,
         skip: req.pageParam ? 1 : 0,
         cursor: req.pageParam ? { id: req.pageParam } : undefined,
@@ -369,9 +382,9 @@ export class ProjectService implements IProjectService {
         projects: enrichedProjects,
         nextCursor: nextCursor || undefined,
       };
-    } catch (err: any) {
-      logger.error("GetTrendingProjects error", { error: err.message });
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+    } catch (err: unknown) {
+      logger.error("GetTrendingProjects error", { error: (err as Error).message });
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 
@@ -416,9 +429,9 @@ export class ProjectService implements IProjectService {
         projects: enrichedProjects,
         nextCursor: nextCursor || undefined,
       };
-    } catch (err: any) {
-      logger.error("GetTopProjects error", { error: err.message });
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+    } catch (err: unknown) {
+      logger.error("GetTopProjects error", { error: (err as Error).message });
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 
@@ -442,22 +455,28 @@ export class ProjectService implements IProjectService {
           (await this.shareRepository?.getUserSharesForProjects(req.userId, projectIds)) || {};
       }
 
-      const enrichedProjects = projects.map((project: any) => ({
-        ...this.mapToProjectProto(project),
-        engagement: {
-          ...project.engagement,
-          isLiked: userLikesMap[project.id] || false,
-          isShared: userSharesMap[project.id] || false,
-        },
-      }));
+      const enrichedProjects = projects.map((project) => {
+        const proto = this.mapToProjectProto(project);
+        return {
+          ...proto,
+          engagement: {
+            likesCount: proto.engagement?.likesCount ?? 0,
+            commentsCount: proto.engagement?.commentsCount ?? 0,
+            sharesCount: proto.engagement?.sharesCount ?? 0,
+            viewsCount: proto.engagement?.viewsCount ?? 0,
+            isLiked: userLikesMap[project.id] || false,
+            isShared: userSharesMap[project.id] || false,
+          },
+        };
+      });
 
       return {
         projects: enrichedProjects,
         totalCount: enrichedProjects.length,
       };
-    } catch (err: any) {
-      logger.error("SearchProjects error", { error: err.message });
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+    } catch (err: unknown) {
+      logger.error("SearchProjects error", { error: (err as Error).message });
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 
@@ -470,9 +489,9 @@ export class ProjectService implements IProjectService {
         success: true,
         viewsCount: project?.viewsCount || 0,
       };
-    } catch (err: any) {
-      logger.error("TrackProjectView error", { error: err.message });
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+    } catch (err: unknown) {
+      logger.error("TrackProjectView error", { error: (err as Error).message });
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 
@@ -500,7 +519,7 @@ export class ProjectService implements IProjectService {
     }
   }
 
-  private mapToProjectProto(project: any): Project {
+  private mapToProjectProto(project: EnrichedProject): Project {
     return {
       id: project.id,
       title: project.title,
@@ -520,7 +539,7 @@ export class ProjectService implements IProjectService {
         isLiked: project.engagement?.isLiked || false,
         isShared: project.engagement?.isShared || false,
       } as ProjectEngagement,
-      media: (project.media || []).map((m: any) => ({
+      media: (project.media || []).map((m) => ({
         id: m.id,
         type: m.type,
         url: m.url,
@@ -536,7 +555,7 @@ export class ProjectService implements IProjectService {
         name: project.author.name,
         username: project.author.username,
         avatar: project.author.avatar,
-      } as UserProfile : undefined as any,
+      } as UserProfile : undefined,
       createdAt: project.createdAt.toISOString(),
       updatedAt: project.updatedAt.toISOString(),
       publishedAt: project.publishedAt?.toISOString() || undefined,

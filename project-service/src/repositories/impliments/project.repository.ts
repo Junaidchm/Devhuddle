@@ -8,6 +8,7 @@ import { prisma } from "../../config/prisma.config";
 import logger from "../../utils/logger.util";
 import { Project, Prisma } from "@prisma/client";
 import { userClient } from "../../config/grpc.client";
+import { EnrichedProject } from "../../types/common.types";
 
 export class ProjectRepository
   extends BaseRepository<
@@ -23,7 +24,7 @@ export class ProjectRepository
     super(prisma.project);
   }
 
-  async createProject(data: CreateProjectData): Promise<any> {
+  async createProject(data: CreateProjectData): Promise<Project> {
     try {
       const project = await prisma.$transaction(async (tx) => {
         // Validate media if provided
@@ -95,7 +96,7 @@ export class ProjectRepository
     }
   }
 
-  async updateProject(projectId: string, data: Partial<CreateProjectData>): Promise<any> {
+  async updateProject(projectId: string, data: Partial<CreateProjectData>): Promise<Project> {
     try {
       const project = await prisma.$transaction(async (tx) => {
         const existingProject = await tx.project.findUnique({
@@ -154,7 +155,7 @@ export class ProjectRepository
     }
   }
 
-  async getProjectById(projectId: string, userId?: string): Promise<any> {
+  async getProjectById(projectId: string, userId?: string): Promise<EnrichedProject | null> {
     try {
       const project = await prisma.project.findUnique({
         where: { id: projectId },
@@ -236,7 +237,7 @@ export class ProjectRepository
     }
   }
 
-  async listProjects(options: ProjectSelectOptions): Promise<any[]> {
+  async listProjects(options: ProjectSelectOptions): Promise<EnrichedProject[]> {
     try {
       const projects = await prisma.project.findMany({
         ...options,
@@ -307,7 +308,7 @@ export class ProjectRepository
     }
   }
 
-  async getTrendingProjects(options: ProjectSelectOptions): Promise<any[]> {
+  async getTrendingProjects(options: ProjectSelectOptions): Promise<EnrichedProject[]> {
     try {
       const projects = await prisma.project.findMany({
         ...options,
@@ -343,7 +344,7 @@ export class ProjectRepository
     }
   }
 
-  async getTopProjects(options: ProjectSelectOptions): Promise<any[]> {
+  async getTopProjects(options: ProjectSelectOptions): Promise<EnrichedProject[]> {
     try {
       const projects = await prisma.project.findMany({
         ...options,
@@ -381,7 +382,7 @@ export class ProjectRepository
     }
   }
 
-  async searchProjects(query: string, filters: any): Promise<any[]> {
+  async searchProjects(query: string, filters: any): Promise<EnrichedProject[]> {
     try {
       const projects = await prisma.project.findMany({
         where: {
@@ -425,7 +426,7 @@ export class ProjectRepository
     }
   }
 
-  async deleteProject(projectId: string, userId: string): Promise<any> {
+  async deleteProject(projectId: string, userId: string): Promise<Project> {
     try {
       const project = await prisma.project.findUnique({
         where: { id: projectId },
@@ -457,7 +458,7 @@ export class ProjectRepository
     }
   }
 
-  async publishProject(projectId: string, userId: string): Promise<any> {
+  async publishProject(projectId: string, userId: string): Promise<Project> {
     try {
       const project = await prisma.project.findUnique({
         where: { id: projectId },
@@ -521,7 +522,7 @@ export class ProjectRepository
     }
   }
 
-  async findProject(projectId: string): Promise<any | null> {
+  async findProject(projectId: string): Promise<Project | null> {
     try {
       return await prisma.project.findUnique({
         where: { id: projectId },
@@ -534,7 +535,7 @@ export class ProjectRepository
     }
   }
 
-  private async enrichProjectsWithUsers(projects: any[]): Promise<any[]> {
+  private async enrichProjectsWithUsers(projects: any[]): Promise<EnrichedProject[]> {
     return Promise.all(
       projects.map(async (project) => {
         let author = null;

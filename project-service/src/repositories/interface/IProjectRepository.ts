@@ -1,4 +1,5 @@
-import { Prisma } from "@prisma/client";
+import { Project } from "@prisma/client";
+import { EnrichedProject } from "../../types/common.types";
 
 export interface ProjectSelectOptions {
   include?: any;
@@ -23,17 +24,17 @@ export interface CreateProjectData {
 }
 
 export interface IProjectRepository {
-  createProject(data: CreateProjectData): Promise<any>;
-  updateProject(projectId: string, data: Partial<CreateProjectData>): Promise<any>;
-  getProjectById(projectId: string, userId?: string): Promise<any>;
-  listProjects(options: ProjectSelectOptions): Promise<any[]>;
-  getTrendingProjects(options: ProjectSelectOptions): Promise<any[]>;
-  getTopProjects(options: ProjectSelectOptions): Promise<any[]>;
-  searchProjects(query: string, filters: any): Promise<any[]>;
-  deleteProject(projectId: string, userId: string): Promise<any>;
-  publishProject(projectId: string, userId: string): Promise<any>;
+  createProject(data: CreateProjectData): Promise<Project>;
+  updateProject(projectId: string, data: Partial<CreateProjectData>): Promise<Project>;
+  getProjectById(projectId: string, userId?: string): Promise<EnrichedProject | null>;
+  listProjects(options: ProjectSelectOptions): Promise<EnrichedProject[]>;
+  getTrendingProjects(options: ProjectSelectOptions): Promise<EnrichedProject[]>;
+  getTopProjects(options: ProjectSelectOptions): Promise<EnrichedProject[]>;
+  searchProjects(query: string, filters: any): Promise<EnrichedProject[]>;
+  deleteProject(projectId: string, userId: string): Promise<Project>;
+  publishProject(projectId: string, userId: string): Promise<Project>;
   incrementViews(projectId: string): Promise<void>;
   updateTrendingScore(projectId: string, score: number): Promise<void>;
-  findProject(projectId: string): Promise<any | null>;
+  findProject(projectId: string): Promise<Project | null>;
 }
 

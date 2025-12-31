@@ -1,4 +1,5 @@
-import { MediaType, MediaStatus } from "@prisma/client";
+import { MediaType, MediaStatus, Media } from "@prisma/client";
+import { ThumbnailUrl, TranscodedUrlMap, MediaValidationResult, ValidatedMediaItem } from "../../types/common.types";
 import { IMediaService, UploadSessionRequest, UploadSessionResponse, CompleteUploadRequest, CompleteUploadResponse } from "../interfaces/IMediaService";
 import { IStorageService } from "../interfaces/IStorageService";
 import { IMediaRepository } from "../../repositories/interfaces/IMediaRepository";
@@ -89,9 +90,9 @@ export class MediaService implements IMediaService {
         partSize,
         totalParts,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to create upload session", {
-        error: error.message,
+        error: (error as Error).message,
         request,
       });
       throw error;
@@ -153,16 +154,16 @@ export class MediaService implements IMediaService {
         cdnUrl: updatedMedia.cdnUrl,
         status: updatedMedia.status,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to complete upload", {
-        error: error.message,
+        error: (error as Error).message,
         request,
       });
       throw error;
     }
   }
 
-  async getMediaById(mediaId: string, userId: string): Promise<any> {
+  async getMediaById(mediaId: string, userId: string): Promise<Media> {
     try {
       const media = await this.mediaRepository.findById(mediaId);
 
@@ -176,9 +177,9 @@ export class MediaService implements IMediaService {
       }
 
       return media;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to get media", {
-        error: error.message,
+        error: (error as Error).message,
         mediaId,
         userId,
       });
@@ -204,9 +205,9 @@ export class MediaService implements IMediaService {
 
       // Delete thumbnails if they exist
       if (media.thumbnailUrls) {
-        const thumbnails = media.thumbnailUrls as any;
+        const thumbnails = media.thumbnailUrls as unknown as ThumbnailUrl[];
         if (Array.isArray(thumbnails)) {
-          const thumbnailKeys = thumbnails.map((t: any) => t.storageKey).filter(Boolean);
+          const thumbnailKeys = thumbnails.map((t) => t.storageKey).filter(Boolean);
           if (thumbnailKeys.length > 0) {
             await this.storageService.deleteFiles(thumbnailKeys);
           }
@@ -215,10 +216,10 @@ export class MediaService implements IMediaService {
 
       // Delete transcoded videos if they exist
       if (media.transcodedUrls) {
-        const transcoded = media.transcodedUrls as any;
+        const transcoded = media.transcodedUrls as unknown as TranscodedUrlMap;
         if (typeof transcoded === "object") {
           const transcodedKeys = Object.values(transcoded)
-            .map((url: any) => {
+            .map((url) => {
               // Extract key from URL
               if (typeof url === "string") {
                 const parts = url.split("/");
@@ -226,9 +227,10 @@ export class MediaService implements IMediaService {
               }
               return null;
             })
-            .filter(Boolean);
+            .filter((key): key is string => Boolean(key));
+            
           if (transcodedKeys.length > 0) {
-            await this.storageService.deleteFiles(transcodedKeys as string[]);
+            await this.storageService.deleteFiles(transcodedKeys);
           }
         }
       }
@@ -237,9 +239,9 @@ export class MediaService implements IMediaService {
       await this.mediaRepository.delete(mediaId);
 
       logger.info("Media deleted", { mediaId, userId });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to delete media", {
-        error: error.message,
+        error: (error as Error).message,
         mediaId,
         userId,
       });
@@ -249,11 +251,10 @@ export class MediaService implements IMediaService {
 
   async validateMediaOwnership(
     request: { mediaIds: string[]; userId: string }
-  ): Promise<{ valid: boolean; invalidMediaIds?: string[]; message?: string; validMedia?: any[] }> {
+  ): Promise<MediaValidationResult> {
     try {
       const invalidMediaIds: string[] = [];
-
-      const validMediaValues: any[] = [];
+      const validMediaValues: ValidatedMediaItem[] = [];
       
       // Check each media
       for (const mediaId of request.mediaIds) {
@@ -279,6 +280,8 @@ export class MediaService implements IMediaService {
         validMediaValues.push({
           ...media,
           fileSize: media.fileSize.toString(),
+          thumbnailUrls: media.thumbnailUrls as unknown as ThumbnailUrl[],
+          transcodedUrls: media.transcodedUrls as unknown as TranscodedUrlMap,
         });
       }
 
@@ -294,9 +297,9 @@ export class MediaService implements IMediaService {
         valid: true,
         validMedia: validMediaValues,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to validate media ownership", {
-        error: error.message,
+        error: (error as Error).message,
         request,
       });
       throw error;
@@ -329,9 +332,9 @@ export class MediaService implements IMediaService {
       }
 
       logger.info("Media linked to post", { mediaIds, postId, userId });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to link media to post", {
-        error: error.message,
+        error: (error as Error).message,
         mediaIds,
         postId,
         userId,
@@ -362,9 +365,9 @@ export class MediaService implements IMediaService {
       }
 
       logger.info("Media unlinked from post", { mediaIds, userId });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to unlink media from post", {
-        error: error.message,
+        error: (error as Error).message,
         mediaIds,
         userId,
       });

@@ -8,7 +8,7 @@ import { Messages } from "../../constents/reqresMessages";
 export class FollowsController implements IFollowsController {
   constructor(private followService: IFollowsService) {}
 
-  async getSuggestions(req: Request, res: Response): Promise<any> {
+  async getSuggestions(req: Request, res: Response): Promise<void> {
     try {
 
       console.log('this is the req.headers -----------------------------######################,', req.headers)
@@ -22,13 +22,13 @@ export class FollowsController implements IFollowsController {
           Number(limit) || 5
         );
       res.status(200).json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Internal server error" });
     }
   }
 
 
-  async follow(req: Request, res: Response): Promise<any> {
+  async follow(req: Request, res: Response): Promise<void> {
     try {
       const { targetUserId } = req.body;
       const userId = JSON.parse(req.headers["x-user-data"] as string).id;
@@ -53,10 +53,10 @@ export class FollowsController implements IFollowsController {
         message: Messages.USER_FOLLOWED_SUCCESSFULLY,
         data: result,
       });
-    } catch (error: any) {
-      logger.error("Error in follow controller", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error in follow controller", { error: (error as Error).message });
       
-      if (error.message === "Database error") {
+      if ((error as Error).message === "Database error") {
         res.status(500).json({ error: "Internal server error" });
       } else {
         res.status(500).json({ error: "Internal server error" });
@@ -65,7 +65,7 @@ export class FollowsController implements IFollowsController {
   }
   
 
-  async unfollow(req: Request, res: Response): Promise<any> {
+  async unfollow(req: Request, res: Response): Promise<void> {
     try {
       const { targetUserId } = req.body;
       const userId = JSON.parse(req.headers["x-user-data"] as string).id;
@@ -87,10 +87,10 @@ export class FollowsController implements IFollowsController {
       res.status(HttpStatus.OK).json({
         message: Messages.USER_UNFOLLOWED_SUCCESSFULLY,
       });
-    } catch (error: any) {
-      logger.error("Error in unfollow controller", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error in unfollow controller", { error: (error as Error).message });
       
-      if (error.message === "Database error") {
+      if ((error as Error).message === "Database error") {
         res.status(500).json({ error: "Internal server error" });
       } else {
         res.status(500).json({ error: "Internal server error" });
