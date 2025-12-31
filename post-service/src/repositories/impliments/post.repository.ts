@@ -7,9 +7,8 @@ import { prisma } from "../../config/prisma.config";
 import logger from "../../utils/logger.util";
 import redisClient from "../../config/redis.config";
 import { posts, Prisma } from ".prisma/client";
-import { resolve } from "path";
+
 import { userClient } from "../../config/grpc.client";
-import { response } from "express";
 import {
   DeletePostResponse,
   SubmitPostRequest,

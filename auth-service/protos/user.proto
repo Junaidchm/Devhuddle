@@ -19,8 +19,24 @@ message CheckFollowResponse {
   bool isFollowing = 1;
 }
 
+// Get followers for fan-out pattern
+message GetFollowersRequest {
+  string userId = 1;
+}
+
+message Follower {
+  string id = 1;
+  string username = 2;
+  string name = 3;
+}
+
+message GetFollowersResponse {
+  repeated Follower followers = 1;
+}
+
 service UserService {
   // User-related methods
   rpc getUserForFeedListing (getUserForFeedListingRequest) returns (getUserForFeedListingResponse);
   rpc CheckFollow (CheckFollowRequest) returns (CheckFollowResponse);
+  rpc GetFollowers (GetFollowersRequest) returns (GetFollowersResponse);
 }
