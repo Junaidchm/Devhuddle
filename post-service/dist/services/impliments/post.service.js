@@ -48,8 +48,8 @@ const kafka_config_1 = require("../../config/kafka.config");
 const grpc_client_1 = require("../../config/grpc.client");
 const grpc_client_call_util_1 = require("../../utils/grpc.client.call.util");
 class PostSerive {
-    constructor(postRepository, likeRepository, commentRepository, shareRepository, postVersionRepository, feedService, // ✅ NEW: Feed service for fan-out
-    outboxService // ✅ NEW: Outbox service for events
+    constructor(postRepository, likeRepository, commentRepository, shareRepository, postVersionRepository, feedService, //  NEW: Feed service for fan-out
+    outboxService //  NEW: Outbox service for events
     ) {
         this.postRepository = postRepository;
         this.likeRepository = likeRepository;
@@ -63,7 +63,7 @@ class PostSerive {
         try {
             // 1. Create post in database (transaction ensures atomicity)
             const post = await this.postRepository.submitPostRepo(req);
-            // 2. ✅ NEW: Fan-out to followers (production-ready feed generation)
+            // 2.  NEW: Fan-out to followers (production-ready feed generation)
             if (this.feedService) {
                 try {
                     // Get followers from User Service
@@ -136,7 +136,7 @@ class PostSerive {
                     });
                 }
             }
-            // 3. ✅ NEW: Publish event for notifications
+            // 3.  NEW: Publish event for notifications
             if (this.outboxService) {
                 try {
                     await this.outboxService.createOutboxEvent({
@@ -173,11 +173,11 @@ class PostSerive {
     }
     async getPosts(pageParam, userId) {
         try {
-            // ✅ NEW: Use personalized feed if feedService is available and userId provided
+            //  NEW: Use personalized feed if feedService is available and userId provided
             if (this.feedService && userId) {
                 try {
                     const feedResponse = await this.feedService.getFeed(userId, pageParam, 10);
-                    // ✅ FIX: If feed is empty, fall back to legacy query (for cases where UserFeed hasn't been populated yet)
+                    //  FIX: If feed is empty, fall back to legacy query (for cases where UserFeed hasn't been populated yet)
                     if (feedResponse.posts.length === 0) {
                         logger_util_1.default.info("Feed service returned empty, falling back to legacy query", {
                             userId,
@@ -199,7 +199,7 @@ class PostSerive {
                                     {};
                         }
                         const enrichedPosts = feedResponse.posts.map((post) => {
-                            // ✅ FIX: Transform Media array to Attachments format
+                            //  FIX: Transform Media array to Attachments format
                             const attachments = (post.Media || []).map((media) => ({
                                 id: media.id,
                                 post_id: media.postId || post.id,
@@ -209,7 +209,7 @@ class PostSerive {
                             }));
                             return {
                                 ...post,
-                                attachments, // ✅ Add attachments array
+                                attachments, //  Add attachments array
                                 engagement: {
                                     likesCount: post.likesCount ?? 0,
                                     commentsCount: post.commentsCount ?? 0,
@@ -234,10 +234,10 @@ class PostSerive {
                     // Fall through to legacy implementation
                 }
             }
-            // ✅ FALLBACK: Legacy naive query (for backwards compatibility or if feedService unavailable)
-            // ✅ FIX: Order by createdAt DESC to ensure newest posts appear first (UUIDs don't sort chronologically)
+            //  FALLBACK: Legacy naive query (for backwards compatibility or if feedService unavailable)
+            //  FIX: Order by createdAt DESC to ensure newest posts appear first (UUIDs don't sort chronologically)
             const PAGE_SIZE = 10;
-            // ✅ FIX: Use offset-based pagination with createdAt ordering
+            //  FIX: Use offset-based pagination with createdAt ordering
             // If pageParam (post ID) is provided, find how many posts to skip based on createdAt
             let skipCount = 0;
             if (pageParam) {
@@ -256,11 +256,11 @@ class PostSerive {
             }
             const PostselectOptions = {
                 include: {
-                    Media: true, // ✅ FIX: Changed from 'attachments' to 'Media' to match schema
+                    Media: true, //  FIX: Changed from 'attachments' to 'Media' to match schema
                 },
                 take: PAGE_SIZE + 1,
                 skip: skipCount,
-                orderBy: { createdAt: "desc" }, // ✅ CRITICAL FIX: Order by createdAt DESC for chronological ordering (UUIDs are not chronological!)
+                orderBy: { createdAt: "desc" }, //  CRITICAL FIX: Order by createdAt DESC for chronological ordering (UUIDs are not chronological!)
             };
             const prismaPosts = await this.postRepository.getPostsRepo(PostselectOptions);
             const hasMore = prismaPosts.length > PAGE_SIZE;
@@ -277,7 +277,7 @@ class PostSerive {
                         {};
             }
             const enrichedPosts = items.map((post) => {
-                // ✅ FIX: Transform Media array to Attachments format
+                //  FIX: Transform Media array to Attachments format
                 const attachments = (post.Media || []).map((media) => ({
                     id: media.id,
                     post_id: media.postId || post.id,
@@ -287,7 +287,7 @@ class PostSerive {
                 }));
                 return {
                     ...post,
-                    attachments, // ✅ Add attachments array
+                    attachments, //  Add attachments array
                     engagement: {
                         likesCount: post.likesCount ?? 0,
                         commentsCount: post.commentsCount ?? 0,
@@ -297,7 +297,7 @@ class PostSerive {
                     },
                 };
             });
-            // ✅ FIX: Use post ID as cursor (for next page pagination)
+            //  FIX: Use post ID as cursor (for next page pagination)
             const nextCursor = hasMore ? enrichedPosts[enrichedPosts.length - 1].id : null;
             return {
                 pages: enrichedPosts,
@@ -315,7 +315,7 @@ class PostSerive {
                 throw new error_util_1.CustomError(grpc.status.NOT_FOUND, "Post Not found");
             }
             const deletedPost = await this.postRepository.deletePost(postId);
-            // ✅ NEW: Remove post from all user feeds
+            //  NEW: Remove post from all user feeds
             if (this.feedService) {
                 try {
                     await this.feedService.removeFromAllFeeds(postId);
