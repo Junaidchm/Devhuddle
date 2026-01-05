@@ -99,8 +99,8 @@ export const engagementServiceProxy = app_config.postServiceUrl
       onProxyRes: (proxyRes, req, res) => {
         logger.info(`[Engagement Proxy] Response ${proxyRes.statusCode} for ${req.method} ${req.originalUrl}`);
       },
-      onError: (err, req, res) => {
-        logger.error("Engagement Service Proxy error:", { error: err.message });
+      onError: (err: unknown, req, res) => {
+        logger.error("Engagement Service Proxy error:", { error: (err as Error).message });
         if (typeof res.status === "function") {
           res.status(500).json({ error: "Proxy failed", message: "Unable to connect to engagement service" });
         } else {

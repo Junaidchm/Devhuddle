@@ -44,9 +44,9 @@ app.use(compression());
 // Body parser middleware with proper limits and error handling
 app.use(express.json({
   limit: '10mb', // 10MB limit for JSON payloads
-  verify: (req: any, res, buf) => {
+  verify: (req: Request, res, buf) => {
     // Store raw body for potential signature verification
-    req.rawBody = buf;
+    (req as any).rawBody = buf;
   },
 }));
 

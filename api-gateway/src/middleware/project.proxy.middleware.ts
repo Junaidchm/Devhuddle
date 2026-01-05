@@ -83,9 +83,9 @@ export const projectServiceProxy = app_config.projectServiceUrl
               bodyKeys: Object.keys(req.body),
               url: req.originalUrl,
             });
-          } catch (bodyError: any) {
+          } catch (bodyError: unknown) {
             logger.error("[Project Proxy] Error writing body to proxy request", {
-              error: bodyError.message,
+              error: (bodyError as Error).message,
               url: req.originalUrl,
             });
             // Don't throw - let the proxy continue, but log the error
@@ -111,17 +111,18 @@ export const projectServiceProxy = app_config.projectServiceUrl
           );
         }
       },
-      onError: (err: any, req, res) => {
+      onError: (err: unknown, req, res) => {
+        const error = err as any;
         logger.error("[Project Proxy] Proxy error", {
-          error: err.message,
+          error: error.message,
           url: req.url,
           method: req.method,
-          code: err.code,
-          stack: err.stack,
+          code: error.code,
+          stack: error.stack,
         });
         
         // Handle different error types
-        const errorCode = err.code || err.errno;
+        const errorCode = error.code || error.errno;
         if (errorCode === "ECONNREFUSED") {
           if (typeof res.status === "function") {
             res.status(503).json({

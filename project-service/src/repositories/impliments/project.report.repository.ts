@@ -40,9 +40,9 @@ export class ProjectReportRepository
       }
 
       return report;
-    } catch (error: any) {
-      logger.error("Error creating project report", { error: error.message });
-      if (error.code === "P2002") {
+    } catch (error: unknown) {
+      logger.error("Error creating project report", { error: (error as Error).message });
+      if ((error as { code?: string }).code === "P2002") {
         throw new Error("Report already exists");
       }
       throw new Error("Failed to create report");
@@ -62,8 +62,8 @@ export class ProjectReportRepository
           commentId: commentId || null,
         },
       });
-    } catch (error: any) {
-      logger.error("Error finding project report", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error finding project report", { error: (error as Error).message });
       throw new Error("Failed to find report");
     }
   }
@@ -74,8 +74,8 @@ export class ProjectReportRepository
         where: { projectId },
         orderBy: { createdAt: "desc" },
       });
-    } catch (error: any) {
-      logger.error("Error getting reports by project", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error getting reports by project", { error: (error as Error).message });
       throw new Error("Failed to get reports by project");
     }
   }
@@ -86,8 +86,8 @@ export class ProjectReportRepository
         where: { commentId },
         orderBy: { createdAt: "desc" },
       });
-    } catch (error: any) {
-      logger.error("Error getting reports by comment", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error getting reports by comment", { error: (error as Error).message });
       throw new Error("Failed to get reports by comment");
     }
   }
@@ -103,21 +103,21 @@ export class ProjectReportRepository
         resolvedAt: status === "CLOSED" || status === "RESOLVED" ? new Date() : undefined,
         resolvedBy,
       });
-    } catch (error: any) {
-      logger.error("Error updating report status", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error updating report status", { error: (error as Error).message });
       throw new Error("Failed to update report status");
     }
   }
 
   async getReportCount(projectId?: string, commentId?: string): Promise<number> {
     try {
-      const where: any = {};
+      const where: Prisma.ProjectReportWhereInput = {};
       if (projectId) where.projectId = projectId;
       if (commentId) where.commentId = commentId;
 
       return await prisma.projectReport.count({ where });
-    } catch (error: any) {
-      logger.error("Error getting report count", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error getting report count", { error: (error as Error).message });
       throw new Error("Failed to get report count");
     }
   }

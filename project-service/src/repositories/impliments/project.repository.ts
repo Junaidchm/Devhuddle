@@ -6,9 +6,23 @@ import {
 import { BaseRepository } from "./base.repository";
 import { prisma } from "../../config/prisma.config";
 import logger from "../../utils/logger.util";
-import { Project, Prisma } from "@prisma/client";
+import { Project, Prisma, ProjectMedia } from "@prisma/client";
 import { userClient } from "../../config/grpc.client";
-import { EnrichedProject } from "../../types/common.types";
+import { EnrichedProject, UserResponse } from "../../types/common.types";
+import { getUserForFeedListingResponse } from "../../grpc/generated/user";
+import { ServiceError } from "@grpc/grpc-js";
+
+type ProjectWithRelations = Project & {
+  media: ProjectMedia[];
+  _count: {
+    likes: number;
+    comments: number;
+    shares: number;
+  };
+  viewsCount: number;
+  likes?: { userId: string }[];
+  shares?: { userId: string }[];
+};
 
 export class ProjectRepository
   extends BaseRepository<
@@ -57,8 +71,8 @@ export class ProjectRepository
             demoUrl: data.demoUrl,
             techStack: data.techStack || [],
             tags: data.tags || [],
-            visibility: (data.visibility as any) || "PUBLIC",
-            status: (data.status as any) || "PUBLISHED", // Auto-publish so projects appear immediately
+            visibility: (data.visibility || "PUBLIC") as Prisma.ProjectCreateInput["visibility"],
+            status: (data.status || "PUBLISHED") as Prisma.ProjectCreateInput["status"],
             publishedAt: new Date(), // Set publishedAt when creating
           },
           include: {
@@ -86,13 +100,13 @@ export class ProjectRepository
       });
 
       return project;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error creating project", {
         error: (error as Error).message,
         stack: (error as Error).stack,
         userId: data.userId,
       });
-      throw new Error(error.message || "Database error");
+      throw new Error((error as Error).message || "Database error");
     }
   }
 
@@ -108,13 +122,14 @@ export class ProjectRepository
         }
 
         // Create version snapshot before update
+        // Using strict typing for data snapshot
         await tx.projectVersion.create({
           data: {
             projectId: existingProject.id,
             version: existingProject.version,
             title: existingProject.title,
             description: existingProject.description,
-            data: existingProject as any,
+            data: existingProject as unknown as Prisma.InputJsonValue,
           },
         });
 
@@ -128,7 +143,7 @@ export class ProjectRepository
             demoUrl: data.demoUrl,
             techStack: data.techStack,
             tags: data.tags,
-            visibility: data.visibility as any,
+            visibility: data.visibility as Prisma.ProjectUpdateInput["visibility"],
             version: { increment: 1 },
             media:
               data.mediaIds && data.mediaIds.length > 0
@@ -146,12 +161,12 @@ export class ProjectRepository
       });
 
       return project;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error updating project", {
         error: (error as Error).message,
         projectId,
       });
-      throw new Error(error.message || "Database error");
+      throw new Error((error as Error).message || "Database error");
     }
   }
 
@@ -196,10 +211,10 @@ export class ProjectRepository
       // Get user profile via gRPC
       let author = null;
       try {
-        const userResponse = await new Promise((resolve, reject) => {
+        const userResponse = await new Promise<getUserForFeedListingResponse>((resolve, reject) => {
           userClient.getUserForFeedListing(
             { userId: project.userId },
-            (error: any, response: any) => {
+            (error: ServiceError | null, response: getUserForFeedListingResponse) => {
               if (error) reject(error);
               else resolve(response);
             }
@@ -208,9 +223,9 @@ export class ProjectRepository
 
         author = {
           id: project.userId,
-          name: (userResponse as any).name,
-          username: (userResponse as any).username,
-          avatar: (userResponse as any).avatar || "",
+          name: userResponse.name,
+          username: userResponse.username,
+          avatar: userResponse.avatar || "",
         };
       } catch (error) {
         logger.error("Error fetching user profile", { error });
@@ -227,8 +242,8 @@ export class ProjectRepository
           isShared: project.shares && project.shares.length > 0,
         },
         author,
-      };
-    } catch (error: any) {
+      } as EnrichedProject;
+    } catch (error: unknown) {
       logger.error("Error getting project", {
         error: (error as Error).message,
         projectId,
@@ -262,45 +277,8 @@ export class ProjectRepository
       });
 
       // Enrich with user profiles
-      const enrichedProjects = await Promise.all(
-        projects.map(async (project) => {
-          let author = null;
-          try {
-            const userResponse = await new Promise((resolve, reject) => {
-              userClient.getUserForFeedListing(
-                { userId: project.userId },
-                (error: any, response: any) => {
-                  if (error) reject(error);
-                  else resolve(response);
-                }
-              );
-            });
-
-            author = {
-              id: project.userId,
-              name: (userResponse as any).name,
-              username: (userResponse as any).username,
-              avatar: (userResponse as any).avatar || "",
-            };
-          } catch (error) {
-            logger.error("Error fetching user profile", { error });
-          }
-
-          return {
-            ...project,
-            engagement: {
-              likesCount: project._count.likes,
-              commentsCount: project._count.comments,
-              sharesCount: project._count.shares,
-              viewsCount: project.viewsCount,
-            },
-            author,
-          };
-        })
-      );
-
-      return enrichedProjects;
-    } catch (error: any) {
+      return this.enrichProjectsWithUsers(projects as unknown as ProjectWithRelations[]);
+    } catch (error: unknown) {
       logger.error("Error listing projects", {
         error: (error as Error).message,
       });
@@ -335,8 +313,8 @@ export class ProjectRepository
         },
       });
 
-      return this.enrichProjectsWithUsers(projects);
-    } catch (error: any) {
+      return this.enrichProjectsWithUsers(projects as unknown as ProjectWithRelations[]);
+    } catch (error: unknown) {
       logger.error("Error getting trending projects", {
         error: (error as Error).message,
       });
@@ -373,8 +351,8 @@ export class ProjectRepository
         },
       });
 
-      return this.enrichProjectsWithUsers(projects);
-    } catch (error: any) {
+      return this.enrichProjectsWithUsers(projects as unknown as ProjectWithRelations[]);
+    } catch (error: unknown) {
       logger.error("Error getting top projects", {
         error: (error as Error).message,
       });
@@ -382,7 +360,7 @@ export class ProjectRepository
     }
   }
 
-  async searchProjects(query: string, filters: any): Promise<EnrichedProject[]> {
+  async searchProjects(query: string, filters: { techStack?: string[]; tags?: string[]; limit?: number }): Promise<EnrichedProject[]> {
     try {
       const projects = await prisma.project.findMany({
         where: {
@@ -417,8 +395,8 @@ export class ProjectRepository
         },
       });
 
-      return this.enrichProjectsWithUsers(projects);
-    } catch (error: any) {
+      return this.enrichProjectsWithUsers(projects as unknown as ProjectWithRelations[]);
+    } catch (error: unknown) {
       logger.error("Error searching projects", {
         error: (error as Error).message,
       });
@@ -444,17 +422,17 @@ export class ProjectRepository
         where: { id: projectId },
         data: {
           deletedAt: new Date(),
-          status: "REMOVED",
+          status: "REMOVED" as Prisma.ProjectUpdateInput["status"],
         },
       });
 
       return deletedProject;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error deleting project", {
         error: (error as Error).message,
         projectId,
       });
-      throw new Error(error.message || "Database error");
+      throw new Error((error as Error).message || "Database error");
     }
   }
 
@@ -475,18 +453,18 @@ export class ProjectRepository
       const publishedProject = await prisma.project.update({
         where: { id: projectId },
         data: {
-          status: "PUBLISHED",
+          status: "PUBLISHED" as Prisma.ProjectUpdateInput["status"],
           publishedAt: new Date(),
         },
       });
 
       return publishedProject;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error publishing project", {
         error: (error as Error).message,
         projectId,
       });
-      throw new Error(error.message || "Database error");
+      throw new Error((error as Error).message || "Database error");
     }
   }
 
@@ -498,7 +476,7 @@ export class ProjectRepository
           viewsCount: { increment: 1 },
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error incrementing views", {
         error: (error as Error).message,
         projectId,
@@ -514,7 +492,7 @@ export class ProjectRepository
           trendingScore: score,
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error updating trending score", {
         error: (error as Error).message,
         projectId,
@@ -527,7 +505,7 @@ export class ProjectRepository
       return await prisma.project.findUnique({
         where: { id: projectId },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error finding project", {
         error: (error as Error).message,
       });
@@ -535,15 +513,15 @@ export class ProjectRepository
     }
   }
 
-  private async enrichProjectsWithUsers(projects: any[]): Promise<EnrichedProject[]> {
+  private async enrichProjectsWithUsers(projects: ProjectWithRelations[]): Promise<EnrichedProject[]> {
     return Promise.all(
       projects.map(async (project) => {
         let author = null;
         try {
-          const userResponse = await new Promise((resolve, reject) => {
+          const userResponse = await new Promise<getUserForFeedListingResponse>((resolve, reject) => {
             userClient.getUserForFeedListing(
               { userId: project.userId },
-              (error: any, response: any) => {
+              (error: ServiceError | null, response: getUserForFeedListingResponse) => {
                 if (error) reject(error);
                 else resolve(response);
               }
@@ -552,9 +530,9 @@ export class ProjectRepository
 
           author = {
             id: project.userId,
-            name: (userResponse as any).name,
-            username: (userResponse as any).username,
-            avatar: (userResponse as any).avatar || "",
+            name: userResponse.name,
+            username: userResponse.username,
+            avatar: userResponse.avatar || "",
           };
         } catch (error) {
           logger.error("Error fetching user profile", { error });
@@ -569,7 +547,7 @@ export class ProjectRepository
             viewsCount: project.viewsCount,
           },
           author,
-        };
+        } as EnrichedProject;
       })
     );
   }

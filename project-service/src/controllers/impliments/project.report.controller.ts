@@ -30,7 +30,7 @@ export class ProjectReportController {
         message: "Project reported successfully",
         data: result,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       next(error);
     }
   }

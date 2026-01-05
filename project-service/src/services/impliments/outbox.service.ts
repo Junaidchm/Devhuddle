@@ -1,6 +1,6 @@
 import { IOutboxService } from "../interfaces/IOutboxService";
 import { IOutboxRepository } from "../../repositories/interface/IOutboxRepository";
-import { OutboxAggregateType, OutboxEventType } from "@prisma/client";
+import { Prisma, OutboxAggregateType, OutboxEventType } from "@prisma/client";
 import logger from "../../utils/logger.util";
 
 export class OutboxService implements IOutboxService {
@@ -12,7 +12,7 @@ export class OutboxService implements IOutboxService {
     type: OutboxEventType;
     topic: string;
     key?: string;
-    payload: any;
+    payload: Prisma.InputJsonValue;
   }): Promise<void> {
     try {
       await this.outboxRepository.createOutboxEvent({
@@ -30,9 +30,9 @@ export class OutboxService implements IOutboxService {
         type: data.type,
         topic: data.topic,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error creating outbox event", {
-        error: error.message,
+        error: (error as Error).message,
         data,
       });
       throw error;

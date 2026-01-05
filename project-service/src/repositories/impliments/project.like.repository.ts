@@ -43,16 +43,16 @@ export class ProjectLikeRepository
       });
 
       return like;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error creating project like", {
-        error: error.message,
-        errorCode: error.code,
+        error: (error as Error).message,
+        errorCode: (error as { code?: string }).code,
         data,
       });
-      if (error.code === "P2002") {
+      if ((error as { code?: string }).code === "P2002") {
         throw new Error("Like already exists");
       }
-      throw new Error(`Database error: ${error.message}`);
+      throw new Error(`Database error: ${(error as Error).message}`);
     }
   }
 
@@ -84,9 +84,9 @@ export class ProjectLikeRepository
           likesCount: { decrement: 1 },
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error deleting project like", {
-        error: error.message,
+        error: (error as Error).message,
         projectId,
         userId,
       });
@@ -103,9 +103,9 @@ export class ProjectLikeRepository
           deletedAt: null,
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error finding project like", {
-        error: error.message,
+        error: (error as Error).message,
         projectId,
         userId,
       });
@@ -123,9 +123,9 @@ export class ProjectLikeRepository
         },
         orderBy: { deletedAt: "desc" },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error finding soft-deleted project like", {
-        error: error.message,
+        error: (error as Error).message,
         projectId,
         userId,
       });
@@ -160,9 +160,9 @@ export class ProjectLikeRepository
       });
 
       return restored;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error restoring project like", {
-        error: error.message,
+        error: (error as Error).message,
         likeId,
       });
       throw new Error("Database error");
@@ -177,9 +177,9 @@ export class ProjectLikeRepository
           deletedAt: null,
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error getting project like count", {
-        error: error.message,
+        error: (error as Error).message,
         projectId,
       });
       throw new Error("Database error");
@@ -212,9 +212,9 @@ export class ProjectLikeRepository
         acc[like.projectId] = true;
         return acc;
       }, {});
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error getting user likes for projects", {
-        error: error.message,
+        error: (error as Error).message,
         userId,
         projectIdsCount: projectIds.length,
       });

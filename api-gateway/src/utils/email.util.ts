@@ -22,8 +22,8 @@ export const sendVerificationEmail = async (
       text: `Your OTP is: ${otp}. It expires in 1 minutes.`,
     });
     logger.info("Verification email sent", { email });
-  } catch (error: any) {
-    logger.error("Error sending verification email", { error: error.message });
+  } catch (error: unknown) {
+    logger.error("Error sending verification email", { error: (error as Error).message });
     throw new Error("Email sending failed");
   }
 };
@@ -41,8 +41,8 @@ export const sendPasswordResetEmail = async (
       text: `Click this link to reset your password: ${resetUrl}. It expires in 1 hour.`,
     });
     logger.info("Password reset email sent", { email });
-  } catch (err: any) {
-    logger.error("Error sending password reset email", { error: err.message });
+  } catch (err: unknown) {
+    logger.error("Error sending password reset email", { error: (err as Error).message });
     throw new Error("Email sending failed");
   }
 };

@@ -37,9 +37,9 @@ app.use(
 // Configure with proper limits to handle UploadThing callbacks and large payloads
 app.use(express.json({
   limit: '10mb', // 10MB limit for JSON payloads (sufficient for UploadThing callbacks)
-  verify: (req: any, res, buf) => {
+  verify: (req: Request, res, buf) => {
     // Store raw body for potential signature verification
-    req.rawBody = buf;
+    (req as any).rawBody = buf;
   },
 }));
 
@@ -142,10 +142,10 @@ const startServer = async () => {
     server.listen(PORT, () => {
       logger.info(`API Gateway running on port ${PORT}`);
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     logger.error("Failed to start server", {
-      error: err.message,
-      stack: err.stack,
+      error: (err as Error).message,
+      stack: (err as Error).stack,
     });
     process.exit(1);
   }

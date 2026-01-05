@@ -76,10 +76,10 @@ export class ProjectShareService implements IProjectShareService {
         shareId: share.id,
         sharesCount,
       };
-    } catch (err: any) {
-      logger.error("ShareProject error", { error: err.message });
+    } catch (err: unknown) {
+      logger.error("ShareProject error", { error: (err as Error).message });
       if (err instanceof CustomError) throw err;
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 }

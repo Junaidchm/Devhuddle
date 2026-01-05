@@ -94,12 +94,12 @@ export const idempotencyMiddleware = (
 
       // Store original res.json to intercept response
       const originalJson = res.json.bind(res);
-      res.json = function (body: any) {
+      res.json = function (body: unknown) {
         // Update idempotency key with response
         idempotencyRepository
           .updateIdempotencyKey(idempotencyKey, {
             status: IdempotencyStatus.COMPLETED,
-            response: body,
+            response: body as any, // Cast to any or InputJsonValue if imported, using any for now to satisfy Prisma constraint
           })
           .catch((err) => {
             logger.error("Error updating idempotency key", {
@@ -112,13 +112,13 @@ export const idempotencyMiddleware = (
       };
 
       next();
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof CustomError) {
         return next(error);
       }
 
       logger.error("Error in idempotency middleware", {
-        error: error.message,
+        error: (error as Error).message,
         idempotencyKey,
       });
 

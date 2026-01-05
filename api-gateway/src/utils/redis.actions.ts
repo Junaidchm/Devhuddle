@@ -1,6 +1,7 @@
-import {logger} from "./logger";
+import { logger } from "./logger";
 import redisClient, { generateBlockUserRedisKey } from "./redis.util";
 import jwt from "jsonwebtoken";
+import { jwtPayload } from "../types/auth";
 
 export const checkIsRevoked = async (jti: string): Promise<boolean> => {
   try {
@@ -20,16 +21,16 @@ export const checkIsRevoked = async (jti: string): Promise<boolean> => {
 
 // Extract jti values from cookies object
 const extractRefreshAndAccess = (
-  cookies: Record<string, any>
+  cookies: Record<string, string | undefined>
 ): { jtiAccess?: string; jtiRefresh?: string } => {
   const accessToken = cookies.access_token;
   const refreshToken = cookies.refresh_token;
 
   const jtiAccess = accessToken
-    ? (jwt.decode(accessToken) as any)?.jti
+    ? (jwt.decode(accessToken) as jwtPayload)?.jti
     : undefined;
   const jtiRefresh = refreshToken
-    ? (jwt.decode(refreshToken) as any)?.jti
+    ? (jwt.decode(refreshToken) as jwtPayload)?.jti
     : undefined;
 
   return { jtiAccess, jtiRefresh };
@@ -37,7 +38,7 @@ const extractRefreshAndAccess = (
 
 //  Blacklist access and refresh tokens using jti values from cookies
 export const setJtiAsBlackListed = async (
-  cookies: Record<string, any>
+  cookies: Record<string, string | undefined>
 ): Promise<void> => {
   try {
     const { jtiAccess, jtiRefresh } = extractRefreshAndAccess(cookies);

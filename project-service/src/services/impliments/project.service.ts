@@ -26,14 +26,14 @@ import {
   UserProfile,
 } from "../../grpc/generated/project";
 import { IProjectService } from "../interfaces/IProjectService";
-import { IProjectRepository } from "../../repositories/interface/IProjectRepository";
+import { IProjectRepository, ProjectSelectOptions } from "../../repositories/interface/IProjectRepository";
 import { IProjectLikeRepository } from "../../repositories/interface/IProjectLikeRepository";
 import { IProjectShareRepository } from "../../repositories/interface/IProjectShareRepository";
 import { IOutboxService } from "../interfaces/IOutboxService";
 import { CustomError } from "../../utils/error.util";
 import logger from "../../utils/logger.util";
 import { KAFKA_TOPICS } from "../../config/kafka.config";
-import { OutboxAggregateType, OutboxEventType } from "@prisma/client";
+import { Prisma, OutboxAggregateType, OutboxEventType } from "@prisma/client";
 import { calculateTrendingScore } from "../../utils/trending.util";
 import { EnrichedProject } from "../../types/common.types";
 
@@ -192,18 +192,13 @@ export class ProjectService implements IProjectService {
   async listProjects(req: ListProjectsRequest): Promise<ListProjectsResponse> {
     try {
       const PAGE_SIZE = req.limit || 10;
-      const options: {
-        take: number;
-        skip: number;
-        cursor?: { id: string };
-        orderBy: any; // Prisma orderBy type is complex, using any temporarily or constructing strict type if possible
-        where: any;
-      } = {
+      const where: Prisma.ProjectWhereInput = {};
+      const options: ProjectSelectOptions = {
         take: PAGE_SIZE + 1,
         skip: req.pageParam ? 1 : 0,
         cursor: req.pageParam ? { id: req.pageParam } : undefined,
         orderBy: { createdAt: "desc" },
-        where: {},
+        where,
       };
 
       // Apply filters
@@ -218,10 +213,10 @@ export class ProjectService implements IProjectService {
       }
 
       if (req.techStack && req.techStack.length > 0) {
-        options.where.techStack = { hasSome: req.techStack };
+        where.techStack = { hasSome: req.techStack };
       }
       if (req.tags && req.tags.length > 0) {
-        options.where.tags = { hasSome: req.tags };
+        where.tags = { hasSome: req.tags };
       }
 
       const projects = await this.projectRepository.listProjects(options);
@@ -233,7 +228,7 @@ export class ProjectService implements IProjectService {
       let userSharesMap: Record<string, boolean> = {};
 
       if (req.userId && items.length > 0) {
-        const projectIds = items.map((p: any) => p.id);
+        const projectIds = items.map((p) => p.id);
         userLikesMap =
           (await this.likeRepository?.getUserLikesForProjects(req.userId, projectIds)) || {};
         userSharesMap =
@@ -343,7 +338,7 @@ export class ProjectService implements IProjectService {
   async getTrendingProjects(req: GetTrendingProjectsRequest): Promise<GetTrendingProjectsResponse> {
     try {
       const PAGE_SIZE = req.limit || 10;
-      const options: any = { // Keeping as any for now due to complexity of Prisma types, but removing explicit 'any' from other places
+      const options: ProjectSelectOptions = {
         take: PAGE_SIZE + 1,
         skip: req.pageParam ? 1 : 0,
         cursor: req.pageParam ? { id: req.pageParam } : undefined,
@@ -360,21 +355,27 @@ export class ProjectService implements IProjectService {
       let userSharesMap: Record<string, boolean> = {};
 
       if (req.userId && items.length > 0) {
-        const projectIds = items.map((p: any) => p.id);
+        const projectIds = items.map((p) => p.id);
         userLikesMap =
           (await this.likeRepository?.getUserLikesForProjects(req.userId, projectIds)) || {};
         userSharesMap =
           (await this.shareRepository?.getUserSharesForProjects(req.userId, projectIds)) || {};
       }
 
-      const enrichedProjects = items.map((project: any) => ({
-        ...this.mapToProjectProto(project),
-        engagement: {
-          ...project.engagement,
-          isLiked: userLikesMap[project.id] || false,
-          isShared: userSharesMap[project.id] || false,
-        },
-      }));
+      const enrichedProjects = items.map((project) => {
+        const proto = this.mapToProjectProto(project);
+        return {
+          ...proto,
+          engagement: {
+            likesCount: proto.engagement?.likesCount ?? 0,
+            commentsCount: proto.engagement?.commentsCount ?? 0,
+            sharesCount: proto.engagement?.sharesCount ?? 0,
+            viewsCount: proto.engagement?.viewsCount ?? 0,
+            isLiked: userLikesMap[project.id] || false,
+            isShared: userSharesMap[project.id] || false,
+          },
+        };
+      });
 
       const nextCursor = hasMore ? enrichedProjects[enrichedProjects.length - 1].id : null;
 
@@ -391,7 +392,7 @@ export class ProjectService implements IProjectService {
   async getTopProjects(req: GetTopProjectsRequest): Promise<GetTopProjectsResponse> {
     try {
       const PAGE_SIZE = req.limit || 10;
-      const options: any = {
+      const options: ProjectSelectOptions = {
         take: PAGE_SIZE + 1,
         skip: req.pageParam ? 1 : 0,
         cursor: req.pageParam ? { id: req.pageParam } : undefined,
@@ -407,21 +408,27 @@ export class ProjectService implements IProjectService {
       let userSharesMap: Record<string, boolean> = {};
 
       if (req.userId && items.length > 0) {
-        const projectIds = items.map((p: any) => p.id);
+        const projectIds = items.map((p) => p.id);
         userLikesMap =
           (await this.likeRepository?.getUserLikesForProjects(req.userId, projectIds)) || {};
         userSharesMap =
           (await this.shareRepository?.getUserSharesForProjects(req.userId, projectIds)) || {};
       }
 
-      const enrichedProjects = items.map((project: any) => ({
-        ...this.mapToProjectProto(project),
-        engagement: {
-          ...project.engagement,
-          isLiked: userLikesMap[project.id] || false,
-          isShared: userSharesMap[project.id] || false,
-        },
-      }));
+      const enrichedProjects = items.map((project) => {
+        const proto = this.mapToProjectProto(project);
+        return {
+          ...proto,
+          engagement: {
+            likesCount: proto.engagement?.likesCount ?? 0,
+            commentsCount: proto.engagement?.commentsCount ?? 0,
+            sharesCount: proto.engagement?.sharesCount ?? 0,
+            viewsCount: proto.engagement?.viewsCount ?? 0,
+            isLiked: userLikesMap[project.id] || false,
+            isShared: userSharesMap[project.id] || false,
+          },
+        };
+      });
 
       const nextCursor = hasMore ? enrichedProjects[enrichedProjects.length - 1].id : null;
 
@@ -448,7 +455,7 @@ export class ProjectService implements IProjectService {
       let userSharesMap: Record<string, boolean> = {};
 
       if (req.userId && projects.length > 0) {
-        const projectIds = projects.map((p: any) => p.id);
+        const projectIds = projects.map((p) => p.id);
         userLikesMap =
           (await this.likeRepository?.getUserLikesForProjects(req.userId, projectIds)) || {};
         userSharesMap =

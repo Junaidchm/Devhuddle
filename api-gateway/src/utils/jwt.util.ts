@@ -22,8 +22,8 @@ export const generateAccessToken = (user:jwtUserFilter,jti:string): string => {
       process.env.ACCESS_TOKEN_SECRET as string,
       { expiresIn: ACCESS_TOKEN_EXPIRY }
     );
-  } catch (error: any) {
-    logger.error("Error generating access token", { error: error.message });
+  } catch (error: unknown) {
+    logger.error("Error generating access token", { error: (error as Error).message });
     throw new Error("Token generation failed");
   }
 };
@@ -44,8 +44,8 @@ export const GenerateRefreshToken = (user: jwtUserFilter,jti:string): string => 
       }
     );
     return refreshToken;
-  } catch (err: any) {
-    logger.error("Error generating refresh token", { error: err.message });
+  } catch (err: unknown) {
+    logger.error("Error generating refresh token", { error: (err as Error).message });
     throw new Error("Token generation failed");
   }
 };
@@ -64,8 +64,8 @@ export const verifyRefreshToken = async (
       return null;
     }
     return decoded;
-  } catch (err: any) {
-    logger.error("Invalid refresh token", { error: err.message });
+  } catch (err: unknown) {
+    logger.error("Invalid refresh token", { error: (err as Error).message });
     return null;
   }
 };
@@ -77,8 +77,8 @@ export const revokeToken = async (
   try {
     await redisClient.sadd("revoked_tokens", jti);
     await redisClient.expire("revoked_tokens", expiresInSeconds);
-  } catch (err: any) {
-    logger.error("Error revoking token", { error: err.message });
+  } catch (err: unknown) {
+    logger.error("Error revoking token", { error: (err as Error).message });
     throw new Error("Token revocation failed");
   }
 };
@@ -97,9 +97,9 @@ export const verifyAccessToken = async (
       return null;
     }
     return decoded;
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Invalid or expired token
-    logger.error("Invalid refresh token", { error: err.message });
+    logger.error("Invalid refresh token", { error: (err as Error).message });
     return null;
   }
 };
@@ -122,9 +122,9 @@ export const generatePasswordResetToken = async (
       token
     );
     return token;
-  } catch (err: any) {
+  } catch (err: unknown) {
     logger.error("Error generating password reset token", {
-      error: err.message,
+      error: (err as Error).message,
     });
     throw new Error("Token generation failed");
   }
@@ -142,8 +142,8 @@ export const verifyPasswordResetToken = async (
     jwt.verify(token, JWT_SECRET);
     await redisClient.del(`reset:${email}`);
     return true;
-  } catch (err: any) {
-    logger.error("Invalid password reset token", { error: err.message });
+  } catch (err: unknown) {
+    logger.error("Invalid password reset token", { error: (err as Error).message });
     return false;
   }
 };

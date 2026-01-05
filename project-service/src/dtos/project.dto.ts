@@ -147,5 +147,6 @@ export class ReportProjectDto {
   reason!: ReportReason;
 
   @IsOptional()
-  metadata?: any;
+  @IsOptional()
+  metadata?: Record<string, unknown>;
 }

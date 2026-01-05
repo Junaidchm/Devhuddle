@@ -26,7 +26,7 @@ export class ProjectLikeController {
         message: "Project liked successfully",
         data: result,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -50,7 +50,7 @@ export class ProjectLikeController {
         message: "Project unliked successfully",
         data: result,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       next(error);
     }
   }

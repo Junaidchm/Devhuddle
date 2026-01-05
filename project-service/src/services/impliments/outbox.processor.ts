@@ -70,10 +70,10 @@ export class OutboxProcessor {
           batch.map((event) => this.processEvent(event))
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error processing pending events", {
-        error: error.message,
-        stack: error.stack,
+        error: (error as Error).message,
+        stack: (error as Error).stack,
       });
     }
   }
@@ -105,11 +105,11 @@ export class OutboxProcessor {
         topic: event.topic,
         aggregateType: event.aggregateType,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Error processing outbox event`, {
         eventId: event.id,
         topic: event.topic,
-        error: error.message,
+        error: (error as Error).message,
       });
 
       // Mark as FAILED after max attempts

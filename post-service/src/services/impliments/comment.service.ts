@@ -86,6 +86,7 @@ export class CommentService implements ICommentService {
         }
       }
 
+
       // Validate parent comment if provided and get parent comment author
       // LinkedIn-style: If replying to a reply, find the main comment and use that instead
       let parentCommentAuthorId: string | undefined;

@@ -36,9 +36,9 @@ export class ProjectMediaRepository
         order: 0,
         isPreview: false,
         processingStatus: "COMPLETED",
-      } as any);
+      } as unknown as Prisma.ProjectMediaUncheckedCreateInput);
       return mediaId;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error creating project media", {
         error: (error as Error).message,
         stack: (error as Error).stack,
