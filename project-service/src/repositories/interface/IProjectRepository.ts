@@ -1,13 +1,19 @@
-import { Project } from "@prisma/client";
+import { Project, Prisma } from "@prisma/client";
 import { EnrichedProject } from "../../types/common.types";
 
 export interface ProjectSelectOptions {
-  include?: any;
+  include?: Prisma.ProjectInclude;
   take?: number;
   skip?: number;
-  cursor?: { id: string };
-  orderBy?: any;
-  where?: any;
+  cursor?: Prisma.ProjectWhereUniqueInput;
+  orderBy?: Prisma.ProjectOrderByWithRelationInput | Prisma.ProjectOrderByWithRelationInput[];
+  where?: Prisma.ProjectWhereInput;
+}
+
+export interface SearchFilters {
+  techStack?: string[];
+  tags?: string[];
+  limit?: number;
 }
 
 export interface CreateProjectData {
@@ -30,7 +36,7 @@ export interface IProjectRepository {
   listProjects(options: ProjectSelectOptions): Promise<EnrichedProject[]>;
   getTrendingProjects(options: ProjectSelectOptions): Promise<EnrichedProject[]>;
   getTopProjects(options: ProjectSelectOptions): Promise<EnrichedProject[]>;
-  searchProjects(query: string, filters: any): Promise<EnrichedProject[]>;
+  searchProjects(query: string, filters: SearchFilters): Promise<EnrichedProject[]>;
   deleteProject(projectId: string, userId: string): Promise<Project>;
   publishProject(projectId: string, userId: string): Promise<Project>;
   incrementViews(projectId: string): Promise<void>;

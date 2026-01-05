@@ -15,12 +15,13 @@ export const controllerWrapper =
     try {
       const { status, data } = await handler(req);
       res.status(status).json(data);
-    } catch (err: any) {
-      logger.error(`Error in request`, { error: err.message });
-      const statusCode = grpcToHttp[err.code] || HttpStatus.INTERNAL_SERVER_ERROR;
+    } catch (err: unknown) {
+      const error = err as any;
+      logger.error(`Error in request`, { error: error.message });
+      const statusCode = grpcToHttp[error.code] || HttpStatus.INTERNAL_SERVER_ERROR;
       sendErrorResponse(res, {
         status: statusCode,
-        message: filterError(err) || "Server error",
+        message: filterError(error) || "Server error",
       });
     }
   };

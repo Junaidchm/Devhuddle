@@ -30,12 +30,12 @@ export class OutboxRepository
     type: OutboxEventType;
     topic: string;
     key?: string;
-    payload: any;
+    payload: Prisma.InputJsonValue;
   }): Promise<OutboxEvent> {
     try {
       return await super.create(data);
-    } catch (error: any) {
-      logger.error("Error creating outbox event", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error creating outbox event", { error: (error as Error).message });
       throw new Error("Failed to create outbox event");
     }
   }
@@ -47,8 +47,8 @@ export class OutboxRepository
         orderBy: { createdAt: "asc" },
         take: limit ?? 100,
       });
-    } catch (error: any) {
-      logger.error("Error getting pending events", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error getting pending events", { error: (error as Error).message });
       throw new Error("Failed to get pending events");
     }
   }
@@ -65,9 +65,9 @@ export class OutboxRepository
         attempts,
         publishedAt,
         lastAttemptedAt: new Date(),
-      } as any);
-    } catch (error: any) {
-      logger.error("Error updating event status", { error: error.message });
+      } as Prisma.OutboxEventUpdateInput);
+    } catch (error: unknown) {
+      logger.error("Error updating event status", { error: (error as Error).message });
       throw new Error("Failed to update event status");
     }
   }
@@ -82,8 +82,8 @@ export class OutboxRepository
           lastAttemptedAt: new Date(),
         },
       });
-    } catch (error: any) {
-      logger.error("Error marking event as sent", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error marking event as sent", { error: (error as Error).message });
       throw new Error("Database error");
     }
   }
@@ -98,8 +98,8 @@ export class OutboxRepository
           lastAttemptedAt: new Date(),
         },
       });
-    } catch (error: any) {
-      logger.error("Error marking event as failed", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error marking event as failed", { error: (error as Error).message });
       throw new Error("Failed to mark event as failed");
     }
   }

@@ -28,7 +28,7 @@ export class ProjectShareController {
         message: "Project shared successfully",
         data: result,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       next(error);
     }
   }

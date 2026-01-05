@@ -43,7 +43,7 @@ export class ProjectController {
         message: "Project created successfully",
         data: result,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -85,7 +85,7 @@ export class ProjectController {
         message: "Project updated successfully",
         data: result,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -112,7 +112,7 @@ export class ProjectController {
           project: result.project,
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -146,7 +146,7 @@ export class ProjectController {
         success: true,
         data: result,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -170,7 +170,7 @@ export class ProjectController {
         message: "Project deleted successfully",
         data: result,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -194,7 +194,7 @@ export class ProjectController {
         message: "Project published successfully",
         data: result,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -223,7 +223,7 @@ export class ProjectController {
         success: true,
         data: result,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -252,7 +252,7 @@ export class ProjectController {
         success: true,
         data: result,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -292,7 +292,7 @@ export class ProjectController {
         success: true,
         data: result,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -317,7 +317,7 @@ export class ProjectController {
         success: true,
         data: result,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       next(error);
     }
   }

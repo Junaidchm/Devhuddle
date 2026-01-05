@@ -35,9 +35,9 @@ export class IdempotencyRepository
         ...data,
         method: data.method as HttpMethod,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error creating idempotency key", {
-        error: error.message,
+        error: (error as Error).message,
       });
       throw new Error("Failed to create idempotency key");
     }
@@ -46,8 +46,8 @@ export class IdempotencyRepository
   async findIdempotencyKey(key: string): Promise<IdempotencyKey | null> {
     try {
       return await prisma.idempotencyKey.findUnique({ where: { key } });
-    } catch (error: any) {
-      logger.error("Error finding idempotency key", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error finding idempotency key", { error: (error as Error).message });
       throw new Error("Failed to find idempotency key");
     }
   }
@@ -56,15 +56,15 @@ export class IdempotencyRepository
     key: string,
     data: {
       status: IdempotencyStatus;
-      response?: any;
+      response?: Prisma.InputJsonValue;
       requestHash?: string;
     }
   ): Promise<IdempotencyKey> {
     try {
-      return await super.updateWhere({ key } as any, data);
-    } catch (error: any) {
+      return await super.updateWhere({ key } as Prisma.IdempotencyKeyWhereUniqueInput, data);
+    } catch (error: unknown) {
       logger.error("Error updating idempotency key", {
-        error: error.message,
+        error: (error as Error).message,
       });
       throw new Error("Failed to update idempotency key");
     }
@@ -73,8 +73,8 @@ export class IdempotencyRepository
   async deleteIdempotencyKey(key: string): Promise<void> {
     try {
       await prisma.idempotencyKey.delete({ where: { key } });
-    } catch (error: any) {
-      logger.error("Error deleting idempotency key", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error deleting idempotency key", { error: (error as Error).message });
       throw new Error("Failed to delete idempotency key");
     }
   }

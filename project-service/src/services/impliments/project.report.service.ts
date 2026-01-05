@@ -87,10 +87,10 @@ export class ProjectReportService implements IProjectReportService {
         reportId: report.id,
         success: true,
       };
-    } catch (err: any) {
-      logger.error("ReportProject error", { error: err.message });
+    } catch (err: unknown) {
+      logger.error("ReportProject error", { error: (err as Error).message });
       if (err instanceof CustomError) throw err;
-      throw new CustomError(grpc.status.INTERNAL, err.message);
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
 }

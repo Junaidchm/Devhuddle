@@ -22,10 +22,10 @@ export class ProjectMediaService implements IProjectMediaService {
       const mediaId = await this.mediaRepository.createProjectMedia(req);
 
       return { mediaId };
-    } catch (err: any) {
-      logger.error("Error uploading project media", { error: err.message });
+    } catch (err: unknown) {
+      logger.error("Error uploading project media", { error: (err as Error).message });
       if (err instanceof CustomError) throw err;
-      throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, err.message);
+      throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, (err as Error).message);
     }
   }
 }

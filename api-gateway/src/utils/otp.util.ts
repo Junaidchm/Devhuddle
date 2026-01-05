@@ -11,8 +11,8 @@ export const storeOTP = async (email: string, otp: string): Promise<void> => {
   try {
     await redisClient.setEx(`otp:${email}`, OTP_EXPIRY_SECONDS, otp);
     logger.info("OTP stored in Redis", { email });
-  } catch (error: any) {
-    logger.error("Error storing OTP", { error: error.message });
+  } catch (error: unknown) {
+    logger.error("Error storing OTP", { error: (error as Error).message });
     throw new Error("Redis error");
   }
 };
@@ -30,8 +30,8 @@ export const verifyOTP = async (
     }
     logger.warn("Invalid OTP", { email });
     return false;
-  } catch (error: any) {
-    logger.error("Error verifying OTP", { error: error.message });
+  } catch (error: unknown) {
+    logger.error("Error verifying OTP", { error: (error as Error).message });
     throw new Error("Redis error");
   }
 };

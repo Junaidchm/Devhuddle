@@ -36,17 +36,17 @@ export class ProjectShareRepository
       });
 
       return share;
-    } catch (error: any) {
-      logger.error("Error creating project share", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error creating project share", { error: (error as Error).message });
       throw new Error("Failed to create share");
     }
   }
 
   async findShare(projectId: string, userId: string): Promise<ProjectShare | null> {
     try {
-      return await super.findOne({ projectId, userId } as any);
-    } catch (error: any) {
-      logger.error("Error finding project share", { error: error.message });
+      return await super.findOne({ projectId, userId } as Partial<ProjectShare>);
+    } catch (error: unknown) {
+      logger.error("Error finding project share", { error: (error as Error).message });
       throw new Error("Failed to find share");
     }
   }
@@ -58,8 +58,8 @@ export class ProjectShareRepository
         take: limit,
         orderBy: { createdAt: "desc" },
       });
-    } catch (error: any) {
-      logger.error("Error getting shares by project", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error getting shares by project", { error: (error as Error).message });
       throw new Error("Failed to get shares by project");
     }
   }
@@ -67,8 +67,8 @@ export class ProjectShareRepository
   async getShareCount(projectId: string): Promise<number> {
     try {
       return await prisma.projectShare.count({ where: { projectId } });
-    } catch (error: any) {
-      logger.error("Error getting project share count", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error getting project share count", { error: (error as Error).message });
       throw new Error("Failed to get share count");
     }
   }
@@ -77,8 +77,8 @@ export class ProjectShareRepository
     try {
       const share = await this.findShare(projectId, userId);
       return !!share;
-    } catch (error: any) {
-      logger.error("Error checking if user shared project", { error: error.message });
+    } catch (error: unknown) {
+      logger.error("Error checking if user shared project", { error: (error as Error).message });
       return false;
     }
   }
@@ -108,9 +108,9 @@ export class ProjectShareRepository
         acc[share.projectId] = true;
         return acc;
       }, {});
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Error getting user shares for projects", {
-        error: error.message,
+        error: (error as Error).message,
         userId,
         projectIdsCount: projectIds.length,
       });

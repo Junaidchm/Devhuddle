@@ -65,11 +65,12 @@ export class ProjectMediaController {
       }
 
       res.status(HttpStatus.OK).json(response);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Check if request was aborted during processing
-      if (req.aborted || err.message === 'request aborted' || err.message?.includes('aborted')) {
+      const error = err as any;
+      if (req.aborted || error.message === 'request aborted' || error.message?.includes('aborted')) {
         logger.warn("Request aborted during media upload processing", {
-          error: err.message,
+          error: error.message,
         });
         if (!res.headersSent && !res.writableEnded) {
           res.status(400).json({
@@ -83,19 +84,19 @@ export class ProjectMediaController {
       }
 
       logger.error("Error in POST /api/v1/projects/media", {
-        error: err.message,
-        stack: err.stack,
+        error: error.message,
+        stack: error.stack,
         url: req.url,
         body: req.body ? Object.keys(req.body) : null,
       });
 
-      const statusCode = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
+      const statusCode = error.status || HttpStatus.INTERNAL_SERVER_ERROR;
       
       // Only send error response if headers not sent and connection not closed
       if (!res.headersSent && !res.writableEnded) {
         sendErrorResponse(res, {
           status: statusCode,
-          message: err.message || "Server error",
+          message: error.message || "Server error",
           success: false,
         });
       }
