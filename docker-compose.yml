@@ -66,6 +66,30 @@ services:
       start_period: 15s
     restart: unless-stopped
   
+  chat-service:
+    build: 
+      context: ./chat-service
+      dockerfile: Dockerfile
+    container_name: chat-service
+    ports:
+      - "4004:4004"
+    environment:
+      - PORT=4004
+      - DATABASE_URL=postgresql://user:password@postgres:5432/second_project_db?schema=public
+      - KAFKA_BROKER=kafka:9092
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your_jwt_secret
+      - AUTH_SERVICE_URL=http://auth-service:4000
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    networks:
+      - app-network
+    volumes:
+      - ./chat-service:/app
+      - /app/node_modules
+
   notification-service:
     build:
       context: ./notification-service
@@ -131,35 +155,7 @@ services:
       start_period: 15s
     restart: unless-stopped
 
-  chat-service:
-    build:
-      context: ./chat-service
-      dockerfile: Dockerfile
-    container_name: chat-service
-    ports:
-      - "3003:3003"
-    depends_on:
-      - kafka
-      - zookeeper
-      - redis
-    env_file:
-      - ./chat-service/.env
-    volumes:
-      - ./chat-service/src:/app/src
-      - ./chat-service/protos:/app/protos
-      - ./chat-service/src/grpc/generated:/app/src/grpc/generated
-      - ./chat-service/prisma:/app/prisma
-      - /app/node_modules
-    networks:
-      - shared
-    command: sh -c "npx ts-node src/generate.ts && npx prisma migrate deploy && npm run dev"
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3003/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
-    restart: unless-stopped
+
 
   
   project-service:

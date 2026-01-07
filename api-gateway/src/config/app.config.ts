@@ -15,6 +15,7 @@ export interface Iconfig {
   FRONTEND_PRODUCTION_URL2 : string;
   postServiceUrl: string;
   projectServiceUrl: string;
+  chatServiceUrl : string;
 }
 
 export const app_config: Iconfig = {
@@ -31,4 +32,5 @@ export const app_config: Iconfig = {
   FRONTEND_PRODUCTION_URL2 : process.env.FRONTEND_PRODUCTION_URL2 as string,
   postServiceUrl: process.env.POST_SERVICE_URL as string,
   projectServiceUrl: process.env.PROJECT_SERVICE_URL as string,
+  chatServiceUrl : process.env.CHAT_SERVICE_URL as string,
 };

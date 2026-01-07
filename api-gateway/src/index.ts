@@ -17,6 +17,7 @@ import conditionalJwtMiddleware from "./middleware/conditional-jwt.middleware";
 import { ROUTES } from "./constants/routes";
 import { engagementServiceProxy } from "./middleware/engagement.proxy.middleware";
 import { adminServiceProxy } from "./middleware/admin.proxy.middleware";
+import { chatServiceProxy } from "./middleware/chat.proxy.middleware";
 
 dotenv.config();
 
@@ -88,6 +89,13 @@ app.use(ROUTES.PROJECTS.BASE, conditionalJwtMiddleware, projectServiceProxy);
 
 
 app.use(ROUTES.ADMIN.BASE, conditionalJwtMiddleware, adminServiceProxy);
+
+// Chat Service Route
+app.use(
+  "/api/v1/chat", // Hardcoded for now as it might not be in ROUTES constant yet
+  conditionalJwtMiddleware,
+  chatServiceProxy
+);
 
 // Health check
 app.get(ROUTES.HEALTH, (req: Request, res: Response) => {
