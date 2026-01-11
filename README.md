@@ -29,34 +29,76 @@ DevHuddle is an enterprise-grade professional social networking platform similar
 
 ## 🏗️ System Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Client Layer                            │
-│                    (Next.js + TypeScript)                       │
-└────────────────────┬────────────────────────────────────────────┘
-                     │
-┌────────────────────▼────────────────────────────────────────────┐
-│                       API Gateway                                │
-│              (Express + HTTP Proxy Middleware)                   │
-│         • Request Routing  • WebSocket Proxy                     │
-│         • Rate Limiting    • Authentication                      │
-└─────┬──────┬──────┬──────┬──────┬──────┬──────┬────────────────┘
-      │      │      │      │      │      │      │
-      ▼      ▼      ▼      ▼      ▼      ▼      ▼
-┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐
-│  Auth   │ │  Post   │ │  Chat   │ │ Notify  │ │ Project │
-│ Service │ │ Service │ │ Service │ │ Service │ │ Service │
-└────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘
-     │           │           │           │           │
-     └───────────┴───────────┴───────────┴───────────┘
-                            │
-          ┌─────────────────┼─────────────────┐
-          │                 │                 │
-          ▼                 ▼                 ▼
-   ┌────────────┐   ┌────────────┐   ┌────────────┐
-   │ PostgreSQL │   │   Redis    │   │   Kafka    │
-   │  (NeonDB)  │   │  (Pub/Sub) │   │  (Events)  │
-   └────────────┘   └────────────┘   └────────────┘
+```mermaid
+graph TD
+    %% Styling
+    classDef client fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1;
+    classDef gateway fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100;
+    classDef service fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#4a148c;
+    classDef data fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20;
+    classDef async fill:#fff8e1,stroke:#fbc02d,stroke-width:2px,color:#f57f17;
+
+    %% Client Layer
+    subgraph Client_Layer ["Client Layer"]
+        WebClient(["💻 Web App<br/>(Next.js 15 + Redux)"]):::client
+        MobileClient(["📱 Mobile App<br/>(React Native)"]):::client
+    end
+
+    %% Access Layer
+    subgraph Access_Layer ["Access Layer"]
+        APIGateway["🛡️ API Gateway<br/>(Rate Limit, Auth, WebSocket Proxy)"]:::gateway
+    end
+
+    %% Service Layer
+    subgraph Service_Layer ["Microservices Layer"]
+        AuthSvc["🔐 Auth Service<br/>(JWT, gRPC Server)"]:::service
+        PostSvc["📝 Post Service<br/>(Feed, Engagement)"]:::service
+        ChatSvc["💬 Chat Service<br/>(WebSocket, Redis Pub/Sub)"]:::service
+        NotifSvc["🔔 Notification Service<br/>(WebSocket, Kafka Consumer)"]:::service
+        ProjSvc["🚀 Project Service<br/>(Portfolio Management)"]:::service
+        MediaSvc["🎬 Media Service<br/>(S3 Upload)"]:::service
+    end
+
+    %% Data Layer
+    subgraph Data_Layer ["Data & Persistence"]
+        DB_Auth[("🗄️ Auth DB<br/>(PostgreSQL)")]:::data
+        DB_Post[("🗄️ Post DB<br/>(PostgreSQL)")]:::data
+        DB_Chat[("🗄️ Chat DB<br/>(PostgreSQL)")]:::data
+        Redis[("⚡ Redis<br/>(Cache/Pub/Sub)")]:::data
+        S3[("☁️ AWS S3<br/>(Media)")]:::data
+    end
+
+    %% Event Bus
+    subgraph Async_Layer ["Event Streaming"]
+        Kafka{{"📨 Apache Kafka<br/>(Event Bus)"}}:::async
+    end
+
+    %% Connections
+    WebClient & MobileClient -->|HTTPS| APIGateway
+    WebClient & MobileClient ==>|WSS| APIGateway
+    
+    APIGateway --> AuthSvc
+    APIGateway --> PostSvc
+    APIGateway --> ProjSvc
+    APIGateway --> MediaSvc
+    APIGateway ==> ChatSvc
+    APIGateway ==> NotifSvc
+    
+    PostSvc -.->|gRPC| AuthSvc
+    ProjSvc -.->|gRPC| AuthSvc
+    
+    AuthSvc === DB_Auth
+    PostSvc === DB_Post
+    ChatSvc === DB_Chat
+    
+    AuthSvc & PostSvc --> Redis
+    ChatSvc ==> Redis
+    NotifSvc ==> Redis
+    
+    MediaSvc --> S3
+    
+    AuthSvc & PostSvc & ChatSvc --> Kafka
+    NotifSvc --> Kafka
 ```
 
 ---
@@ -73,11 +115,12 @@ DevHuddle is an enterprise-grade professional social networking platform similar
 - **Logging:** Pino for high-performance structured logging
 
 ### Frontend
-- **Framework:** Next.js 14 with App Router
+- **Framework:** Next.js 15 with App Router
 - **Language:** TypeScript
+- **State Management:** Redux Toolkit + React Context API
 - **Styling:** Tailwind CSS
-- **State Management:** React Context + Hooks
 - **Authentication:** NextAuth.js
+- **Real-time:** WebSocket client for chat and notifications
 
 ### Infrastructure
 - **Database:** PostgreSQL (NeonDB cloud-hosted)
@@ -417,26 +460,13 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ---
 
-## 📝 License
+## ‍💻 Author
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-## 👨‍💻 Author
-
-**Junaid**
+**Junaid Chammayil**
 - GitHub: [@Junaidchm](https://github.com/Junaidchm)
-- LinkedIn: [Your LinkedIn Profile]
-
----
-
-## 🙏 Acknowledgments
-
-- Next.js team for the amazing framework
-- Prisma team for the excellent ORM
-- The open-source community
+- LinkedIn: [linkedin.com/in/junaidchammayil](https://linkedin.com/in/junaidchammayil)
 
 ---
 
 **Built with ❤️ using modern technologies and best practices**
+
