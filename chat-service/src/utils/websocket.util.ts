@@ -1,15 +1,17 @@
 import { Server, WebSocket } from "ws";
 import { Server as HttpServer } from "http";
+import { IncomingMessage } from "http";
 import jwt from "jsonwebtoken";
 import logger from "./logger.util";
 import { ChatService } from "../services/impliments/chat.service";
 import { redisPublisher, redisSubscriber } from "../config/redis.config";
-
-
-interface AuthenticatedWebSocket extends WebSocket {
-    userId?: string;  // Optional (initially undefined)
-    isAlive?: boolean; // Optional
-}
+import { Participant } from "@prisma/client";
+import {
+    AuthenticatedWebSocket,
+    SendMessagePayload,
+    TypingMessage,
+    JWTPayload,
+} from "../types";
 
 // Configuration constants
 const MAX_CONNECTIONS_PER_USER = 5;
@@ -27,7 +29,7 @@ export class WebSocketService {
         this._wss = new Server({
             server: _server,
             path: WEBSOCKET_PATH,
-            verifyClient: (info: any) => {
+            verifyClient: () => {
                 //  No token check here - we'll authenticate after connection
                 return true;
             }
@@ -35,11 +37,13 @@ export class WebSocketService {
 
         this._initializeWebSocket();
         this._setupRedisSubscription();
+        this._startHeartbeat();
+        this._setupGracefulShutdown();
     }
 
     private _initializeWebSocket() {
 
-        this._wss.on("connection", (ws: AuthenticatedWebSocket, req: any) => {
+        this._wss.on("connection", (ws: AuthenticatedWebSocket, _req: IncomingMessage) => {
             logger.info("New WebSocket connection (awaiting authentication)");
 
             // Mark as unauthenticated
@@ -78,14 +82,14 @@ export class WebSocketService {
                         const decoded = jwt.verify(
                             message.token,
                             process.env.ACCESS_TOKEN_SECRET as string
-                        ) as { id: string };
+                        ) as JWTPayload;
 
                         if (!decoded || !decoded.id) {
                             throw new Error("Invalid token");
                         }
 
                         userId = decoded.id;
-                    } catch (error: any) {
+                    } catch (error) {
                         ws.send(JSON.stringify({
                             type: "auth_error",
                             error: "Invalid token"
@@ -142,9 +146,9 @@ export class WebSocketService {
                                         error: "Unknown message type"
                                     }));
                             }
-                        } catch (error: any) {
+                        } catch (error) {
                             logger.error("Message handling error", {
-                                error: error.message,
+                                error: error instanceof Error ? error.message : "Unknown error",
                                 userId: ws.userId
                             });
                             ws.send(JSON.stringify({
@@ -172,8 +176,8 @@ export class WebSocketService {
                         });
                     });
 
-                } catch (error: any) {
-                    logger.error("Auth error", { error: error.message });
+                } catch (error) {
+                    logger.error("Auth error", { error: error instanceof Error ? error.message : "Unknown error" });
                     ws.close(4000, "Invalid message");
                     this._pendingConnections.delete(ws);
                     clearTimeout(authTimeout);
@@ -187,7 +191,7 @@ export class WebSocketService {
 
     private async _handleSendMessage(
         ws: AuthenticatedWebSocket,
-        message: any
+        message: SendMessagePayload
     ): Promise<void> {
         // Validate message structure
         if (!message.recipientIds || !Array.isArray(message.recipientIds)) {
@@ -243,10 +247,10 @@ export class WebSocketService {
                     messageId: savedMessage.id
                 });
 
-            } catch (redisError: any) {
+            } catch (redisError) {
                 // Don't fail message sending if Redis fails
                 logger.error("Failed to publish to Redis", {
-                    error: redisError.message,
+                    error: redisError instanceof Error ? redisError.message : "Unknown error",
                     messageId: savedMessage.id
                 });
             }
@@ -265,19 +269,19 @@ export class WebSocketService {
                     timestamp: savedMessage.createdAt
                 });
 
-            } catch (kafkaError: any) {
+            } catch (kafkaError) {
                 // Don't fail if Kafka fails
                 logger.error("Failed to publish to Kafka", {
-                    error: kafkaError.message,
+                    error: kafkaError instanceof Error ? kafkaError.message : "Unknown error",
                     messageId: savedMessage.id
                 });
             }
 
 
 
-        } catch (error: any) {
+        } catch (error) {
             logger.error("Failed to send message", {
-                error: error.message,
+                error: error instanceof Error ? error.message : "Unknown error",
                 userId: ws.userId
             });
             ws.send(JSON.stringify({
@@ -289,7 +293,7 @@ export class WebSocketService {
 
     private async _handleTyping(
         ws: AuthenticatedWebSocket,
-        message: any
+        message: TypingMessage
     ): Promise<void> {
         // Broadcast typing indicator to conversation participants
         // For now, just log it
@@ -316,9 +320,9 @@ export class WebSocketService {
                     // Broadcast to all users in this conversation
                     await this._broadcastToConversation(conversationId, data);
 
-                } catch (error: any) {
+                } catch (error) {
                     logger.error("Failed to process Redis message", {
-                        error: error.message,
+                        error: error instanceof Error ? error.message : "Unknown error",
                         channel
                     });
                 }
@@ -326,9 +330,9 @@ export class WebSocketService {
 
             logger.info("Redis subscription established for chat:*");
 
-        } catch (error: any) {
+        } catch (error) {
             logger.error("Failed to setup Redis subscription", {
-                error: error.message
+                error: error instanceof Error ? error.message : "Unknown error"
             });
             throw error;
         }
@@ -336,11 +340,11 @@ export class WebSocketService {
 
     private async _broadcastToConversation(
         conversationId: string,
-        messageData: any
+        messageData: Record<string, unknown>
     ): Promise<void> {
         try {
             // Get conversation to find participant IDs
-            const conversation = await this.chatService.findConversation(conversationId);
+            const conversation = await this.chatService.findConversationById(conversationId);
 
             if (!conversation || !conversation.participants) {
                 logger.warn("Conversation not found or no participants", {
@@ -350,7 +354,7 @@ export class WebSocketService {
             }
 
             // Extract participant user IDs
-            const participantIds = conversation.participants.map(p => p.userId);
+            const participantIds = conversation.participants.map((p: Participant) => p.userId);
 
             // Broadcast to each participant's connections
             let sentCount = 0;
@@ -378,9 +382,9 @@ export class WebSocketService {
                 });
             }
 
-        } catch (error: any) {
+        } catch (error) {
             logger.error("Failed to broadcast to conversation", {
-                error: error.message,
+                error: error instanceof Error ? error.message : "Unknown error",
                 conversationId
             });
         }
@@ -388,7 +392,7 @@ export class WebSocketService {
 
     private _startHeartbeat(): void {
         const interval = setInterval(() => {
-            this._wss.clients.forEach((ws: any) => {
+            this._wss.clients.forEach((ws: WebSocket) => {
                 const authWs = ws as AuthenticatedWebSocket;
 
                 // Skip unauthenticated connections
@@ -419,6 +423,44 @@ export class WebSocketService {
         logger.info("Heartbeat started", {
             interval: `${HEARTBEAT_INTERVAL}ms`
         });
+    }
+
+    private _setupGracefulShutdown(): void {
+        const shutdown = () => {
+            logger.info("Shutting down WebSocket server gracefully");
+
+            // Close all client connections
+            this._wss.clients.forEach((ws: WebSocket) => {
+                const authWs = ws as AuthenticatedWebSocket;
+
+                // Send shutdown message
+                if (authWs.readyState === WebSocket.OPEN) {
+                    authWs.send(JSON.stringify({
+                        type: "server_shutdown",
+                        message: "Server is shutting down"
+                    }));
+                }
+
+                authWs.close(1001, "Server shutting down");
+            });
+
+            // Close WebSocket server
+            this._wss.close(() => {
+                logger.info("WebSocket server closed");
+                process.exit(0);
+            });
+
+            // Force exit after 5 seconds
+            setTimeout(() => {
+                logger.warn("Forcing exit after timeout");
+                process.exit(1);
+            }, 5000);
+        };
+
+        process.on("SIGTERM", shutdown);
+        process.on("SIGINT", shutdown);
+
+        logger.info("Graceful shutdown handlers registered");
     }
 
     private _addConnection(userId: string, ws: AuthenticatedWebSocket) {

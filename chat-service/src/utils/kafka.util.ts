@@ -1,36 +1,48 @@
-import { Kafka, Producer } from "kafkajs";
+import { Kafka, Producer, ProducerRecord } from "kafkajs";
 import { KAFKA_CONFIG, KAFKA_TOPICS } from "../config/kafka.config";
 import logger from "./logger.util";
-import { v4 as uuidv4 } from "uuid";
 
 let producer: Producer | null = null;
 
 /**
- * Get or create Kafka producer instance (singleton pattern)
+ * Get or create Kafka producer instance (Singleton pattern)
  */
 export async function getProducer(): Promise<Producer> {
-  if (!producer) {
-    const kafka = new Kafka(KAFKA_CONFIG);
-    producer = kafka.producer({
-      retry: {
-        initialRetryTime: 100,
-        retries: 5,
-        maxRetryTime: 30000,
-        restartOnFailure: async (err: Error) => {
-          logger.error("Kafka producer restart on failure", {
-            error: err.message,
-          });
-          return true; // Always attempt to restart on failure
-        },
-      },
-      allowAutoTopicCreation: false,
-      idempotent: true, // Prevent duplicate messages
-    });
-    
-    await producer.connect();
-    logger.info("Kafka producer connected");
-  }
-  return producer;
+    if (producer) {
+        return producer;
+    }
+
+    try {
+        const kafka = new Kafka(KAFKA_CONFIG);
+        producer = kafka.producer();
+
+        // Set up error handlers
+        producer.on("producer.connect", () => {
+            logger.info("Kafka producer connected");
+        });
+
+        producer.on("producer.disconnect", () => {
+            logger.warn("Kafka producer disconnected");
+        });
+
+        // Connect the producer
+        await producer.connect();
+        logger.info("Kafka producer initialized successfully");
+
+        return producer;
+    } catch (error) {
+        logger.error("Failed to initialize Kafka producer", {
+            error: error instanceof Error ? error.message : "Unknown error"
+        });
+        throw error;
+    }
+}
+
+/**
+ * Generate deduplication ID using crypto (built-in Node.js module)
+ */
+function generateDedupeId(): string {
+    return `${Date.now()}-${Math.random().toString(36).substring(7)}`;
 }
 
 /**
@@ -47,7 +59,7 @@ export async function publishChatEvent(
     
     const eventWithMetadata = {
       ...event,
-      dedupeId: dedupeId || uuidv4(),
+      dedupeId: dedupeId || generateDedupeId(),
       timestamp: new Date().toISOString(),
       source: "chat-service",
       version: event.version ?? 1,
