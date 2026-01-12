@@ -1,14 +1,11 @@
 import { IChatService } from "../interfaces/IChatService";
 import { IChatRepository } from "../../repositories/interfaces/IChatRepository";
-import { Message, Conversation, Prisma } from "@prisma/client";
+import { Message, Conversation, Prisma, Participant } from "@prisma/client";
 import logger from "../../utils/logger.util";
 
 export class ChatService implements IChatService {
-    private chatRepository: IChatRepository;
 
-    constructor(chatRepository: IChatRepository) {
-        this.chatRepository = chatRepository;
-    }
+    constructor(private chatRepository: IChatRepository) {}
 
     async sendMessage(senderId: string, recipientIds: string[], content: string): Promise<Message> {
         try {
@@ -113,6 +110,22 @@ export class ChatService implements IChatService {
         } catch (error) {
             logger.error("Error in findOrCreateConversation service", { error: (error as Error).message });
             throw new Error("Failed to find or create conversation");
+        }
+    }
+
+    async findConversationById(conversationId: string): Promise<(Conversation & { participants: Participant[] }) | null> {
+        try {
+            const conversation = await this.chatRepository.findConversationById(conversationId);
+            
+            if (!conversation) {
+                return null;
+            }
+
+            // Repository now includes participants, so we can return directly
+            return conversation;
+        } catch (error) {
+            logger.error("Error in findConversationById service", { error: (error as Error).message });
+            throw new Error("Failed to find conversation");
         }
     }
 }

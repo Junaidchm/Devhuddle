@@ -2,7 +2,7 @@ import { IChatRepository } from "../interfaces/IChatRepository";
 import { BaseRepository } from "./base.repository";
 import prisma from "../../config/db";
 import logger from "../../utils/logger.util";
-import { Message, Conversation, Prisma } from "@prisma/client";
+import { Message, Conversation, Prisma, Participant } from "@prisma/client";
 
 export class ChatRepository extends BaseRepository<
     typeof prisma.message,
@@ -41,13 +41,16 @@ export class ChatRepository extends BaseRepository<
         }
     }
 
-    async findConversationById(conversationId: string): Promise<Conversation | null> {
+    async findConversationById(conversationId: string): Promise<(Conversation & { participants: Participant[] }) | null> {
         try {
             return await prisma.conversation.findUnique({
                 where: {
                     id: conversationId
+                },
+                include: {
+                    participants: true
                 }
-            })
+            }) as (Conversation & { participants: Participant[] }) | null;
         } catch (error) {
             logger.error("Error finding conversation by id", { error: (error as Error).message });
             throw new Error("Database error");

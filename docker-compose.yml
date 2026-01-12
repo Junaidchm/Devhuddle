@@ -74,7 +74,6 @@ services:
     ports:
       - "4004:4004"
     depends_on:
-      - postgres
       - kafka
       - zookeeper
       - redis
@@ -158,11 +157,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
-    restart: unless-stopped
-
-
-
-  
+    restart: unless-stopped  
   project-service:
     build:
       context: ./project-service

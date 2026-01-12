@@ -1,4 +1,4 @@
-import { Message, Conversation, Prisma, } from "@prisma/client";
+import { Message, Conversation, Prisma, Participant } from "@prisma/client";
 
 export interface IChatRepository {
   // Create a new message in a conversation
@@ -12,8 +12,8 @@ export interface IChatRepository {
   ): Promise<Message[]>;
 
 
-  // Find a conversation by ID
-  findConversationById(conversationId: string): Promise<Conversation | null>;
+  // Find a conversation by ID (with participants)
+  findConversationById(conversationId: string): Promise<(Conversation & { participants: Participant[] }) | null>;
 
   // Find existing conversation between users, or create new one
   findOrCreateConversation(participantIds: string[]): Promise<Conversation>;
