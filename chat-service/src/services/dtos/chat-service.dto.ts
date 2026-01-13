@@ -1,0 +1,126 @@
+/**
+ * Service Layer DTOs (Business DTOs / Commands)
+ * These handle business logic validation, not HTTP validation
+ */
+
+/**
+ * Command to send a message in a conversation
+ */
+export class SendMessageCommand {
+  constructor(
+    public readonly senderId: string,
+    public readonly recipientIds: string[],
+    public readonly content: string
+  ) {
+    this.validate();
+  }
+
+  private validate(): void {
+    // Business rule: Can't send message to yourself only
+    if (this.recipientIds.length === 1 && this.recipientIds[0] === this.senderId) {
+      throw new Error('Cannot send message to yourself only');
+    }
+
+    // Business rule: Message content cannot be empty after trimming
+    if (!this.content || this.content.trim().length === 0) {
+      throw new Error('Message content cannot be empty');
+    }
+
+    // Business rule: Message too long
+    if (this.content.length > 5000) {
+      throw new Error('Message content too long (max 5000 characters)');
+    }
+
+    // Business rule: Maximum recipients in group chat
+    if (this.recipientIds.length > 50) {
+      throw new Error('Too many recipients (max 50)');
+    }
+  }
+}
+
+/**
+ * Command to create a conversation
+ */
+export class CreateConversationCommand {
+  constructor(
+    public readonly initiatorId: string,
+    public readonly participantIds: string[]
+  ) {
+    this.validate();
+  }
+
+  private validate(): void {
+    // Business rule: Need at least 2 participants (initiator + 1 other)
+    if (this.participantIds.length < 1) {
+      throw new Error('Need at least one other participant');
+    }
+
+    // Business rule: Maximum participants in conversation
+    if (this.participantIds.length > 100) {
+      throw new Error('Too many participants (max 100)');
+    }
+
+    // Business rule: Can't create conversation with yourself only
+    const uniqueParticipants = new Set([this.initiatorId, ...this.participantIds]);
+    if (uniqueParticipants.size < 2) {
+      throw new Error('Need at least 2 unique participants');
+    }
+
+    // Business rule: No duplicate participants
+    const hasDuplicates = this.participantIds.length !== new Set(this.participantIds).size;
+    if (hasDuplicates) {
+      throw new Error('Duplicate participant IDs not allowed');
+    }
+  }
+
+  /**
+   * Get all unique participant IDs including initiator
+   */
+  getAllParticipants(): string[] {
+    return Array.from(new Set([this.initiatorId, ...this.participantIds]));
+  }
+}
+
+/**
+ * Query object for fetching messages
+ */
+export class GetMessagesQuery {
+  constructor(
+    public readonly conversationId: string,
+    public readonly userId: string,
+    public readonly limit: number,
+    public readonly offset: number
+  ) {
+    this.validate();
+  }
+
+  private validate(): void {
+    // Business rule: Limit must be reasonable
+    if (this.limit < 1 || this.limit > 100) {
+      throw new Error('Limit must be between 1 and 100');
+    }
+
+    // Business rule: Offset cannot be negative
+    if (this.offset < 0) {
+      throw new Error('Offset cannot be negative');
+    }
+  }
+}
+
+/**
+ * Query object for getting user conversations
+ */
+export class GetUserConversationsQuery {
+  constructor(
+    public readonly userId: string
+  ) {
+    this.validate();
+  }
+
+  private validate(): void {
+    // Business rule: User ID must be valid
+    if (!this.userId || this.userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+  }
+}

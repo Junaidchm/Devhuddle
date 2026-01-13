@@ -14,7 +14,9 @@
   "devDependencies": {
     "@types/compression": "^1.8.1",
     "@types/cookie-parser": "^1.4.9",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/helmet": "^4.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.0.15",
     "@types/pg": "^8.16.0",
@@ -31,6 +33,7 @@
     "class-validator": "^0.14.3",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
     "helmet": "^8.1.0",
