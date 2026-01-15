@@ -148,6 +148,37 @@ export class UserController {
   }
 
   /**
+   * Get chat suggestions for current user
+   * Returns user's connections for starting new chats (LinkedIn-style)
+   * Endpoint: GET /api/v1/users/chat/suggestions
+   */
+  async getChatSuggestions(req: Request, res: Response): Promise<void> {
+    try {
+      const currentUserId = JSON.parse(req.headers["x-user-data"] as string).id;
+      const limit = parseInt(req.query.limit as string) || 20;
+
+      const suggestions = await this._userService.getChatSuggestions(
+        currentUserId,
+        limit
+      );
+
+      res.status(HttpStatus.OK).json({
+        success: true,
+        data: {
+          suggestions,
+          total: suggestions.length,
+        },
+      });
+    } catch (err: unknown) {
+      logger.error("Get chat suggestions error", { error: (err as Error).message });
+      sendErrorResponse(
+        res,
+        err instanceof CustomError ? err : { status: 500, message: "Server error" }
+      );
+    }
+  }
+
+  /**
    * Internal endpoint for service-to-service calls
    * Gets user info by ID without requiring authentication
    * Only accessible from internal services (checks x-internal-service header)

@@ -15,8 +15,7 @@ export class UserRepository
     Prisma.UserUpdateInput,
     Prisma.UserWhereUniqueInput
   >
-  implements IUserRepository
-{
+  implements IUserRepository {
   constructor() {
     super(prisma.user);
   }
@@ -196,10 +195,10 @@ export class UserRepository
     if (!currentUserId || typeof currentUserId !== 'string' || currentUserId.trim().length === 0) {
       throw new Error("Authentication required to view profiles");
     }
-    
+
     // Always include followers check since authentication is required
     const hasCurrentUserId = true;
-    
+
     const user = await prisma.user.findUnique({
       where: { username },
       select: {
@@ -251,10 +250,10 @@ export class UserRepository
 
     // If currentUserId was provided, check following status; otherwise default to false
     let isFollowing = false;
-    
+
     // We know followers are included because hasCurrentUserId is true and we selected it
     const userWithFollowers = user as typeof user & { followers: { followerId: string }[] };
-    
+
     if (hasCurrentUserId && userWithFollowers.followers) {
       const followers = userWithFollowers.followers;
       isFollowing = Array.isArray(followers) && followers.length > 0;
@@ -272,21 +271,12 @@ export class UserRepository
       skills: user.skills || [],
       isFollowing,
     };
-    
+
     return result;
   }
 
   async findFollowers(userId: string, currentUserId: string): Promise<UserWithFollowStatus[]> {
-    console.log('🔍 DEBUG findFollowers - userId:', userId, 'currentUserId:', currentUserId);
-    
-    // First, let's check if there are ANY follow records for this user
-    // const allFollows = await prisma.follow.findMany({
-    //   where: { followingId: userId },
-    // });
-    // console.log('🔍 DEBUG - All follows for followingId:', userId, 'count:', allFollows.length);
-    // console.log('🔍 DEBUG - Sample follow records:', allFollows.slice(0, 3));
-    
-    // Now get all follower relations with deletedAt check
+   
     const followerRelations = await prisma.follow.findMany({
       where: { followingId: userId, deletedAt: null },
       include: {
@@ -334,28 +324,11 @@ export class UserRepository
       isFollowing: followingIdsSet.has(relation.follower.id),
     }));
 
-    console.log('this is the followers -----------------------------######################,', followers);
     return followers;
   }
 
   async findFollowing(userId: string, currentUserId: string): Promise<UserWithFollowStatus[]> {
-    console.log('🔍 DEBUG findFollowing - userId:', userId, 'currentUserId:', currentUserId);
-    
-    // First, let's check if there are ANY follow records for this user
-    const allFollows = await prisma.follow.findMany({
-      where: { followerId: userId },
-    });
-    console.log('🔍 DEBUG - All follows for followerId:', userId, 'count:', allFollows.length);
-    
-    // Check how many are deleted vs active
-    const activeFollows = allFollows.filter(f => f.deletedAt === null);
-    const deletedFollows = allFollows.filter(f => f.deletedAt !== null);
-    console.log('🔍 DEBUG - Active follows:', activeFollows.length);
-    console.log('🔍 DEBUG - Deleted follows:', deletedFollows.length);
-    console.log('🔍 DEBUG - Sample active records:', activeFollows.slice(0, 3));
-    console.log('🔍 DEBUG - Sample deleted records:', deletedFollows.slice(0, 3));
-    
-    // First, get all following relations
+
     const followingRelations = await prisma.follow.findMany({
       where: { followerId: userId, deletedAt: null },
       include: {
@@ -376,12 +349,8 @@ export class UserRepository
       },
     });
 
-    console.log('🔍 DEBUG - Following relations found:', followingRelations.length);
-    console.log('🔍 DEBUG - First relation:', followingRelations[0]);
-
     // Get all following IDs
     const followingIds = followingRelations.map(rel => rel.following.id);
-    console.log('🔍 DEBUG - Following IDs:', followingIds);
 
     // Check which of these people the current user is following
     const currentUserFollows = followingIds.length > 0 ? await prisma.follow.findMany({
@@ -403,7 +372,8 @@ export class UserRepository
       isFollowing: followingIdsSet.has(relation.following.id),
     }));
 
-    console.log('this is the following -----------------------------######################,', following); 
     return following;
   }
+
+
 }

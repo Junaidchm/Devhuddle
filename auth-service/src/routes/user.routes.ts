@@ -13,16 +13,19 @@ const followsService = new FollowsService(followsRepository);
 const userService = new UserService(userRepository, followsService);
 const userController = new UserController(userService);
 
+// Chat suggestions endpoint
+router.get("/chat/suggestions", (req, res) => userController.getChatSuggestions(req, res));
+
 // Internal service endpoint (must come before /:username to avoid conflict)
 router.get(
   "/internal/:userId",
-  userController.getUserByIdInternal.bind(userController)
+  (req, res) => userController.getUserByIdInternal(req, res)
 );
 
 // User search route (must come before /:username route to avoid conflict)
 router.get(
   "/search",
-  userController.searchUsers.bind(userController)
+  (req, res) => userController.searchUsers(req, res)
 );
 
 // Current user's connections (must come before /:username route)

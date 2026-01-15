@@ -1,4 +1,5 @@
 import { User } from "@prisma/client";
+import { ChatSuggestionUserDto } from "../../dtos/auth.dto";
 
 export interface IUserService {
   getProfileByUsername(
@@ -9,5 +10,5 @@ export interface IUserService {
   getFollowing(username: string, currentUserId: string): Promise<Partial<User>[]>;
   searchUsers(query: string, currentUserId: string): Promise<Partial<User>[]>;
   getUserById(userId: string): Promise<Partial<User> | null>;
+  getChatSuggestions(userId: string, limit: number): Promise<ChatSuggestionUserDto[]>
 }
-

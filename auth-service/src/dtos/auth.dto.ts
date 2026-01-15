@@ -117,3 +117,44 @@ export class GeneratePresignedUrlDto {
   @IsString()
   key?: string;
 }
+
+/**
+ * DTO for chat suggestion query parameters
+ */
+export class GetChatSuggestionsQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  limit?: number = 20;
+}
+/**
+ * DTO for a single chat suggestion user
+ * LinkedIn-style: Simple and clean (photo, name, skills only)
+ */
+export class ChatSuggestionUserDto {
+  @IsString()
+  id!: string;
+  @IsString()
+  username!: string;
+  @IsString()
+  fullName!: string;
+  @IsOptional()
+  @IsString()
+  profilePhoto?: string;
+  @IsOptional()
+  @IsString()
+  bio?: string;
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  skills?: string[];
+}
+/**
+ * DTO for chat suggestions response
+ */
+export class GetChatSuggestionsResponseDto {
+  @IsArray()
+  suggestions!: ChatSuggestionUserDto[];
+  @IsNumber()
+  total!: number;
+}

@@ -23,3 +23,21 @@ export interface UserWithFollowStatus extends Partial<User> {
   isFollowing: boolean;
 }
 
+/**
+ * Chat interaction data for scoring suggestions
+ */
+export interface ChatInteraction {
+  userId: string;
+  partnerId: string;
+  lastMessageAt: Date;
+  messageCount: number;
+  lastMessageByPartner: Date | null;
+  responseRate: number;  // 0-1 (how often partner replies)
+}
+/**
+ * User with scoring metadata
+ */
+export interface ScoredUser extends UserWithFollowStatus {
+  _score: number;
+  _chatData?: ChatInteraction;
+}
