@@ -13,13 +13,13 @@ import {
 } from "../../services/interfaces/IMediaService";
 
 export class MediaService implements IMediaService {
-  constructor(private mediaRepository: IMediaRepository) {}
+  constructor(private _mediaRepository: IMediaRepository) {}
 
   async uploadMediaService(
     req: UploadMediaRequest
   ): Promise<UploadMediaResponse> {
     try {
-      const mediaId = await this.mediaRepository.createMedia(req);
+      const mediaId = await this._mediaRepository.createMedia(req);
 
       return { mediaId };
     } catch (err: any) {
@@ -33,7 +33,7 @@ export class MediaService implements IMediaService {
   ): Promise<CleanupResult> {
     try {
       const unusedMedia: Partial<Media>[] =
-        await this.mediaRepository.findUnusedMedia();
+        await this._mediaRepository.findUnusedMedia();
       if (unusedMedia.length === 0) {
         console.log("No unused media found");
         return { deletedFiles: 0, deletedRecords: 0 };
@@ -46,7 +46,7 @@ export class MediaService implements IMediaService {
       // Unused media should be deleted via Media Service API
       logger.warn("Media deletion should be handled by Media Service, not Post Service");
 
-      const deletedCount = await this.mediaRepository.deleteUnusedMediaRepo(
+      const deletedCount = await this._mediaRepository.deleteUnusedMediaRepo(
         unusedMedia.map((m) => m.id as string)
       );
 

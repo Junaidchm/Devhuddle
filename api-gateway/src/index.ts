@@ -90,12 +90,12 @@ app.use(ROUTES.PROJECTS.BASE, conditionalJwtMiddleware, projectServiceProxy);
 
 app.use(ROUTES.ADMIN.BASE, conditionalJwtMiddleware, adminServiceProxy);
 
-// Chat Service Route
-app.use(
-  "/api/v1/chat", // Hardcoded for now as it might not be in ROUTES constant yet
-  conditionalJwtMiddleware,
-  chatServiceProxy
-);
+// // Chat Service Route
+// app.use(
+//   "/api/v1/chat", // Hardcoded for now as it might not be in ROUTES constant yet
+//   conditionalJwtMiddleware,
+//   chatServiceProxy
+// );
 
 // Health check
 app.get(ROUTES.HEALTH, (req: Request, res: Response) => {

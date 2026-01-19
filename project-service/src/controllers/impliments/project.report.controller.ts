@@ -4,7 +4,7 @@ import { HttpStatus } from "../../constands/http.status";
 import { getUserIdFromRequest } from "../../utils/request.util";
 
 export class ProjectReportController {
-  constructor(private reportService: IProjectReportService) {}
+  constructor(private _reportService: IProjectReportService) {}
 
   async reportProject(
     req: Request,
@@ -18,7 +18,7 @@ export class ProjectReportController {
 
       // Validation handled by DTO
 
-      const result = await this.reportService.reportProject({
+      const result = await this._reportService.reportProject({
         projectId,
         reporterId,
         reason,

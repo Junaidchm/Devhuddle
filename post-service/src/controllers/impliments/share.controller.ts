@@ -8,7 +8,7 @@ import { Messages } from "../../constands/reqresMessages";
 import { IShareController } from "../../controllers/interfaces/IShareController";
 
 export class ShareController implements IShareController {
-  constructor(private shareService: IShareService) {}
+  constructor(private _shareService: IShareService) {}
 
   async sharePost(
     req: Request,
@@ -38,7 +38,7 @@ export class ShareController implements IShareController {
         );
       }
 
-      const share = await this.shareService.sharePost(
+      const share = await this._shareService.sharePost(
         postId,
         userId,
         shareType,
@@ -73,7 +73,7 @@ export class ShareController implements IShareController {
         );
       }
 
-      const count = await this.shareService.getShareCount(postId);
+      const count = await this._shareService.getShareCount(postId);
 
       res.status(HttpStatus.OK).json({
         success: true,
@@ -104,7 +104,7 @@ export class ShareController implements IShareController {
         );
       }
 
-      const hasShared = await this.shareService.hasShared(postId, userId);
+      const hasShared = await this._shareService.hasShared(postId, userId);
 
       res.status(HttpStatus.OK).json({
         success: true,

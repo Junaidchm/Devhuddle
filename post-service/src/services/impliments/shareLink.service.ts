@@ -24,8 +24,8 @@ function generateSecureToken(length: number = 32): string {
 
 export class ShareLinkService implements IShareLinkService {
   constructor(
-    private shareLinkRepository: IShareLinkRepository,
-    private postRepository: IPostRepository
+    private _shareLinkRepository: IShareLinkRepository,
+    private _postRepository: IPostRepository
   ) {}
 
   async generateShareLink(
@@ -43,7 +43,7 @@ export class ShareLinkService implements IShareLinkService {
   }> {
     try {
       // 1. Check post exists
-      const post = await this.postRepository.findPost(postId);
+      const post = await this._postRepository.findPost(postId);
       if (!post) {
         throw new CustomError(grpc.status.NOT_FOUND, "Post not found");
       }
@@ -65,7 +65,7 @@ export class ShareLinkService implements IShareLinkService {
       // 4. Generate short link if requested
       if (options.generateShort) {
         const shortId = await this.generateShortId();
-        await this.shareLinkRepository.createShareLink({
+        await this._shareLinkRepository.createShareLink({
           postId,
           shortId,
           createdById: userId,
@@ -78,7 +78,7 @@ export class ShareLinkService implements IShareLinkService {
         shareToken = generateSecureToken(32);
         expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-        await this.shareLinkRepository.createShareLink({
+        await this._shareLinkRepository.createShareLink({
           postId,
           shortId: await this.generateShortId(), // Generate shortId even if not requested for token
           shareToken,
@@ -112,8 +112,8 @@ export class ShareLinkService implements IShareLinkService {
     try {
       // Try to find by token first, then by shortId
       let link =
-        (await this.shareLinkRepository.findByShareToken(tokenOrShortId)) ||
-        (await this.shareLinkRepository.findByShortId(tokenOrShortId));
+        (await this._shareLinkRepository.findByShareToken(tokenOrShortId)) ||
+        (await this._shareLinkRepository.findByShortId(tokenOrShortId));
 
       if (!link) {
         throw new CustomError(grpc.status.NOT_FOUND, "Invalid link");
@@ -125,7 +125,7 @@ export class ShareLinkService implements IShareLinkService {
       }
 
       // Increment click count (async, don't wait)
-      this.shareLinkRepository.incrementClickCount(link.id).catch((err) => {
+      this._shareLinkRepository.incrementClickCount(link.id).catch((err) => {
         logger.error("Error incrementing click count", { error: err.message });
       });
 
@@ -148,7 +148,7 @@ export class ShareLinkService implements IShareLinkService {
     let attempts = 0;
     while (attempts < 10) {
       const shortId = generateShortId(8);
-      const exists = await this.shareLinkRepository.findByShortId(shortId);
+      const exists = await this._shareLinkRepository.findByShortId(shortId);
       if (!exists) return shortId;
       attempts++;
     }

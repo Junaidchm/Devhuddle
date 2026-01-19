@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package chatstats;
+
+service ChatStatsService {
+  rpc GetChatStats (GetChatStatsRequest) returns (GetChatStatsResponse);
+  rpc GetRecentChatPartners (GetRecentPartnersRequest) returns (GetRecentPartnersResponse);
+}
+
+message GetChatStatsRequest {
+  string user_id = 1;
+  repeated string partner_ids = 2;
+  int32 days_back = 3;
+}
+
+message ChatInteraction {
+  string partner_id = 1;
+  string last_message_at = 2;
+  int32 message_count = 3;
+  int32 user_sent_count = 4;
+  int32 partner_sent_count = 5;
+  double response_rate = 6;
+  int32 days_since_last_message = 7;
+}
+
+message GetChatStatsResponse {
+  repeated ChatInteraction interactions = 1;
+}
+
+message GetRecentPartnersRequest {
+  string user_id = 1;
+  int32 limit = 2;
+  int32 days_back = 3;
+}
+
+message GetRecentPartnersResponse {
+  repeated string partner_ids = 1;
+}

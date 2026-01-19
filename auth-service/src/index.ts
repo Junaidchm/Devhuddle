@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import compression from "compression";
 import dotenv from "dotenv";
 import express, { Express, NextFunction, Request, Response } from "express";

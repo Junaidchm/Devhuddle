@@ -8,7 +8,7 @@ import { HttpStatus } from "../../constands/http.status";
 import { getUserIdFromRequest } from "../../utils/request.util";
 
 export class ReportController implements IReportController {
-  constructor(private reportService: IReportService) {}
+  constructor(private _reportService: IReportService) {}
 
   async reportPost(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -24,7 +24,7 @@ export class ReportController implements IReportController {
 
       // Validation handled by DTO
 
-      const report = await this.reportService.reportPost(
+      const report = await this._reportService.reportPost(
         postId,
         reporterId,
         reason,
@@ -56,7 +56,7 @@ export class ReportController implements IReportController {
 
       // Validation handled by DTO
 
-      const report = await this.reportService.reportComment(commentId, reporterId, reason, metadata);
+      const report = await this._reportService.reportComment(commentId, reporterId, reason, metadata);
 
       res.status(HttpStatus.CREATED).json({
         success: true,
@@ -76,7 +76,7 @@ export class ReportController implements IReportController {
         throw new CustomError(HttpStatus.BAD_REQUEST, "Target type and target ID are required");
       }
 
-      const count = await this.reportService.getReportCount(targetType as string, targetId as string);
+      const count = await this._reportService.getReportCount(targetType as string, targetId as string);
 
       res.status(HttpStatus.OK).json({
         success: true,
@@ -98,7 +98,7 @@ export class ReportController implements IReportController {
         throw new CustomError(HttpStatus.BAD_REQUEST, "Target type and target ID are required");
       }
 
-      const hasReported = await this.reportService.hasReported(
+      const hasReported = await this._reportService.hasReported(
         targetType as string,
         targetId as string,
         reporterId

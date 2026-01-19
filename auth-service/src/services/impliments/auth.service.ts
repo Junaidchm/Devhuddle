@@ -47,7 +47,7 @@ import { getUserForFeedListingResponse } from "../../grpc/generated/user";
 import { IUserRepository } from "../../repositories/interfaces/IUserRepository";
 
 export class AuthService implements IAuthService {
-  constructor(private userRepository: IUserRepository) {}
+  constructor(private _userRepository: IUserRepository) {}
 
 
   async searchUsers(
@@ -55,7 +55,7 @@ export class AuthService implements IAuthService {
     currentUserId: string
   ): Promise<Partial<User>[]> {
     // Delegate the search to the repository
-    return this.userRepository.searchUsers(query, currentUserId);
+    return this._userRepository.searchUsers(query, currentUserId);
   }
 
   ////////// user Signup
@@ -67,12 +67,12 @@ export class AuthService implements IAuthService {
     password,
   }: RegisterRequest): Promise<void> {
     try {
-      const existingUser = await this.userRepository.findByEmail(email);
+      const existingUser = await this._userRepository.findByEmail(email);
       if (existingUser) {
         throw new CustomError(grpc.status.ALREADY_EXISTS, Messages.EMAIL_EXIST);
       }
 
-      const existingUsername = await this.userRepository.findByUsername(
+      const existingUsername = await this._userRepository.findByUsername(
         username
       );
       if (existingUsername) {
@@ -82,7 +82,7 @@ export class AuthService implements IAuthService {
         );
       }
 
-      await this.userRepository.createUser(email, username, name, password);
+      await this._userRepository.createUser(email, username, name, password);
       const otp = generateOTP();
       await storeOTP(email, otp);
       await sendVerificationEmail(email, otp);
@@ -107,7 +107,7 @@ export class AuthService implements IAuthService {
         );
       }
 
-      const user = await this.userRepository.updateEmailVerified(email, true);
+      const user = await this._userRepository.updateEmailVerified(email, true);
 
       logger.info("Email verified", { email });
       return filterUserJwtPayload(user);
@@ -125,7 +125,7 @@ export class AuthService implements IAuthService {
 
   async resendOTP(email: string) {
     try {
-      const user = await this.userRepository.findByEmail(email);
+      const user = await this._userRepository.findByEmail(email);
       if (!user) {
         throw new CustomError(grpc.status.NOT_FOUND, Messages.USER_NOT_FOUND);
       }
@@ -147,7 +147,7 @@ export class AuthService implements IAuthService {
 
   async getJwtPayload(id: string): Promise<GetJwtUserResponse> {
     try {
-      const user = await this.userRepository.findByIdUser(id);
+      const user = await this._userRepository.findByIdUser(id);
       if (!user) {
         throw new CustomError(grpc.status.NOT_FOUND, Messages.USER_NOT_FOUND);
       }
@@ -165,7 +165,7 @@ export class AuthService implements IAuthService {
   // The backend returns the user's role in the JWT payload, and the client validates it
   async login({ email, password }: LoginRequest): Promise<GetJwtUserResponse> {
     try {
-      const user = await this.userRepository.findByEmail(email);
+      const user = await this._userRepository.findByEmail(email);
 
       if (user && user.email === email && user.password == "") {
         throw new CustomError(
@@ -175,7 +175,7 @@ export class AuthService implements IAuthService {
       }
       if (
         !user ||
-        !(await this.userRepository.verifyPassword(user.password, password))
+        !(await this._userRepository.verifyPassword(user.password, password))
       ) {
         throw new CustomError(grpc.status.NOT_FOUND, Messages.USER_NOT_FOUND);
       }
@@ -204,7 +204,7 @@ export class AuthService implements IAuthService {
   ///////// reset password request
   async requestPasswordReset({ email }: PasswordResetRequest): Promise<void> {
     try {
-      const user = await this.userRepository.findByEmail(email);
+      const user = await this._userRepository.findByEmail(email);
 
       if (!user) {
         logger.warn("Password reset requested for non-existent email", {
@@ -248,7 +248,7 @@ export class AuthService implements IAuthService {
         );
       }
 
-      await this.userRepository.updatePassword(decoded.email, newPassword);
+      await this._userRepository.updatePassword(decoded.email, newPassword);
       logger.info("Password reset successful", { email: decoded.email });
     } catch (err: unknown) {
       throw err instanceof CustomError
@@ -263,9 +263,9 @@ export class AuthService implements IAuthService {
     res: Response
   ): Promise<GetJwtUserResponse> {
     try {
-      let user = await this.userRepository.findByEmail(oauthUser.email);
+      let user = await this._userRepository.findByEmail(oauthUser.email);
       if (!user) {
-        user = await this.userRepository.createOAuthUser(oauthUser);
+        user = await this._userRepository.createOAuthUser(oauthUser);
         logger.info("OAuth user created", { email: oauthUser.email });
       }
       logger.info("OAuth login successful", { email: oauthUser.email });
@@ -280,7 +280,7 @@ export class AuthService implements IAuthService {
   //////// verify User
   async verifyUser(email: string): Promise<JwtPayload> {
     try {
-      const user = await this.userRepository.findByEmail(email);
+      const user = await this._userRepository.findByEmail(email);
 
       if (!user) {
         throw new CustomError(
@@ -307,7 +307,7 @@ export class AuthService implements IAuthService {
   ///////// get user profile
   async getUserProfile(id: string): Promise<GetProfileResponse> {
     try {
-      const user = await this.userRepository.findByIdUser(id);
+      const user = await this._userRepository.findByIdUser(id);
       if (!user) {
         throw new CustomError(grpc.status.NOT_FOUND, Messages.USER_NOT_FOUND);
       }
@@ -321,7 +321,7 @@ export class AuthService implements IAuthService {
 
   async getUserForFeedPostServic(userId: string): Promise<getUserForFeedListingResponse> {
       try {
-        const user = await this.userRepository.findByIdUser(userId);
+        const user = await this._userRepository.findByIdUser(userId);
         if (!user) {
           throw new CustomError(grpc.status.NOT_FOUND, Messages.USER_NOT_FOUND);
         }
@@ -356,7 +356,7 @@ export class AuthService implements IAuthService {
 
     // Validate username uniqueness if username is being updated
     if (username) {
-      const existingUsername = await this.userRepository.findByUsername(
+      const existingUsername = await this._userRepository.findByUsername(
         username
       );
       if (existingUsername && existingUsername.id !== userId) {
@@ -417,7 +417,7 @@ export class AuthService implements IAuthService {
     ) as Partial<User>;
 
     // Update user
-    const updatedUser = await this.userRepository.updateProfile(
+    const updatedUser = await this._userRepository.updateProfile(
       userId,
       filteredFields
     );

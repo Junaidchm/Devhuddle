@@ -10,9 +10,9 @@ export class FeedService implements IFeedService {
   private readonly FEED_CACHE_TTL = 300; // 5 minutes
 
   constructor(
-    private feedRepository: IFeedRepository,
-    private feedRankingService: FeedRankingService,
-    private postRepository: IPostRepository
+    private _feedRepository: IFeedRepository,
+    private _feedRankingService: FeedRankingService,
+    private _postRepository: IPostRepository
   ) {}
 
   /**
@@ -45,7 +45,7 @@ export class FeedService implements IFeedService {
             try {
               // Calculate relevance score for this follower
               const relevanceScore =
-                await this.feedRankingService.calculateInitialScore(
+                await this._feedRankingService.calculateInitialScore(
                   authorId,
                   follower.id,
                   metadata
@@ -79,7 +79,7 @@ export class FeedService implements IFeedService {
         );
 
         // Batch insert into UserFeed table
-        await this.feedRepository.batchInsertFeedEntries(feedEntries);
+        await this._feedRepository.batchInsertFeedEntries(feedEntries);
       }
 
       logger.info("Fan-out completed", {
@@ -113,7 +113,7 @@ export class FeedService implements IFeedService {
       }
 
       // Query UserFeed table (ranked by relevance)
-      const feedEntries = await this.feedRepository.getFeedEntries({
+      const feedEntries = await this._feedRepository.getFeedEntries({
         userId,
         cursor,
         limit,
@@ -126,7 +126,7 @@ export class FeedService implements IFeedService {
 
       // Get full post data
       const postIds = feedEntries.map((entry) => entry.postId);
-      const posts = await this.postRepository.getPostsByIds(postIds);
+      const posts = await this._postRepository.getPostsByIds(postIds);
 
       // Maintain order from feed entries (ranked)
       const orderedPosts = feedEntries
@@ -167,12 +167,12 @@ export class FeedService implements IFeedService {
   async recalculatePostScores(postId: string): Promise<void> {
     try {
       // Get all feed entries for this post
-      const feedEntries = await this.feedRepository.getFeedEntriesByPostId(
+      const feedEntries = await this._feedRepository.getFeedEntriesByPostId(
         postId
       );
 
       // Get post metadata
-      const post = await this.postRepository.findPost(postId);
+      const post = await this._postRepository.findPost(postId);
       if (!post) {
         throw new Error("Post not found");
       }
@@ -192,7 +192,7 @@ export class FeedService implements IFeedService {
       // Recalculate scores for all feed entries
       const updates = await Promise.all(
         feedEntries.map(async (entry) => {
-          const newScore = await this.feedRankingService.calculateScore(
+          const newScore = await this._feedRankingService.calculateScore(
             postId,
             entry.userId,
             metadata
@@ -206,7 +206,7 @@ export class FeedService implements IFeedService {
       );
 
       // Batch update scores
-      await this.feedRepository.batchUpdateScores(updates);
+      await this._feedRepository.batchUpdateScores(updates);
 
       // Invalidate cache for affected users (delete pattern-based keys)
       // Note: Redis doesn't support wildcard deletes directly, so we track keys or delete specific ones
@@ -234,7 +234,7 @@ export class FeedService implements IFeedService {
    */
   async removeFromAllFeeds(postId: string): Promise<void> {
     try {
-      await this.feedRepository.removeFromFeeds(postId);
+      await this._feedRepository.removeFromFeeds(postId);
       logger.info("Post removed from all feeds", { postId });
     } catch (error: unknown) {
       logger.error("Error removing post from feeds", {

@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import express from "express";
 import { createServer } from "http";
 import helmet from "helmet";
@@ -11,6 +12,7 @@ import { createChatRoutes } from "./routes/chat.routes";
 import { connectRedis } from "./config/redis.config";
 import { getProducer } from "./utils/kafka.util";
 import logger from "./utils/logger.util";
+import { startGrpcServer } from "./grpc/server";
 
 const PORT = process.env.PORT || 4004;
 
@@ -62,9 +64,15 @@ async function startServer() {
         new WebSocketService(server, chatService);
         logger.info("✅ WebSocket server initialized");
 
-        // 6. Start HTTP server
+        // 7. Start HTTP server
         server.listen(PORT, () => {
-            logger.info(`🚀 Chat service running on port ${PORT}`);
+            logger.info(`✅ Chat service HTTP running on port ${PORT}`);
+            
+            // 8. Start gRPC server
+            const GRPC_PORT = parseInt(process.env.GRPC_PORT || '50051');
+            logger.info(`Starting gRPC server on port ${GRPC_PORT}...`);
+            startGrpcServer(GRPC_PORT);
+
             logger.info(`📡 WebSocket endpoint: ws://localhost:${PORT}/api/v1/chat`);
             logger.info(`💚 Health check: http://localhost:${PORT}/health`);
             logger.info(`🔌 REST API: http://localhost:${PORT}/api/v1/chat`);

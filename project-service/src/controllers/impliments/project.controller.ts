@@ -6,7 +6,7 @@ import logger from "../../utils/logger.util";
 import { getUserIdFromRequest } from "../../utils/request.util";
 
 export class ProjectController {
-  constructor(private projectService: IProjectService) {}
+  constructor(private _projectService: IProjectService) {}
 
   async createProject(
     req: Request,
@@ -26,7 +26,7 @@ export class ProjectController {
         mediaIds,
       } = req.body;
 
-      const result = await this.projectService.createProject({
+      const result = await this._projectService.createProject({
         userId,
         title,
         description,
@@ -67,7 +67,7 @@ export class ProjectController {
         mediaIds,
       } = req.body;
 
-      const result = await this.projectService.updateProject({
+      const result = await this._projectService.updateProject({
         projectId,
         userId,
         title,
@@ -101,7 +101,7 @@ export class ProjectController {
         ? getUserIdFromRequest(req)
         : undefined;
 
-      const result = await this.projectService.getProject({
+      const result = await this._projectService.getProject({
         projectId,
         userId,
       });
@@ -130,7 +130,7 @@ export class ProjectController {
       // Support both 'cursor' (from client) and 'pageParam' (legacy) for backward compatibility
       const pageCursor = (cursor as string) || (pageParam as string) || undefined;
 
-      const result = await this.projectService.listProjects({
+      const result = await this._projectService.listProjects({
         pageParam: pageCursor,
         userId,
         filter: filter as string | undefined,
@@ -160,7 +160,7 @@ export class ProjectController {
       const { projectId } = req.params;
       const userId = getUserIdFromRequest(req);
 
-      const result = await this.projectService.deleteProject({
+      const result = await this._projectService.deleteProject({
         projectId,
         userId,
       });
@@ -184,7 +184,7 @@ export class ProjectController {
       const { projectId } = req.params;
       const userId = getUserIdFromRequest(req);
 
-      const result = await this.projectService.publishProject({
+      const result = await this._projectService.publishProject({
         projectId,
         userId,
       });
@@ -212,7 +212,7 @@ export class ProjectController {
       // Support both 'cursor' (from client) and 'pageParam' (legacy) for backward compatibility
       const pageCursor = (cursor as string) || (pageParam as string) || undefined;
 
-      const result = await this.projectService.getTrendingProjects({
+      const result = await this._projectService.getTrendingProjects({
         pageParam: pageCursor,
         userId,
         limit: limit ? parseInt(limit as string) : 10,
@@ -241,7 +241,7 @@ export class ProjectController {
       // Support both 'cursor' (from client) and 'pageParam' (legacy) for backward compatibility
       const pageCursor = (cursor as string) || (pageParam as string) || undefined;
 
-      const result = await this.projectService.getTopProjects({
+      const result = await this._projectService.getTopProjects({
         pageParam: pageCursor,
         userId,
         limit: limit ? parseInt(limit as string) : 10,
@@ -277,7 +277,7 @@ export class ProjectController {
         );
       }
 
-      const result = await this.projectService.searchProjects({
+      const result = await this._projectService.searchProjects({
         query: query as string,
         pageParam: pageCursor,
         userId,
@@ -308,7 +308,7 @@ export class ProjectController {
         ? getUserIdFromRequest(req)
         : undefined;
 
-      const result = await this.projectService.trackProjectView({
+      const result = await this._projectService.trackProjectView({
         projectId,
         userId,
       });

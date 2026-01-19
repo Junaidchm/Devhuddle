@@ -19,9 +19,9 @@ import { sanitizeInput, validateContentLength } from "../../utils/xss.util";
 
 export class ShareService implements IShareService {
   constructor(
-    private shareRepository: IShareRepository,
-    private postRepository: IPostRepository,
-    private outboxService: IOutboxService
+    private _shareRepository: IShareRepository,
+    private _postRepository: IPostRepository,
+    private _outboxService: IOutboxService
   ) {}
 
   async sharePost(
@@ -35,7 +35,7 @@ export class ShareService implements IShareService {
   ): Promise<any> {
     try {
       // 1. Validate post exists
-      const post = await this.postRepository.findPost(postId);
+      const post = await this._postRepository.findPost(postId);
       if (!post) {
         throw new CustomError(grpc.status.NOT_FOUND, "Post not found");
       }
@@ -125,7 +125,7 @@ export class ShareService implements IShareService {
       await RedisCacheService.invalidatePostCounter(postId, "shares");
 
       // 9. Create outbox event
-      await this.outboxService.createOutboxEvent({
+      await this._outboxService.createOutboxEvent({
         aggregateType: OutboxAggregateType.SHARE,
         aggregateId: share.id,
         type: OutboxEventType.SHARE_CREATED,
@@ -216,7 +216,7 @@ export class ShareService implements IShareService {
       }
 
       // Cache miss - get from database
-      const count = await this.shareRepository.getShareCount(postId);
+      const count = await this._shareRepository.getShareCount(postId);
 
       // Cache the result (cache-aside pattern)
       // Note: We don't have a cachePostSharesCount method, but we can use increment
@@ -238,7 +238,7 @@ export class ShareService implements IShareService {
 
   async hasShared(postId: string, userId: string): Promise<boolean> {
     try {
-      const share = await this.shareRepository.findShare(postId, userId);
+      const share = await this._shareRepository.findShare(postId, userId);
       return !!share;
     } catch (err: any) {
       logger.error("Error checking share status", {

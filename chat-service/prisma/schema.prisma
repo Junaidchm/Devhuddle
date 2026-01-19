@@ -42,3 +42,21 @@ model Message {
 
   @@index([conversationId, createdAt])
 }
+
+model ChatInteraction {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @map("user_id") @db.VarChar(255)
+  partnerId         String   @map("partner_id") @db.VarChar(255)
+  lastMessageAt     DateTime @default(now()) @map("last_message_at") @db.Timestamp()
+  messageCount      Int      @default(1) @map("message_count")
+  userSentCount     Int      @default(0) @map("user_sent_count")
+  partnerSentCount  Int      @default(0) @map("partner_sent_count")
+  responseRate      Decimal  @default(0.00) @map("response_rate") @db.Decimal(3, 2)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
+  @@unique([userId, partnerId], map: "chat_interactions_user_partner_unique")
+  @@index([userId], map: "idx_chat_interactions_user_id")
+  @@index([partnerId], map: "idx_chat_interactions_partner_id")
+  @@index([userId, lastMessageAt(sort: Desc)], map: "idx_chat_interactions_last_message")
+  @@map("chat_interactions")
+}

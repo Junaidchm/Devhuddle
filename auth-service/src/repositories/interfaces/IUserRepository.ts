@@ -1,5 +1,4 @@
 import { User } from "../../types/auth";
-import { ChatInteraction, ScoredUser } from "../../types/common.types";
 
 export interface IUserRepository {
   findByEmail(email: string): Promise<User | null>;
@@ -27,9 +26,4 @@ export interface IUserRepository {
   ): Promise<any | null>;
   findFollowers(userId: string, currentUserId: string): Promise<any[]>;
   findFollowing(userId: string, currentUserId: string): Promise<any[]>;
-    findChatSuggestionsWithScore(
-    userId: string,
-    limit: number,
-    recentChats: Map<string, ChatInteraction>
-  ): Promise<ScoredUser[]>;
 }

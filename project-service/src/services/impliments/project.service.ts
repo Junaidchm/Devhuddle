@@ -39,7 +39,7 @@ import { EnrichedProject } from "../../types/common.types";
 
 export class ProjectService implements IProjectService {
   constructor(
-    private projectRepository: IProjectRepository,
+    private _projectRepository: IProjectRepository,
     private likeRepository?: IProjectLikeRepository,
     private shareRepository?: IProjectShareRepository,
     private outboxService?: IOutboxService
@@ -50,7 +50,7 @@ export class ProjectService implements IProjectService {
       // Validation
       this.validateCreateProject(req);
 
-      const project = await this.projectRepository.createProject({
+      const project = await this._projectRepository.createProject({
         title: req.title,
         description: req.description,
         userId: req.userId,
@@ -72,7 +72,7 @@ export class ProjectService implements IProjectService {
           0, // viewsCount
           project.publishedAt
         );
-        await this.projectRepository.updateTrendingScore(project.id, trendingScore);
+        await this._projectRepository.updateTrendingScore(project.id, trendingScore);
       }
 
       // Publish event
@@ -108,7 +108,7 @@ export class ProjectService implements IProjectService {
   async updateProject(req: UpdateProjectRequest): Promise<UpdateProjectResponse> {
     try {
       // Validate ownership
-      const existingProject = await this.projectRepository.findProject(req.projectId);
+      const existingProject = await this._projectRepository.findProject(req.projectId);
       if (!existingProject) {
         throw new CustomError(grpc.status.NOT_FOUND, "Project not found");
       }
@@ -124,7 +124,7 @@ export class ProjectService implements IProjectService {
         throw new CustomError(grpc.status.INVALID_ARGUMENT, "Description too long (max 10000 characters)");
       }
 
-      const updatedProject = await this.projectRepository.updateProject(req.projectId, {
+      const updatedProject = await this._projectRepository.updateProject(req.projectId, {
         title: req.title,
         description: req.description,
         repositoryUrls: req.repositoryUrls,
@@ -163,7 +163,7 @@ export class ProjectService implements IProjectService {
 
   async getProject(req: GetProjectRequest): Promise<GetProjectResponse> {
     try {
-      const project = await this.projectRepository.getProjectById(req.projectId, req.userId);
+      const project = await this._projectRepository.getProjectById(req.projectId, req.userId);
 
       if (!project) {
         throw new CustomError(grpc.status.NOT_FOUND, "Project not found");
@@ -175,7 +175,7 @@ export class ProjectService implements IProjectService {
       }
 
       // Track view (async, don't wait)
-      this.projectRepository.incrementViews(req.projectId).catch((err) => {
+      this._projectRepository.incrementViews(req.projectId).catch((err) => {
         logger.error("Error tracking view", { error: err.message });
       });
 
@@ -219,7 +219,7 @@ export class ProjectService implements IProjectService {
         where.tags = { hasSome: req.tags };
       }
 
-      const projects = await this.projectRepository.listProjects(options);
+      const projects = await this._projectRepository.listProjects(options);
       const hasMore = projects.length > PAGE_SIZE;
       const items = projects.slice(0, PAGE_SIZE);
 
@@ -265,7 +265,7 @@ export class ProjectService implements IProjectService {
 
   async deleteProject(req: DeleteProjectRequest): Promise<DeleteProjectResponse> {
     try {
-      const project = await this.projectRepository.deleteProject(req.projectId, req.userId);
+      const project = await this._projectRepository.deleteProject(req.projectId, req.userId);
 
       // Publish event
       if (this.outboxService) {
@@ -295,7 +295,7 @@ export class ProjectService implements IProjectService {
 
   async publishProject(req: PublishProjectRequest): Promise<PublishProjectResponse> {
     try {
-      const project = await this.projectRepository.publishProject(req.projectId, req.userId);
+      const project = await this._projectRepository.publishProject(req.projectId, req.userId);
 
       // Calculate initial trending score
       const trendingScore = calculateTrendingScore(
@@ -305,7 +305,7 @@ export class ProjectService implements IProjectService {
         project.viewsCount,
         project.publishedAt
       );
-      await this.projectRepository.updateTrendingScore(req.projectId, trendingScore);
+      await this._projectRepository.updateTrendingScore(req.projectId, trendingScore);
 
       // Publish event
       if (this.outboxService) {
@@ -346,7 +346,7 @@ export class ProjectService implements IProjectService {
         where: {},
       };
 
-      const projects = await this.projectRepository.getTrendingProjects(options);
+      const projects = await this._projectRepository.getTrendingProjects(options);
       const hasMore = projects.length > PAGE_SIZE;
       const items = projects.slice(0, PAGE_SIZE);
 
@@ -399,7 +399,7 @@ export class ProjectService implements IProjectService {
         where: {},
       };
 
-      const projects = await this.projectRepository.getTopProjects(options);
+      const projects = await this._projectRepository.getTopProjects(options);
       const hasMore = projects.length > PAGE_SIZE;
       const items = projects.slice(0, PAGE_SIZE);
 
@@ -444,7 +444,7 @@ export class ProjectService implements IProjectService {
 
   async searchProjects(req: SearchProjectsRequest): Promise<SearchProjectsResponse> {
     try {
-      const projects = await this.projectRepository.searchProjects(req.query, {
+      const projects = await this._projectRepository.searchProjects(req.query, {
         techStack: req.techStack || [],
         tags: req.tags || [],
         limit: req.limit || 20,
@@ -489,8 +489,8 @@ export class ProjectService implements IProjectService {
 
   async trackProjectView(req: TrackProjectViewRequest): Promise<TrackProjectViewResponse> {
     try {
-      await this.projectRepository.incrementViews(req.projectId);
-      const project = await this.projectRepository.findProject(req.projectId);
+      await this._projectRepository.incrementViews(req.projectId);
+      const project = await this._projectRepository.findProject(req.projectId);
       
       return {
         success: true,

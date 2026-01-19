@@ -6,7 +6,7 @@ import { HttpStatus } from "../../constands/http.status";
 import { Messages } from "../../constands/reqresMessages";
 
 export class ShareLinkController {
-  constructor(private shareLinkService: IShareLinkService) {}
+  constructor(private _shareLinkService: IShareLinkService) {}
 
   async getShareLink(
     req: Request,
@@ -29,7 +29,7 @@ export class ShareLinkController {
         );
       }
 
-      const shareLink = await this.shareLinkService.generateShareLink(
+      const shareLink = await this._shareLinkService.generateShareLink(
         postId,
         userId,
         {
@@ -62,7 +62,7 @@ export class ShareLinkController {
         );
       }
 
-      const result = await this.shareLinkService.resolveShareLink(tokenOrShortId);
+      const result = await this._shareLinkService.resolveShareLink(tokenOrShortId);
 
       // Redirect to the post URL
       res.redirect(result.redirectUrl);

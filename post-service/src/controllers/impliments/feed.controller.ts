@@ -21,11 +21,11 @@ import { HttpStatus } from "../../constands/http.status";
 import { getUserIdFromRequest } from "../../utils/request.util";
 
 export class PostController implements IfeedController {
-  constructor(private postService: IpostService) {}
+  constructor(private _postService: IpostService) {}
 
   // async feedPosting(req: CreatePostRequest): Promise<CreatePostResponse> {
   //   try {
-  //     const post = await this.postService.createPost(req);
+  //     const post = await this._postService.createPost(req);
   //     return {
   //       message: "Post created",
   //       postId: post.postId,
@@ -40,7 +40,7 @@ export class PostController implements IfeedController {
     req: SubmitPostRequest
   ): Promise<SubmitPostResponse> {
     try {
-      const post = await this.postService.submitPost(req);
+      const post = await this._postService.submitPost(req);
       return post;
     } catch (err: any) {
       logger.error("CreatePost error", { error: err.message });
@@ -51,7 +51,7 @@ export class PostController implements IfeedController {
   async getPostsController(req: ListPostsRequest): Promise<ListPostsResponse> {
     try {
       const { pageParam, userId } = req;
-      const result: ListPostsResponse = await this.postService.getPosts(
+      const result: ListPostsResponse = await this._postService.getPosts(
         pageParam as string | undefined,
         userId as string | undefined
       );
@@ -69,7 +69,7 @@ export class PostController implements IfeedController {
     try {
       const { postId } = req;
       const deletePost: DeletePostResponse =
-        await this.postService.deletePostServ(postId as string);
+        await this._postService.deletePostServ(postId as string);
 
       return deletePost;
     } catch (err: any) {

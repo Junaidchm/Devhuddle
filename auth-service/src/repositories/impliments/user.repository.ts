@@ -260,13 +260,13 @@ export class UserRepository
     }
 
     // Create a clean, serializable object
-    const result: UserProfile = {
+    const result = {
       ...user,
-      profilePicture: user.profilePicture || null,
-      location: user.location || null,
-      bio: user.bio || null,
-      jobTitle: user.jobTitle || null,
-      company: user.company || null,
+      profilePicture: user.profilePicture || undefined,
+      location: user.location || undefined,
+      bio: user.bio || undefined,
+      jobTitle: user.jobTitle || undefined,
+      company: user.company || undefined,
       yearsOfExperience: user.yearsOfExperience || null,
       skills: user.skills || [],
       isFollowing,
@@ -321,7 +321,13 @@ export class UserRepository
     // Map the results to the desired shape
     const followers = followerRelations.map(relation => ({
       ...relation.follower,
+      bio: relation.follower.bio || undefined,
+      jobTitle: relation.follower.jobTitle || undefined,
+      company: relation.follower.company || undefined,
+      location: relation.follower.location || undefined,
+      profilePicture: relation.follower.profilePicture || undefined,
       isFollowing: followingIdsSet.has(relation.follower.id),
+      isFollower: true, // They are following the current user
     }));
 
     return followers;
@@ -365,11 +371,30 @@ export class UserRepository
     }) : [];
 
     const followingIdsSet = new Set(currentUserFollows.map(f => f.followingId));
+    
+    // Check who follows the user back
+    const followerIds = followingRelations.map(r => r.following.id);
+    const followsBackRelations = followerIds.length > 0 ? await prisma.follow.findMany({
+      where: {
+        followerId: { in: followerIds },
+        followingId: userId,
+        deletedAt: null,
+      },
+      select: { followerId: true },
+    }) : [];
+    
+    const followsBackSet = new Set(followsBackRelations.map(f => f.followerId));
 
     // Map the results to the desired shape
     const following = followingRelations.map(relation => ({
       ...relation.following,
+      bio: relation.following.bio || undefined,
+      jobTitle: relation.following.jobTitle || undefined,
+      company: relation.following.company || undefined,
+      location: relation.following.location || undefined,
+      profilePicture: relation.following.profilePicture || undefined,
       isFollowing: followingIdsSet.has(relation.following.id),
+      isFollower: followsBackSet.has(relation.following.id), // Check if they follow back
     }));
 
     return following;

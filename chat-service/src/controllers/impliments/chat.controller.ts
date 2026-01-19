@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import { IChatController } from '../interfaces/IChatController';
-import { ChatService } from '../../services/impliments/chat.service';
 import logger from '../../utils/logger.util';
+import { IChatService } from '../../services/interfaces/IChatService';
 
 export class ChatController implements IChatController {
-  constructor(private _chatService: ChatService) {}
+  constructor(private _chatService: IChatService) {}
 
   /**
    * GET /conversations

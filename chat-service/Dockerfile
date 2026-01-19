@@ -9,8 +9,14 @@ COPY package.json ./
 
 RUN pnpm install
 
-COPY . .
+# Copy Prisma schema and generate client
+COPY prisma ./prisma
 
+# Generate Prisma Client
+RUN npx prisma generate
+    
+COPY . .
+    
 RUN pnpm run build
 
 EXPOSE 4004

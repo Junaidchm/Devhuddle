@@ -13,14 +13,14 @@ import {
 import { HttpStatus } from "../../constands/http.status";
 
 export class MediaController implements IMediaController {
-  constructor(private MediaService: IMediaService) {}
+  constructor(private _MediaService: IMediaService) {}
 
   async uploadMediaController(
     req: UploadMediaRequest
   ): Promise<UploadMediaResponse> {
     try {
       const uploadMediaResponse: UploadMediaResponse =
-        await this.MediaService.uploadMediaService(req);
+        await this._MediaService.uploadMediaService(req);
 
       return uploadMediaResponse;
     } catch (err: any) {
@@ -32,7 +32,7 @@ export class MediaController implements IMediaController {
   async deleteUnusedMedia():Promise<DeleteUnusedMediasResponse> {
     try {
 
-      const result = await this.MediaService.deleteUnusedMediaService()
+      const result = await this._MediaService.deleteUnusedMediaService()
 
       return {
         message: `Cleanup completed: ${result.deletedRecords} files deleted`,

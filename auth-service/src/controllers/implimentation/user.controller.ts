@@ -6,6 +6,7 @@ import logger from "../../utils/logger.util";
 import { User } from "@prisma/client";
 
 export class UserController {
+
   constructor(private _userService: IUserService) {}
 
   async getProfileByUsername(req: Request, res: Response): Promise<void> {
@@ -39,7 +40,7 @@ export class UserController {
       }
       
       const profile = await this._userService.getProfileByUsername(
-        username,
+        Array.isArray(username) ? username[0] : username,
         currentUserId
       );
       res.status(HttpStatus.OK).json(profile);
@@ -61,7 +62,7 @@ export class UserController {
       const { username } = req.params;
       const currentUserId = JSON.parse(req.headers["x-user-data"] as string).id;
       const followers = await this._userService.getFollowers(
-        username,
+        Array.isArray(username) ? username[0] : username,
         currentUserId
       );
       res.status(HttpStatus.OK).json(followers);
@@ -79,7 +80,7 @@ export class UserController {
       const { username } = req.params;
       const currentUserId = JSON.parse(req.headers["x-user-data"] as string).id;
       const following = await this._userService.getFollowing(
-        username,
+        Array.isArray(username) ? username[0] : username,
         currentUserId
       );
       res.status(HttpStatus.OK).json(following);
@@ -202,7 +203,7 @@ export class UserController {
         });
       }
 
-      const user = await this._userService.getUserById(userId);
+      const user = await this._userService.getUserById(Array.isArray(userId) ? userId[0] : userId);
       if (!user) {
         return sendErrorResponse(res, {
           status: HttpStatus.NOT_FOUND,

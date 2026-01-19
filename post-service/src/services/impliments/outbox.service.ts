@@ -4,7 +4,7 @@ import { OutboxAggregateType, OutboxEventType } from "@prisma/client";
 import logger from "../../utils/logger.util";
 
 export class OutboxService implements IOutboxService {
-  constructor(private outboxRepository: IOutboxRepository) {}
+  constructor(private _outboxRepository: IOutboxRepository) {}
 
   async createOutboxEvent(data: {
     aggregateType: string;
@@ -20,7 +20,7 @@ export class OutboxService implements IOutboxService {
       const aggregateTypeEnum = data.aggregateType as OutboxAggregateType;
       const typeEnum = data.type as OutboxEventType;
       
-      await this.outboxRepository.createOutboxEvent({
+      await this._outboxRepository.createOutboxEvent({
         aggregateType: aggregateTypeEnum,
         aggregateId: data.aggregateId,
         type: typeEnum, // Cast to enum - Prisma will handle if it's not in enum

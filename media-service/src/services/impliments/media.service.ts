@@ -14,7 +14,7 @@ export class MediaService implements IMediaService {
   private storageService: IStorageService;
 
   constructor(
-    private mediaRepository: IMediaRepository
+    private _mediaRepository: IMediaRepository
   ) {
     this.storageService = new StorageService();
   }
@@ -64,7 +64,7 @@ export class MediaService implements IMediaService {
       );
 
       // Create media record
-      const media = await this.mediaRepository.create({
+      const media = await this._mediaRepository.create({
         userId: request.userId,
         mediaType: request.mediaType,
         storageKey,
@@ -104,7 +104,7 @@ export class MediaService implements IMediaService {
   ): Promise<CompleteUploadResponse> {
     try {
       // Get media record
-      const media = await this.mediaRepository.findById(request.mediaId);
+      const media = await this._mediaRepository.findById(request.mediaId);
 
       if (!media) {
         throw new CustomError(404, "Media not found");
@@ -129,7 +129,7 @@ export class MediaService implements IMediaService {
       const originalUrl = this.storageService.getCdnUrl(media.storageKey);
 
       // Update media record
-      const updatedMedia = await this.mediaRepository.update(media.id, {
+      const updatedMedia = await this._mediaRepository.update(media.id, {
         status: "UPLOADED",
         cdnUrl,
         originalUrl,
@@ -165,7 +165,7 @@ export class MediaService implements IMediaService {
 
   async getMediaById(mediaId: string, userId: string): Promise<Media> {
     try {
-      const media = await this.mediaRepository.findById(mediaId);
+      const media = await this._mediaRepository.findById(mediaId);
 
       if (!media) {
         throw new CustomError(404, "Media not found");
@@ -189,7 +189,7 @@ export class MediaService implements IMediaService {
 
   async deleteMedia(mediaId: string, userId: string): Promise<void> {
     try {
-      const media = await this.mediaRepository.findById(mediaId);
+      const media = await this._mediaRepository.findById(mediaId);
 
       if (!media) {
         throw new CustomError(404, "Media not found");
@@ -236,7 +236,7 @@ export class MediaService implements IMediaService {
       }
 
       // Delete database record
-      await this.mediaRepository.delete(mediaId);
+      await this._mediaRepository.delete(mediaId);
 
       logger.info("Media deleted", { mediaId, userId });
     } catch (error: unknown) {
@@ -258,7 +258,7 @@ export class MediaService implements IMediaService {
       
       // Check each media
       for (const mediaId of request.mediaIds) {
-        const media = await this.mediaRepository.findById(mediaId);
+        const media = await this._mediaRepository.findById(mediaId);
         
         if (!media) {
           invalidMediaIds.push(mediaId);
@@ -314,7 +314,7 @@ export class MediaService implements IMediaService {
     try {
       // Verify all media belong to user
       for (const mediaId of mediaIds) {
-        const media = await this.mediaRepository.findById(mediaId);
+        const media = await this._mediaRepository.findById(mediaId);
         if (!media) {
           throw new CustomError(404, `Media ${mediaId} not found`);
         }
@@ -328,7 +328,7 @@ export class MediaService implements IMediaService {
 
       // Link media to post
       for (const mediaId of mediaIds) {
-        await this.mediaRepository.update(mediaId, { postId });
+        await this._mediaRepository.update(mediaId, { postId });
       }
 
       logger.info("Media linked to post", { mediaIds, postId, userId });
@@ -350,7 +350,7 @@ export class MediaService implements IMediaService {
     try {
       // Verify all media belong to user
       for (const mediaId of mediaIds) {
-        const media = await this.mediaRepository.findById(mediaId);
+        const media = await this._mediaRepository.findById(mediaId);
         if (!media) {
           throw new CustomError(404, `Media ${mediaId} not found`);
         }
@@ -361,7 +361,7 @@ export class MediaService implements IMediaService {
 
       // Unlink media from post
       for (const mediaId of mediaIds) {
-        await this.mediaRepository.update(mediaId, { postId: null });
+        await this._mediaRepository.update(mediaId, { postId: null });
       }
 
       logger.info("Media unlinked from post", { mediaIds, userId });

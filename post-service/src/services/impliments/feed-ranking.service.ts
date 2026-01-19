@@ -22,7 +22,7 @@ export interface PostMetadata {
 }
 
 export class FeedRankingService {
-  constructor(private postRepository: IPostRepository) {}
+  constructor(private _postRepository: IPostRepository) {}
 
   /**
    * Calculate relevance score for a post in a user's feed

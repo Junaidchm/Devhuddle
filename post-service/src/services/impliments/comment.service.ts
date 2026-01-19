@@ -28,10 +28,10 @@ import {
 
 export class CommentService implements ICommentService {
   constructor(
-    private commentRepository: ICommentRepository,
-    private postRepository: IPostRepository,
-    private mentionService: IMentionService,
-    private outboxService: IOutboxService,
+    private _commentRepository: ICommentRepository,
+    private _postRepository: IPostRepository,
+    private _mentionService: IMentionService,
+    private _outboxService: IOutboxService,
     private likeRepository?: ILikeRepository
   ) {}
 
@@ -64,7 +64,7 @@ export class CommentService implements ICommentService {
   ): Promise<any> {
     try {
       // Validate post exists
-      const post = await this.postRepository.findPost(postId);
+      const post = await this._postRepository.findPost(postId);
       if (!post) {
         throw new CustomError(HttpStatus.NOT_FOUND, "Post not found");
       }
@@ -93,7 +93,7 @@ export class CommentService implements ICommentService {
       let actualParentCommentId: string | undefined;
       
       if (parentCommentId) {
-        const parentComment = await this.commentRepository.findComment(
+        const parentComment = await this._commentRepository.findComment(
           parentCommentId
         );
         if (!parentComment || parentComment.postId !== postId) {
@@ -107,7 +107,7 @@ export class CommentService implements ICommentService {
         if (parentComment.parentCommentId) {
           // This is a reply to a reply - use the main comment instead
           actualParentCommentId = parentComment.parentCommentId;
-          const mainComment = await this.commentRepository.findComment(
+          const mainComment = await this._commentRepository.findComment(
             actualParentCommentId
           );
           if (mainComment) {
@@ -137,7 +137,7 @@ export class CommentService implements ICommentService {
       }
 
       // Create comment
-      const comment = await this.commentRepository.createComment({
+      const comment = await this._commentRepository.createComment({
         postId,
         userId,
         content: sanitizedContent,
@@ -145,14 +145,14 @@ export class CommentService implements ICommentService {
       });
 
       // Update counter
-      await this.postRepository.incrementCommentsCount(postId);
+      await this._postRepository.incrementCommentsCount(postId);
 
       // Invalidate cache
       await RedisCacheService.invalidatePostCounter(postId, "comments");
       await RedisCacheService.invalidateCommentList(postId);
 
       // Process mentions
-      const mentionedUserIds = await this.mentionService.processMentions(
+      const mentionedUserIds = await this._mentionService.processMentions(
         sanitizedContent,
         undefined,
         comment.id,
@@ -163,7 +163,7 @@ export class CommentService implements ICommentService {
       const eventTimestamp = new Date().toISOString();
 
       // Create outbox event for comment created
-      await this.outboxService.createOutboxEvent({
+      await this._outboxService.createOutboxEvent({
         aggregateType: OutboxAggregateType.COMMENT,
         aggregateId: comment.id,
         type: OutboxEventType.POST_COMMENT_CREATED,
@@ -208,7 +208,7 @@ export class CommentService implements ICommentService {
   ): Promise<any> {
     try {
       // Find comment
-      const comment = await this.commentRepository.findComment(commentId);
+      const comment = await this._commentRepository.findComment(commentId);
       if (!comment) {
         throw new CustomError(HttpStatus.NOT_FOUND, "Comment not found");
       }
@@ -231,13 +231,13 @@ export class CommentService implements ICommentService {
       }
 
       // Update comment (editedAt is automatically set by repository)
-      const updatedComment = await this.commentRepository.updateComment(
+      const updatedComment = await this._commentRepository.updateComment(
         commentId,
         sanitizedContent
       );
 
       // Process mentions in updated content
-      await this.mentionService.processMentions(
+      await this._mentionService.processMentions(
         sanitizedContent,
         undefined,
         commentId,
@@ -252,7 +252,7 @@ export class CommentService implements ICommentService {
       const eventTimestamp = new Date().toISOString();
 
       // Create outbox event
-      await this.outboxService.createOutboxEvent({
+      await this._outboxService.createOutboxEvent({
         aggregateType: OutboxAggregateType.COMMENT,
         aggregateId: commentId,
         type: OutboxEventType.POST_COMMENT_EDITED,
@@ -289,13 +289,13 @@ export class CommentService implements ICommentService {
   async deleteComment(commentId: string, userId: string): Promise<void> {
     try {
       // Find comment
-      const comment = await this.commentRepository.findComment(commentId);
+      const comment = await this._commentRepository.findComment(commentId);
       if (!comment) {
         throw new CustomError(HttpStatus.NOT_FOUND, "Comment not found");
       }
 
       // Get post to check if user is post author
-      const post = await this.postRepository.findPost(comment.postId);
+      const post = await this._postRepository.findPost(comment.postId);
       if (!post) {
         throw new CustomError(HttpStatus.NOT_FOUND, "Post not found");
       }
@@ -312,10 +312,10 @@ export class CommentService implements ICommentService {
       }
 
       // Soft delete comment
-      await this.commentRepository.deleteComment(commentId);
+      await this._commentRepository.deleteComment(commentId);
 
       // Update counter
-      await this.postRepository.decrementCommentsCount(comment.postId);
+      await this._postRepository.decrementCommentsCount(comment.postId);
 
       // Invalidate cache
       await RedisCacheService.invalidatePostCounter(comment.postId, "comments");
@@ -326,7 +326,7 @@ export class CommentService implements ICommentService {
       const eventTimestamp = new Date().toISOString();
 
       // Create outbox event
-      await this.outboxService.createOutboxEvent({
+      await this._outboxService.createOutboxEvent({
         aggregateType: OutboxAggregateType.COMMENT,
         aggregateId: commentId,
         type: OutboxEventType.POST_COMMENT_DELETED,
@@ -438,7 +438,7 @@ export class CommentService implements ICommentService {
   ): Promise<Comment[]> {
     try {
       // Get post to get author ID for isAuthor flag
-      const post = await this.postRepository.findPost(postId);
+      const post = await this._postRepository.findPost(postId);
       const postAuthorId = post?.userId;
 
       // Initialize userLikesMap
@@ -479,7 +479,7 @@ export class CommentService implements ICommentService {
       }
 
       // Get from database with clear parameters
-      const comments = await this.commentRepository.getCommentsByPost(
+      const comments = await this._commentRepository.getCommentsByPost(
         postId,
         limit,
         offset,
@@ -526,7 +526,7 @@ export class CommentService implements ICommentService {
 
   async getComment(commentId: string): Promise<Comment | null> {
     try {
-      return await this.commentRepository.findComment(commentId);
+      return await this._commentRepository.findComment(commentId);
     } catch (err: any) {
       logger.error("Error getting comment", {
         error: err.message,
@@ -546,7 +546,7 @@ export class CommentService implements ICommentService {
         return cachedCount;
       }
 
-      const count = await this.commentRepository.getCommentCount(postId);
+      const count = await this._commentRepository.getCommentCount(postId);
       await RedisCacheService.cachePostCommentsCount(postId, count);
       return count;
     } catch (err: any) {
@@ -568,16 +568,16 @@ export class CommentService implements ICommentService {
   ): Promise<Comment[]> {
     try {
       // Get the main comment to find the post and post author
-      const mainComment = await this.commentRepository.findComment(commentId);
+      const mainComment = await this._commentRepository.findComment(commentId);
       if (!mainComment) {
         throw new CustomError(HttpStatus.NOT_FOUND, "Comment not found");
       }
 
       // Get post to get author ID for isAuthor flag
-      const post = await this.postRepository.findPost(mainComment.postId);
+      const post = await this._postRepository.findPost(mainComment.postId);
       const postAuthorId = post?.userId;
 
-      const replies = await this.commentRepository.getReplies(commentId, limit);
+      const replies = await this._commentRepository.getReplies(commentId, limit);
       
       // Extract reply IDs for batch like lookup
       const replyIds = replies.map((reply) => reply.id);

@@ -14,15 +14,15 @@ import { OutboxAggregateType, OutboxEventType, ReportReason } from "@prisma/clie
 
 export class ProjectReportService implements IProjectReportService {
   constructor(
-    private reportRepository: IProjectReportRepository,
-    private projectRepository: IProjectRepository,
+    private _reportRepository: IProjectReportRepository,
+    private _projectRepository: IProjectRepository,
     private outboxService?: IOutboxService
   ) {}
 
   async reportProject(req: ReportProjectRequest): Promise<ReportProjectResponse> {
     try {
       // Validate project exists
-      const project = await this.projectRepository.findProject(req.projectId);
+      const project = await this._projectRepository.findProject(req.projectId);
       if (!project) {
         throw new CustomError(grpc.status.NOT_FOUND, "Project not found");
       }
@@ -37,7 +37,7 @@ export class ProjectReportService implements IProjectReportService {
       }
 
       // Check if already reported
-      const existingReport = await this.reportRepository.findReport(
+      const existingReport = await this._reportRepository.findReport(
         req.reporterId,
         req.projectId
       );
@@ -59,7 +59,7 @@ export class ProjectReportService implements IProjectReportService {
       }
 
       // Create report
-      const report = await this.reportRepository.createReport({
+      const report = await this._reportRepository.createReport({
         reporterId: req.reporterId,
         projectId: req.projectId,
         reason: req.reason as ReportReason,

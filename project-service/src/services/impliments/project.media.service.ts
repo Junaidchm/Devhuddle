@@ -6,7 +6,7 @@ import logger from "../../utils/logger.util";
 import * as grpc from "@grpc/grpc-js";
 
 export class ProjectMediaService implements IProjectMediaService {
-  constructor(private mediaRepository: IProjectMediaRepository) {}
+  constructor(private _mediaRepository: IProjectMediaRepository) {}
 
   async uploadProjectMedia(req: UploadProjectMediaRequest): Promise<UploadProjectMediaResponse> {
     try {
@@ -19,7 +19,7 @@ export class ProjectMediaService implements IProjectMediaService {
         throw new CustomError(HttpStatus.BAD_REQUEST, "Type must be IMAGE or VIDEO");
       }
 
-      const mediaId = await this.mediaRepository.createProjectMedia(req);
+      const mediaId = await this._mediaRepository.createProjectMedia(req);
 
       return { mediaId };
     } catch (err: unknown) {

@@ -4,7 +4,7 @@ import { HttpStatus } from "../../constands/http.status";
 import { getUserIdFromRequest } from "../../utils/request.util";
 
 export class ProjectShareController {
-  constructor(private shareService: IProjectShareService) {}
+  constructor(private _shareService: IProjectShareService) {}
 
   async shareProject(
     req: Request,
@@ -16,7 +16,7 @@ export class ProjectShareController {
       const userId = getUserIdFromRequest(req);
       const { caption, shareType } = req.body;
 
-      const result = await this.shareService.shareProject({
+      const result = await this._shareService.shareProject({
         projectId,
         userId,
         caption,

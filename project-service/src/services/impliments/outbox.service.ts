@@ -4,7 +4,7 @@ import { Prisma, OutboxAggregateType, OutboxEventType } from "@prisma/client";
 import logger from "../../utils/logger.util";
 
 export class OutboxService implements IOutboxService {
-  constructor(private outboxRepository: IOutboxRepository) {}
+  constructor(private _outboxRepository: IOutboxRepository) {}
 
   async createOutboxEvent(data: {
     aggregateType: OutboxAggregateType;
@@ -15,7 +15,7 @@ export class OutboxService implements IOutboxService {
     payload: Prisma.InputJsonValue;
   }): Promise<void> {
     try {
-      await this.outboxRepository.createOutboxEvent({
+      await this._outboxRepository.createOutboxEvent({
         aggregateType: data.aggregateType,
         aggregateId: data.aggregateId,
         type: data.type,

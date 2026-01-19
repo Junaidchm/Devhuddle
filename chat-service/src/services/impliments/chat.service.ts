@@ -8,11 +8,11 @@ import {
     CreateConversationCommand,
     GetMessagesQuery,
     GetUserConversationsQuery
-} from "../dtos/chat-service.dto";
+} from "../../dtos/chat-service.dto";
 
 export class ChatService implements IChatService {
 
-    constructor(private chatRepository: IChatRepository) {}
+    constructor(private _chatRepository: IChatRepository) {}
 
     /**
      * Send a message (uses Command pattern with business validation)
@@ -27,7 +27,7 @@ export class ChatService implements IChatService {
             const participantIds = [senderId, ...recipientIds];
 
             // Find or create conversation
-            const conversation = await this.chatRepository.findOrCreateConversation(participantIds);
+            const conversation = await this._chatRepository.findOrCreateConversation(participantIds);
 
             // Create message data
             const messageData: Prisma.MessageCreateInput = {
@@ -41,10 +41,10 @@ export class ChatService implements IChatService {
             };
 
             // Create the message
-            const message = await this.chatRepository.createMessage(messageData);
+            const message = await this._chatRepository.createMessage(messageData);
 
             // Update conversation's last message timestamp
-            await this.chatRepository.updateLastMessageAt(conversation.id, new Date());
+            await this._chatRepository.updateLastMessageAt(conversation.id, new Date());
 
             // Invalidate cache for this conversation and all participants
             await RedisCacheService.invalidateConversationCache(conversation.id);
@@ -90,7 +90,7 @@ export class ChatService implements IChatService {
             }
 
             // Cache miss - verify user is a participant
-            const conversation = await this.chatRepository.findConversationById(query.conversationId);
+            const conversation = await this._chatRepository.findConversationById(query.conversationId);
 
             if (!conversation) {
                 throw new Error("Conversation not found");
@@ -106,7 +106,7 @@ export class ChatService implements IChatService {
             }
 
             // Get messages from database
-            const messages = await this.chatRepository.getMessagesByConversationId(
+            const messages = await this._chatRepository.getMessagesByConversationId(
                 query.conversationId,
                 query.limit,
                 query.offset
@@ -154,7 +154,7 @@ export class ChatService implements IChatService {
             }
 
             // Cache miss - get from database
-            const conversations = await this.chatRepository.getUserConversations(query.userId);
+            const conversations = await this._chatRepository.getUserConversations(query.userId);
 
             // Cache the results
             await RedisCacheService.cacheUserConversations(query.userId, conversations);
@@ -187,7 +187,7 @@ export class ChatService implements IChatService {
             // Get all unique participants
             const allParticipants = command.getAllParticipants();
 
-            const conversation = await this.chatRepository.findOrCreateConversation(allParticipants);
+            const conversation = await this._chatRepository.findOrCreateConversation(allParticipants);
 
             // Invalidate user conversations cache for all participants
             for (const participantId of allParticipants) {
@@ -216,7 +216,7 @@ export class ChatService implements IChatService {
             }
 
             // Cache miss - get from database
-            const conversation = await this.chatRepository.findConversationById(conversationId);
+            const conversation = await this._chatRepository.findConversationById(conversationId);
             
             if (!conversation) {
                 return null;

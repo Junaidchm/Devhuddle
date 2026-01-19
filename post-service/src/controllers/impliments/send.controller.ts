@@ -6,7 +6,7 @@ import { getUserIdFromRequest } from "../../utils/request.util";
 import logger from "../../utils/logger.util";
 
 export class SendController {
-  constructor(private sendService: ISendService) {}
+  constructor(private _sendService: ISendService) {}
 
   /**
    * Get user connections (people the user follows)
@@ -134,7 +134,7 @@ export class SendController {
 
       // Validation handled by DTO
 
-      const result = await this.sendService.sendPost(
+      const result = await this._sendService.sendPost(
         postId,
         userId,
         recipientIds,

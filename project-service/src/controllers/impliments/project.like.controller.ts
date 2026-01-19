@@ -5,7 +5,7 @@ import { HttpStatus } from "../../constands/http.status";
 import { getUserIdFromRequest } from "../../utils/request.util";
 
 export class ProjectLikeController {
-  constructor(private likeService: IProjectLikeService) {}
+  constructor(private _likeService: IProjectLikeService) {}
 
   async likeProject(
     req: Request,
@@ -16,7 +16,7 @@ export class ProjectLikeController {
       const { projectId } = req.params;
       const userId = getUserIdFromRequest(req);
 
-      const result = await this.likeService.likeProject({
+      const result = await this._likeService.likeProject({
         projectId,
         userId,
       });
@@ -40,7 +40,7 @@ export class ProjectLikeController {
       const { projectId } = req.params;
       const userId = getUserIdFromRequest(req);
 
-      const result = await this.likeService.unlikeProject({
+      const result = await this._likeService.unlikeProject({
         projectId,
         userId,
       });

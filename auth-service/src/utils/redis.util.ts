@@ -148,3 +148,81 @@ export class RedisCacheService {
     }
   }
 }
+
+/**
+ * Cache chat suggestions with TTL
+ * @param userId - User ID
+ * @param limit - Number of suggestions
+ * @param data - Suggestions data to cache
+ * @param ttl - Time to live in seconds (default: 300 = 5 minutes)
+ */
+export async function cacheChatSuggestions<T>(
+  userId: string,
+  limit: number,
+  data: T,
+  ttl: number = 300
+): Promise<void> {
+  try {
+    const cacheKey = `chat_suggestions:${userId}:${limit}`;
+    await redisClient.setEx(cacheKey, ttl, JSON.stringify(data));
+    logger.info('✅ Cached chat suggestions', { userId, limit, ttl });
+  } catch (error) {
+    logger.warn('Failed to cache chat suggestions', {
+      error: (error as Error).message,
+      userId,
+      limit,
+    });
+    // Don't throw - caching failure shouldn't break the app
+  }
+}
+
+/**
+ * Get cached chat suggestions
+ * @param userId - User ID
+ * @param limit - Number of suggestions
+ * @returns Cached data or null if not found/expired
+ */
+export async function getCachedChatSuggestions<T>(userId: string, limit: number): Promise<T | null> {
+  try {
+    const cacheKey = `chat_suggestions:${userId}:${limit}`;
+    const cached = await redisClient.get(cacheKey);
+    
+    if (cached) {
+      logger.info('✅ Cache hit for chat suggestions', { userId, limit });
+      return JSON.parse(cached) as T;
+    }
+    
+    logger.info('Cache miss for chat suggestions', { userId, limit });
+    return null;
+  } catch (error) {
+    logger.warn('Redis cache read failed', {
+      error: (error as Error).message,
+      userId,
+      limit,
+    });
+    return null; // Graceful degradation
+  }
+}
+
+/**
+ * Invalidate chat suggestions cache for a user
+ * Useful when user's connections change
+ * @param userId - User ID
+ */
+export async function invalidateChatSuggestionsCache(userId: string): Promise<void> {
+  try {
+    // Delete all cache keys for this user (different limits)
+    const pattern = `chat_suggestions:${userId}:*`;
+    const keys = await redisClient.keys(pattern);
+    
+    if (keys.length > 0) {
+      await redisClient.del(keys);
+      logger.info('🗑️ Invalidated chat suggestions cache', { userId, keysDeleted: keys.length });
+    }
+  } catch (error) {
+    logger.warn('Failed to invalidate chat suggestions cache', {
+      error: (error as Error).message,
+      userId,
+    });
+  }
+}

@@ -9,7 +9,7 @@ import { IAdminService } from "../../services/interface/IadminService";
 import { IAdminController } from "../interface/IadminController";
 
 export class AdminController implements IAdminController {
-  constructor(private adminService: IAdminService) {}
+  constructor(private _adminService: IAdminService) {}
 
   async getUsers(req: Request, res: Response) {
     try {
@@ -19,7 +19,7 @@ export class AdminController implements IAdminController {
       const search = req.query.search as string;
       const date = req.query.date as string;
 
-      const { users, total } = await this.adminService.getUsers(
+      const { users, total } = await this._adminService.getUsers(
         page,
         limit,
         status,
@@ -50,7 +50,7 @@ export class AdminController implements IAdminController {
   async getUserFullDetails(req: Request, res: Response) {
     try {
       const userId = req.params.id as string;
-      const user = await this.adminService.getUserFullDetails(userId);
+      const user = await this._adminService.getUserFullDetails(userId);
       res.status(HttpStatus.OK).json({
         success: true,
         data: user,
@@ -73,7 +73,7 @@ export class AdminController implements IAdminController {
         throw new CustomError(HttpStatus.BAD_REQUEST, Messages.INCOMPLETE_FORM);
       }
       logger.info(`Toogling user ${id}`);
-      await this.adminService.toogleUserState(id);
+      await this._adminService.toogleUserState(id);
       res.status(HttpStatus.OK).json({ success: true});
     } catch (err: unknown) {
       logger.error("Toogling user error", { error: (err as Error).message });

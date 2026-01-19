@@ -8,16 +8,16 @@ import logger from "../../utils/logger.util";
 
 export class AdminService implements IAdminService {
   constructor(
-    private adminRepository: IAdminRepository,
-    private postRepository: IPostRepository,
-    private commentRepository: ICommentRepository
+    private _adminRepository: IAdminRepository,
+    private _postRepository: IPostRepository,
+    private _commentRepository: ICommentRepository
   ) {}
 
   // ==================== REPORTS ====================
 
   async listReports(params: ListReportsParams): Promise<ListReportsResult> {
     try {
-      return await this.adminRepository.listReports(params);
+      return await this._adminRepository.listReports(params);
     } catch (error: any) {
       logger.error("Error in listReports service", { error: error.message });
       throw new CustomError(500, "Failed to list reports");
@@ -26,7 +26,7 @@ export class AdminService implements IAdminService {
 
   async getReportById(reportId: string) {
     try {
-      const report = await this.adminRepository.getReportById(reportId);
+      const report = await this._adminRepository.getReportById(reportId);
       if (!report) {
         throw new CustomError(404, "Report not found");
       }
@@ -43,7 +43,7 @@ export class AdminService implements IAdminService {
       const { reportId, action, resolution, hideContent, suspendUser, reviewedById } = params;
 
       // Get the report first
-      const report = await this.adminRepository.getReportById(reportId);
+      const report = await this._adminRepository.getReportById(reportId);
       if (!report) {
         throw new CustomError(404, "Report not found");
       }
@@ -59,7 +59,7 @@ export class AdminService implements IAdminService {
       }
 
       // Update report status
-      const updatedReport = await this.adminRepository.updateReportStatus(
+      const updatedReport = await this._adminRepository.updateReportStatus(
         reportId,
         newStatus,
         reviewedById,
@@ -73,17 +73,17 @@ export class AdminService implements IAdminService {
       if (hideContent && action === "REMOVE") {
         if (report.targetType === ReportTargetType.POST && report.postId) {
           // Hide the post
-          updatedPost = await this.adminRepository.hidePost(
+          updatedPost = await this._adminRepository.hidePost(
             report.postId,
             resolution || "Removed due to report"
           );
         } else if (report.targetType === ReportTargetType.COMMENT && report.commentId) {
           // Delete the comment (comments don't have isHidden, so we delete)
-          updatedComment = await this.adminRepository.deleteCommentAdmin(report.commentId);
+          updatedComment = await this._adminRepository.deleteCommentAdmin(report.commentId);
           
           // Decrement post comments count
           if (report.postId) {
-            await this.postRepository.decrementCommentsCount(report.postId);
+            await this._postRepository.decrementCommentsCount(report.postId);
           }
         }
       }
@@ -127,7 +127,7 @@ export class AdminService implements IAdminService {
         newStatus = ReportStatus.RESOLVED_IGNORED;
       }
 
-      const updatedCount = await this.adminRepository.bulkUpdateReportStatus(
+      const updatedCount = await this._adminRepository.bulkUpdateReportStatus(
         reportIds,
         newStatus,
         reviewedById,
@@ -145,7 +145,7 @@ export class AdminService implements IAdminService {
 
   async listPosts(params: ListPostsParams): Promise<ListPostsResult> {
     try {
-      return await this.adminRepository.listPosts(params);
+      return await this._adminRepository.listPosts(params);
     } catch (error: any) {
       logger.error("Error in listPosts service", { error: error.message });
       throw new CustomError(500, "Failed to list posts");
@@ -154,7 +154,7 @@ export class AdminService implements IAdminService {
 
   async getPostById(postId: string) {
     try {
-      const post = await this.adminRepository.getPostById(postId);
+      const post = await this._adminRepository.getPostById(postId);
       if (!post) {
         throw new CustomError(404, "Post not found");
       }
@@ -174,9 +174,9 @@ export class AdminService implements IAdminService {
         if (!reason) {
           throw new CustomError(400, "Reason is required when hiding a post");
         }
-        return await this.adminRepository.hidePost(postId, reason);
+        return await this._adminRepository.hidePost(postId, reason);
       } else {
-        return await this.adminRepository.unhidePost(postId);
+        return await this._adminRepository.unhidePost(postId);
       }
     } catch (error: any) {
       if (error instanceof CustomError) throw error;
@@ -187,12 +187,12 @@ export class AdminService implements IAdminService {
 
   async deletePostAdmin(postId: string) {
     try {
-      const post = await this.adminRepository.getPostById(postId);
+      const post = await this._adminRepository.getPostById(postId);
       if (!post) {
         throw new CustomError(404, "Post not found");
       }
 
-      return await this.adminRepository.deletePostAdmin(postId);
+      return await this._adminRepository.deletePostAdmin(postId);
     } catch (error: any) {
       if (error instanceof CustomError) throw error;
       logger.error("Error in deletePostAdmin service", { error: error.message });
@@ -202,7 +202,7 @@ export class AdminService implements IAdminService {
 
   async listReportedPosts(params: ListPostsParams): Promise<ListPostsResult> {
     try {
-      return await this.adminRepository.listReportedPosts(params);
+      return await this._adminRepository.listReportedPosts(params);
     } catch (error: any) {
       logger.error("Error in listReportedPosts service", { error: error.message });
       throw new CustomError(500, "Failed to list reported posts");
@@ -213,7 +213,7 @@ export class AdminService implements IAdminService {
 
   async listComments(params: ListCommentsParams): Promise<ListCommentsResult> {
     try {
-      return await this.adminRepository.listComments(params);
+      return await this._adminRepository.listComments(params);
     } catch (error: any) {
       logger.error("Error in listComments service", { error: error.message });
       throw new CustomError(500, "Failed to list comments");
@@ -222,7 +222,7 @@ export class AdminService implements IAdminService {
 
   async getCommentById(commentId: string) {
     try {
-      const comment = await this.adminRepository.getCommentById(commentId);
+      const comment = await this._adminRepository.getCommentById(commentId);
       if (!comment) {
         throw new CustomError(404, "Comment not found");
       }
@@ -236,15 +236,15 @@ export class AdminService implements IAdminService {
 
   async deleteCommentAdmin(commentId: string) {
     try {
-      const comment = await this.adminRepository.getCommentById(commentId);
+      const comment = await this._adminRepository.getCommentById(commentId);
       if (!comment) {
         throw new CustomError(404, "Comment not found");
       }
 
-      const deletedComment = await this.adminRepository.deleteCommentAdmin(commentId);
+      const deletedComment = await this._adminRepository.deleteCommentAdmin(commentId);
       
       // Decrement post comments count
-      await this.postRepository.decrementCommentsCount(comment.postId);
+      await this._postRepository.decrementCommentsCount(comment.postId);
 
       return deletedComment;
     } catch (error: any) {
@@ -256,7 +256,7 @@ export class AdminService implements IAdminService {
 
   async listReportedComments(params: ListCommentsParams): Promise<ListCommentsResult> {
     try {
-      return await this.adminRepository.listReportedComments(params);
+      return await this._adminRepository.listReportedComments(params);
     } catch (error: any) {
       logger.error("Error in listReportedComments service", { error: error.message });
       throw new CustomError(500, "Failed to list reported comments");
@@ -267,7 +267,7 @@ export class AdminService implements IAdminService {
 
   async getDashboardStats(): Promise<DashboardStats> {
     try {
-      return await this.adminRepository.getDashboardStats();
+      return await this._adminRepository.getDashboardStats();
     } catch (error: any) {
       logger.error("Error in getDashboardStats service", { error: error.message });
       throw new CustomError(500, "Failed to get dashboard stats");
@@ -276,7 +276,7 @@ export class AdminService implements IAdminService {
 
   async getReportsByReason(): Promise<Record<string, number>> {
     try {
-      return await this.adminRepository.getReportsByReason();
+      return await this._adminRepository.getReportsByReason();
     } catch (error: any) {
       logger.error("Error in getReportsByReason service", { error: error.message });
       throw new CustomError(500, "Failed to get reports by reason");
@@ -285,7 +285,7 @@ export class AdminService implements IAdminService {
 
   async getReportsBySeverity(): Promise<Record<string, number>> {
     try {
-      return await this.adminRepository.getReportsBySeverity();
+      return await this._adminRepository.getReportsBySeverity();
     } catch (error: any) {
       logger.error("Error in getReportsBySeverity service", { error: error.message });
       throw new CustomError(500, "Failed to get reports by severity");
@@ -296,7 +296,7 @@ export class AdminService implements IAdminService {
 
   async getUserReportedContent(userId: string) {
     try {
-      return await this.adminRepository.getUserReportedContent(userId);
+      return await this._adminRepository.getUserReportedContent(userId);
     } catch (error: any) {
       logger.error("Error in getUserReportedContent service", { error: error.message });
       throw new CustomError(500, "Failed to get user reported content");
@@ -305,7 +305,7 @@ export class AdminService implements IAdminService {
 
   async getUserReportsHistory(userId: string) {
     try {
-      return await this.adminRepository.getUserReportsHistory(userId);
+      return await this._adminRepository.getUserReportsHistory(userId);
     } catch (error: any) {
       logger.error("Error in getUserReportsHistory service", { error: error.message });
       throw new CustomError(500, "Failed to get user reports history");

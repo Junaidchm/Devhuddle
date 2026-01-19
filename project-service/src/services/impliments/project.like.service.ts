@@ -16,24 +16,24 @@ import { OutboxAggregateType, OutboxEventType } from "@prisma/client";
 
 export class ProjectLikeService implements IProjectLikeService {
   constructor(
-    private likeRepository: IProjectLikeRepository,
-    private projectRepository: IProjectRepository,
+    private _likeRepository: IProjectLikeRepository,
+    private _projectRepository: IProjectRepository,
     private outboxService?: IOutboxService
   ) {}
 
   async likeProject(req: LikeProjectRequest): Promise<LikeProjectResponse> {
     try {
       // Validate project exists
-      const project = await this.projectRepository.findProject(req.projectId);
+      const project = await this._projectRepository.findProject(req.projectId);
       if (!project) {
         throw new CustomError(grpc.status.NOT_FOUND, "Project not found");
       }
 
       // Check if already liked
-      const existingLike = await this.likeRepository.findLike(req.projectId, req.userId);
+      const existingLike = await this._likeRepository.findLike(req.projectId, req.userId);
       if (existingLike) {
         // Already liked - return current count (idempotent)
-        const likesCount = await this.likeRepository.getLikeCount(req.projectId);
+        const likesCount = await this._likeRepository.getLikeCount(req.projectId);
         return {
           isLiked: true,
           likesCount,
@@ -41,13 +41,13 @@ export class ProjectLikeService implements IProjectLikeService {
       }
 
       // Create like
-      await this.likeRepository.createLike({
+      await this._likeRepository.createLike({
         projectId: req.projectId,
         userId: req.userId,
       });
 
       // Get updated count
-      const likesCount = await this.likeRepository.getLikeCount(req.projectId);
+      const likesCount = await this._likeRepository.getLikeCount(req.projectId);
 
       // Publish event
       if (this.outboxService) {
@@ -79,16 +79,16 @@ export class ProjectLikeService implements IProjectLikeService {
   async unlikeProject(req: UnlikeProjectRequest): Promise<UnlikeProjectResponse> {
     try {
       // Validate project exists
-      const project = await this.projectRepository.findProject(req.projectId);
+      const project = await this._projectRepository.findProject(req.projectId);
       if (!project) {
         throw new CustomError(grpc.status.NOT_FOUND, "Project not found");
       }
 
       // Check if liked
-      const existingLike = await this.likeRepository.findLike(req.projectId, req.userId);
+      const existingLike = await this._likeRepository.findLike(req.projectId, req.userId);
       if (!existingLike) {
         // Not liked - return current count (idempotent)
-        const likesCount = await this.likeRepository.getLikeCount(req.projectId);
+        const likesCount = await this._likeRepository.getLikeCount(req.projectId);
         return {
           isLiked: false,
           likesCount,
@@ -96,10 +96,10 @@ export class ProjectLikeService implements IProjectLikeService {
       }
 
       // Delete like
-      await this.likeRepository.deleteLike(req.projectId, req.userId);
+      await this._likeRepository.deleteLike(req.projectId, req.userId);
 
       // Get updated count
-      const likesCount = await this.likeRepository.getLikeCount(req.projectId);
+      const likesCount = await this._likeRepository.getLikeCount(req.projectId);
 
       // Publish event
       if (this.outboxService) {

@@ -6,7 +6,7 @@ import { setUsertoBlockBlackList } from "../../utils/redis.actions";
 import { IAdminService } from "../interface/IadminService";
 
 export class AdminService implements IAdminService {
-  constructor(private adminRepository: AdminRepository) {}
+  constructor(private _adminRepository: AdminRepository) {}
 
   async getUsers(
     page: number,
@@ -20,7 +20,7 @@ export class AdminService implements IAdminService {
         logger.error("Invalid page or limit parameters", { page, limit });
         throw new CustomError(400, "Invalid page or limit");
       }
-      return await this.adminRepository.findManyPaginated(
+      return await this._adminRepository.findManyPaginated(
         page,
         limit,
         status,
@@ -37,7 +37,7 @@ export class AdminService implements IAdminService {
 
   async getUserFullDetails(userId: string): Promise<Partial<User> | null> {
     try {
-      const user = await this.adminRepository.findUserFullDetails(userId);
+      const user = await this._adminRepository.findUserFullDetails(userId);
       if (!user) {
         logger.error(`user not found for this id : ${userId}`);
         throw new CustomError(404, "user Not found");
@@ -54,13 +54,13 @@ export class AdminService implements IAdminService {
 
   async toogleUserState(userId: string): Promise<void> {
     try {
-      const user = await this.adminRepository.findById(userId);
+      const user = await this._adminRepository.findById(userId);
       if (!user) {
         logger.error(`User not found: ${userId}`);
         throw new CustomError(404, "User not found");
       }
 
-      const updatedUser = await this.adminRepository.toogleUserBlock(userId);
+      const updatedUser = await this._adminRepository.toogleUserBlock(userId);
       await setUsertoBlockBlackList(updatedUser.id,updatedUser.isBlocked)
 
     } catch (error: unknown) {

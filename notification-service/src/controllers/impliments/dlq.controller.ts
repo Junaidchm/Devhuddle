@@ -5,7 +5,7 @@ import { IDLQService } from '../../services/interfaces/IDlqService';
 
 export class DLQController {
   
-  constructor(private dlqService: IDLQService ) {}
+  constructor(private _dlqService: IDLQService ) {}
 
   /**
    * Get DLQ messages for manual review
@@ -21,7 +21,7 @@ export class DLQController {
         endDate 
       } = req.query;
 
-      const result = await this.dlqService.getDLQMessages({
+      const result = await this._dlqService.getDLQMessages({
         status: status as string,
         limit: parseInt(limit as string),
         offset: parseInt(offset as string),
@@ -52,7 +52,7 @@ export class DLQController {
         return;
       }
 
-      const result = await this.dlqService.retryDLQMessage(id);
+      const result = await this._dlqService.retryDLQMessage(id);
       
       res.status(200).json({
         success: true,
@@ -85,7 +85,7 @@ export class DLQController {
         return;
       }
 
-      await this.dlqService.resolveDLQMessage(id, resolution);
+      await this._dlqService.resolveDLQMessage(id, resolution);
       
       res.status(200).json({
         success: true,
@@ -107,7 +107,7 @@ export class DLQController {
    */
   async getDLQStats(req: Request, res: Response): Promise<void> {
     try {
-      const stats = await this.dlqService.getDLQStats();
+      const stats = await this._dlqService.getDLQStats();
       
       res.status(200).json({
         success: true,

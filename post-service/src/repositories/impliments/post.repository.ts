@@ -7,7 +7,6 @@ import { prisma } from "../../config/prisma.config";
 import logger from "../../utils/logger.util";
 import redisClient from "../../config/redis.config";
 import { posts, Prisma } from ".prisma/client";
-import { Visibility, CommentControl } from "../../dto/post.dto";
 
 import { userClient } from "../../config/grpc.client";
 import {
@@ -50,20 +49,12 @@ export class PostRepository
 
   async submitPostRepo(data: SubmitPostRequest): Promise<SubmitPostResponse> {
     try {
-      /**
-       *  UPDATED: Use Media Service for validation and linking
-       * 
-       * Why this change:
-       * - Media Service is the single source of truth for media records
-       * - Ensures consistency across services
-       * - Removes dependency on Post Service's Media table
-       * - Better separation of concerns
-       */
+
 
       let validation: MediaValidationResponse | undefined;
 
       // Step 1: Validate media ownership via Media Service
-      // ...
+
       if (data.mediaIds && data.mediaIds.length > 0) {
         try {
           validation = await validateMediaOwnership(data.mediaIds, data.userId);
@@ -371,8 +362,6 @@ export class PostRepository
     try {
       // Use Redis for distributed locking
       const lockKey = `post:edit:lock:${postId}`;
-      // Try to set with NX (only if not exists) and EX (expiration)
-      // Redis v5+ uses SET with options
       const result: string | null = await redisClient.set(lockKey, "1", {
         EX: 300, // 5 minute expiration
         NX: true, // Only set if not exists

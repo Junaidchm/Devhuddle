@@ -5,7 +5,7 @@ import { sendErrorResponse } from "../../utils/error.util";
 import logger from "../../utils/logger.util";
 
 export class MediaController implements IMediaController {
-  constructor(private mediaService: IMediaService) {}
+  constructor(private _mediaService: IMediaService) {}
 
   async createUploadSession(req: Request, res: Response): Promise<void> {
     try {
@@ -25,7 +25,7 @@ export class MediaController implements IMediaController {
         
       }
 
-      const result = await this.mediaService.createUploadSession({
+      const result = await this._mediaService.createUploadSession({
         userId,
         fileName,
         fileType,
@@ -65,7 +65,7 @@ export class MediaController implements IMediaController {
         });
       }
 
-      const result = await this.mediaService.completeUpload({
+      const result = await this._mediaService.completeUpload({
         mediaId,
         userId,
       });
@@ -102,7 +102,7 @@ export class MediaController implements IMediaController {
         });
       }
 
-      const media = await this.mediaService.getMediaById(mediaId, userId);
+      const media = await this._mediaService.getMediaById(mediaId, userId);
 
       res.status(200).json({
         success: true,
@@ -136,7 +136,7 @@ export class MediaController implements IMediaController {
         });
       }
 
-      await this.mediaService.deleteMedia(mediaId, userId);
+      await this._mediaService.deleteMedia(mediaId, userId);
 
       res.status(200).json({
         success: true,
@@ -200,7 +200,7 @@ export class MediaController implements IMediaController {
          // Validation handled by DTO
       }
 
-      const result = await this.mediaService.validateMediaOwnership({
+      const result = await this._mediaService.validateMediaOwnership({
         mediaIds,
         userId,
       });
@@ -242,7 +242,7 @@ export class MediaController implements IMediaController {
         // Validation handled by DTO
       }
 
-      await this.mediaService.linkMediaToPost(mediaIds, postId, userId);
+      await this._mediaService.linkMediaToPost(mediaIds, postId, userId);
 
       res.status(200).json({
         success: true,

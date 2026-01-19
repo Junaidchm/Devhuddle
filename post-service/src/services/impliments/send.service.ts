@@ -14,8 +14,8 @@ import { OutboxAggregateType, OutboxEventType } from "@prisma/client";
  */
 export class SendService implements ISendService {
   constructor(
-    private postRepository: IPostRepository,
-    private outboxService: IOutboxService
+    private _postRepository: IPostRepository,
+    private _outboxService: IOutboxService
   ) {}
 
   async sendPost(
@@ -30,7 +30,7 @@ export class SendService implements ISendService {
   }> {
     try {
       // 1. Validate post exists
-      const post = await this.postRepository.findPost(postId);
+      const post = await this._postRepository.findPost(postId);
       if (!post) {
         throw new CustomError(grpc.status.NOT_FOUND, "Post not found");
       }
@@ -63,7 +63,7 @@ export class SendService implements ISendService {
       // Each recipient gets a separate notification
       for (const recipientId of validRecipients) {
         try {
-          await this.outboxService.createOutboxEvent({
+          await this._outboxService.createOutboxEvent({
             aggregateType: OutboxAggregateType.POST,
             aggregateId: postId,
             type: OutboxEventType.POST_SENT,

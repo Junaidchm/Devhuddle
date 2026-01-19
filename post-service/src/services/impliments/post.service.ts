@@ -44,7 +44,7 @@ import {
 
 export class PostSerive implements IpostService {
   constructor(
-    private postRepository: IPostRepository,
+    private _postRepository: IPostRepository,
     private likeRepository?: ILikeRepository,
     private commentRepository?: ICommentRepository,
     private shareRepository?: IShareRepository,
@@ -58,7 +58,7 @@ export class PostSerive implements IpostService {
   async submitPost(req: SubmitPostRequest): Promise<SubmitPostResponse> {
     try {
       // 1. Create post in database (transaction ensures atomicity)
-      const post: SubmitPostResponse = await this.postRepository.submitPostRepo(
+      const post: SubmitPostResponse = await this._postRepository.submitPostRepo(
         req
       );
 
@@ -93,7 +93,7 @@ export class PostSerive implements IpostService {
           // Only fan-out if we have followers and feed service is available
           if (followers.length > 0 && this.feedService) {
             // Extract post metadata
-            const postData = await this.postRepository.findPost(post.id);
+            const postData = await this._postRepository.findPost(post.id);
             if (postData) {
               const metadata = {
                 authorId: postData.userId,
@@ -256,7 +256,7 @@ export class PostSerive implements IpostService {
       // If pageParam (post ID) is provided, find how many posts to skip based on createdAt
       let skipCount = 0;
       if (pageParam) {
-        const cursorPost = await this.postRepository.findPost(pageParam);
+        const cursorPost = await this._postRepository.findPost(pageParam);
         if (cursorPost && cursorPost.createdAt) {
           // Count posts created after this one (newer posts) to determine skip count
           const newerPostsCount = await prisma.posts.count({
@@ -279,7 +279,7 @@ export class PostSerive implements IpostService {
         orderBy: { createdAt: "desc" }, //  CRITICAL FIX: Order by createdAt DESC for chronological ordering (UUIDs are not chronological!)
       };
 
-      const prismaPosts = await this.postRepository.getPostsRepo(
+      const prismaPosts = await this._postRepository.getPostsRepo(
         PostselectOptions
       );
 
@@ -343,13 +343,13 @@ export class PostSerive implements IpostService {
 
   async deletePostServ(postId: string): Promise<DeletePostResponse> {
     try {
-      const isthere = await this.postRepository.findPost(postId);
+      const isthere = await this._postRepository.findPost(postId);
 
       if (!isthere) {
         throw new CustomError(grpc.status.NOT_FOUND, "Post Not found");
       }
 
-      const deletedPost = await this.postRepository.deletePost(postId);
+      const deletedPost = await this._postRepository.deletePost(postId);
 
       //  NEW: Remove post from all user feeds
       if (this.feedService) {
@@ -374,7 +374,7 @@ export class PostSerive implements IpostService {
   async editPost(req: EditPostRequest): Promise<EditPostResponse> {
     try {
       // 1. Get post
-      const post = await this.postRepository.findPost(req.postId);
+      const post = await this._postRepository.findPost(req.postId);
       if (!post) {
         throw new CustomError(grpc.status.NOT_FOUND, "Post not found");
       }
@@ -396,7 +396,7 @@ export class PostSerive implements IpostService {
       }
 
       // 4. Lock post for editing
-      await this.postRepository.lockForEditing(req.postId);
+      await this._postRepository.lockForEditing(req.postId);
 
       try {
         // 5. Validate attachments if adding
@@ -487,7 +487,7 @@ export class PostSerive implements IpostService {
         };
       } catch (error: any) {
         // Unlock on error
-        await this.postRepository.unlockEditing(req.postId);
+        await this._postRepository.unlockEditing(req.postId);
         throw error;
       }
     } catch (err: unknown) {
@@ -507,7 +507,7 @@ export class PostSerive implements IpostService {
   ): Promise<GetPostVersionsResponse> {
     try {
       // Verify ownership
-      const post = await this.postRepository.findPost(req.postId);
+      const post = await this._postRepository.findPost(req.postId);
       if (!post || post.userId !== req.userId) {
         throw new CustomError(
           grpc.status.PERMISSION_DENIED,
@@ -567,7 +567,7 @@ export class PostSerive implements IpostService {
       }
 
       // Verify ownership
-      const post = await this.postRepository.findPost(req.postId);
+      const post = await this._postRepository.findPost(req.postId);
       if (!post || post.userId !== req.userId) {
         throw new CustomError(
           grpc.status.PERMISSION_DENIED,

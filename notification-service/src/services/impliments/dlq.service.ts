@@ -37,7 +37,7 @@ export interface DLQStats {
 }
 
 export class DLQService {
-  constructor(private repo: IDLQRepository) {}
+  constructor(private _repo: IDLQRepository) {}
 
   async getDLQMessages(query: DLQQuery): Promise<{
     messages: DLQMessage[];
@@ -46,8 +46,8 @@ export class DLQService {
   }> {
     try {
       const [messages, total] = await Promise.all([
-        this.repo.findMany(query),
-        this.repo.count(query),
+        this._repo.findMany(query),
+        this._repo.count(query),
       ]);
       return {
         messages: messages.map((msg) => ({
@@ -79,11 +79,11 @@ export class DLQService {
     dlqId: string
   ): Promise<{ success: boolean; message: string }> {
     try {
-      const dlqMessage = await this.repo.findById(dlqId);
+      const dlqMessage = await this._repo.findById(dlqId);
       if (!dlqMessage) throw new Error("DLQ message not found");
       if (dlqMessage.status === "RESOLVED")
         throw new Error("DLQ message already processed");
-      await this.repo.updateStatus(dlqId, {
+      await this._repo.updateStatus(dlqId, {
         status: "RETRYING",
         retryCount: dlqMessage.retryCount + 1,
         updatedAt: new Date(),
@@ -115,9 +115,9 @@ export class DLQService {
 
   async resolveDLQMessage(dlqId: string, resolution: string): Promise<void> {
     try {
-      const dlqMessage = await this.repo.findById(dlqId);
+      const dlqMessage = await this._repo.findById(dlqId);
       if (!dlqMessage) throw new Error("DLQ message not found");
-      await this.repo.updateStatus(dlqId, {
+      await this._repo.updateStatus(dlqId, {
         status: "RESOLVED",
         resolution,
         updatedAt: new Date(),
@@ -143,13 +143,13 @@ export class DLQService {
         byTopic,
         recentFailures,
       ] = await Promise.all([
-        this.repo.count(),
-        this.repo.count({ status: "PENDING", limit: 0, offset: 0 }),
-        this.repo.count({ status: "RETRYING", limit: 0, offset: 0 }),
-        this.repo.count({ status: "RESOLVED", limit: 0, offset: 0 }),
-        this.repo.count({ status: "FAILED", limit: 0, offset: 0 }),
-        this.repo.groupByTopic(),
-        this.repo.countRecentFailures(),
+        this._repo.count(),
+        this._repo.count({ status: "PENDING", limit: 0, offset: 0 }),
+        this._repo.count({ status: "RETRYING", limit: 0, offset: 0 }),
+        this._repo.count({ status: "RESOLVED", limit: 0, offset: 0 }),
+        this._repo.count({ status: "FAILED", limit: 0, offset: 0 }),
+        this._repo.groupByTopic(),
+        this._repo.countRecentFailures(),
       ]);
       const byTopicMap = byTopic.reduce((acc, item) => {
         acc[item.originalTopic] = item._count.id;
@@ -172,7 +172,7 @@ export class DLQService {
 
   async cleanupOldMessages(daysOld: number = 30): Promise<number> {
     try {
-      const deleted = await this.repo.deleteOldResolved(daysOld);
+      const deleted = await this._repo.deleteOldResolved(daysOld);
       logger.info(`Cleaned up ${deleted} old DLQ messages`);
       return deleted;
     } catch (error: unknown) {

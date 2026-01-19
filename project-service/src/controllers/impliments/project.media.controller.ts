@@ -6,7 +6,7 @@ import logger from "../../utils/logger.util";
 import { sendErrorResponse } from "../../utils/error.util";
 
 export class ProjectMediaController {
-  constructor(private mediaService: IProjectMediaService) {}
+  constructor(private _mediaService: IProjectMediaService) {}
 
   async uploadProjectMediaHttp(req: Request, res: Response): Promise<void> {
     // Check if request was aborted
@@ -45,7 +45,7 @@ export class ProjectMediaController {
         hasThumbnail: !!thumbnailUrl,
       });
 
-      const response = await this.mediaService.uploadProjectMedia({
+      const response = await this._mediaService.uploadProjectMedia({
         url,
         type,
         thumbnailUrl,

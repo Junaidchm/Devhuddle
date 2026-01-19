@@ -14,15 +14,15 @@ import { OutboxAggregateType, OutboxEventType } from "@prisma/client";
 
 export class ProjectShareService implements IProjectShareService {
   constructor(
-    private shareRepository: IProjectShareRepository,
-    private projectRepository: IProjectRepository,
+    private _shareRepository: IProjectShareRepository,
+    private _projectRepository: IProjectRepository,
     private outboxService?: IOutboxService
   ) {}
 
   async shareProject(req: ShareProjectRequest): Promise<ShareProjectResponse> {
     try {
       // Validate project exists
-      const project = await this.projectRepository.findProject(req.projectId);
+      const project = await this._projectRepository.findProject(req.projectId);
       if (!project) {
         throw new CustomError(grpc.status.NOT_FOUND, "Project not found");
       }
@@ -44,7 +44,7 @@ export class ProjectShareService implements IProjectShareService {
       }
 
       // Create share
-      const share = await this.shareRepository.createShare({
+      const share = await this._shareRepository.createShare({
         projectId: req.projectId,
         userId: req.userId,
         shareType: req.shareType,
@@ -52,7 +52,7 @@ export class ProjectShareService implements IProjectShareService {
       });
 
       // Get updated count
-      const sharesCount = await this.shareRepository.getShareCount(req.projectId);
+      const sharesCount = await this._shareRepository.getShareCount(req.projectId);
 
       // Publish event
       if (this.outboxService) {

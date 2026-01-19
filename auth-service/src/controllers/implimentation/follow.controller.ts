@@ -6,7 +6,7 @@ import logger from "../../utils/logger.util";
 import { Messages } from "../../constents/reqresMessages";
 
 export class FollowsController implements IFollowsController {
-  constructor(private followService: IFollowsService) {}
+  constructor(private _followService: IFollowsService) {}
 
   async getSuggestions(req: Request, res: Response): Promise<void> {
     try {
@@ -17,7 +17,7 @@ export class FollowsController implements IFollowsController {
 
       console.log('this is the userId -----------------------------######################,', userId)
       const { suggestedUsers: result } =
-        await this.followService.getSuggestions(
+        await this._followService.getSuggestions(
           userId as string,
           Number(limit) || 5
         );
@@ -45,7 +45,7 @@ export class FollowsController implements IFollowsController {
         return;
       }
 
-      const result = await this.followService.follow(userId, targetUserId);
+      const result = await this._followService.follow(userId, targetUserId);
 
       console.log('this is the result -----------------------------######################,', result)
       
@@ -82,7 +82,7 @@ export class FollowsController implements IFollowsController {
         return;
       }
 
-      await this.followService.unfollow(userId, targetUserId);
+      await this._followService.unfollow(userId, targetUserId);
       
       res.status(HttpStatus.OK).json({
         message: Messages.USER_UNFOLLOWED_SUCCESSFULLY,

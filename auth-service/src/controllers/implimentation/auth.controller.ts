@@ -51,7 +51,7 @@ import { HttpStatus } from "../../constents/httpStatus";
 import { User } from "@prisma/client";
 
 export class AuthController implements IAuthController {
-  constructor(private authService: IAuthService) {}
+  constructor(private _authService: IAuthService) {}
 
 
   async searchUsers(req: Request, res: Response): Promise<void> {
@@ -64,7 +64,7 @@ export class AuthController implements IAuthController {
         return;
       }
 
-      const users: Partial<User>[] = await this.authService.searchUsers(
+      const users: Partial<User>[] = await this._authService.searchUsers(
         query,
         currentUserId
       );
@@ -81,7 +81,7 @@ export class AuthController implements IAuthController {
   async register(req: RegisterRequest): Promise<RegisterResponse> {
     // Validation is now handled by validateDto middleware
     const { name, username, email, password } = req;
-    await this.authService.register({ email, username, name, password });
+    await this._authService.register({ email, username, name, password });
 
     return { message: Messages.VERIFY_EMAIL_WITH_OTP };
   }
@@ -90,7 +90,7 @@ export class AuthController implements IAuthController {
     // Validation handled by DTO
 
     const { email, otp } = req;
-    const jwtpayload: JwtPayload = await this.authService.verifyOTP(req);
+    const jwtpayload: JwtPayload = await this._authService.verifyOTP(req);
     return {
       message: Messages.EMAIL_VERIFIED,
       jwtpayload,
@@ -100,7 +100,7 @@ export class AuthController implements IAuthController {
   async login(req: LogingRequest): Promise<LogingResponse> {
     const { email, password } = req;
     // Validation handled by DTO
-    const jwtpayload: GetJwtUserResponse = await this.authService.login({
+    const jwtpayload: GetJwtUserResponse = await this._authService.login({
       email,
       password,
     });
@@ -114,12 +114,12 @@ export class AuthController implements IAuthController {
   async resendOTP(req: ResentOTPRequest): Promise<ResentOTPResponse> {
     const { email } = req;
     // Validation handled by DTO
-    await this.authService.resendOTP(email);
+    await this._authService.resendOTP(email);
     return { message: Messages.OTP_RESENT };
   }
 
   async getCurrentUser(req: GetJwtUserRequest): Promise<GetJwtUserResponse> {
-    const user = await this.authService.getJwtPayload(req.userId);
+    const user = await this._authService.getJwtPayload(req.userId);
     return user;
   }
 
@@ -128,7 +128,7 @@ export class AuthController implements IAuthController {
   ): Promise<PasswordResetResponse> {
     const { email } = req;
     // Validation handled by DTO
-    await this.authService.requestPasswordReset({ email });
+    await this._authService.requestPasswordReset({ email });
     return { message: Messages.PASSWORD_SENDTO_MAIL };
   }
 
@@ -136,7 +136,7 @@ export class AuthController implements IAuthController {
     // Validation handled by DTO
 
     const { token, newPassword } = req;
-    await this.authService.resetPassword({ token, newPassword });
+    await this._authService.resetPassword({ token, newPassword });
     return { message: Messages.PASSWORD_UPDATED };
   }
 
@@ -180,7 +180,7 @@ export class AuthController implements IAuthController {
     if (yearsOfExperience !== undefined) payload.yearsOfExperience = yearsOfExperience || undefined;
 
     const updatedUser: UpdateProfileResponse =
-      await this.authService.updateProfile(userId, payload);
+      await this._authService.updateProfile(userId, payload);
 
     return updatedUser;
   }
@@ -196,7 +196,7 @@ export class AuthController implements IAuthController {
       throw new CustomError(grpc.status.INVALID_ARGUMENT, "Email is required");
     }
 
-    const jwtpayload: JwtPayload = await this.authService.verifyUser(email);
+    const jwtpayload: JwtPayload = await this._authService.verifyUser(email);
 
     return {
       message: Messages.OK,
@@ -212,7 +212,7 @@ export class AuthController implements IAuthController {
     }
 
     const userProfile: GetProfileResponse =
-      await this.authService.getUserProfile(userId);
+      await this._authService.getUserProfile(userId);
 
     return userProfile;
   }
@@ -231,7 +231,7 @@ export class AuthController implements IAuthController {
       );
     }
 
-    const result = await this.authService.generatePresignedUrl(
+    const result = await this._authService.generatePresignedUrl(
       userId,
       operation,
       fileName,
@@ -272,7 +272,7 @@ export class AuthController implements IAuthController {
             throw new CustomError(500, "No user data received");
           }
           logger.info("Google OAuth user", { email: oauthUser.email });
-          const user: GetJwtUserResponse = await this.authService.handleOAuthLogin(
+          const user: GetJwtUserResponse = await this._authService.handleOAuthLogin(
             oauthUser,
             res
           );
@@ -305,7 +305,7 @@ export class AuthController implements IAuthController {
     }
 
     const userFeedDetails: getUserForFeedListingResponse =
-      await this.authService.getUserForFeedPostServic(userId);
+      await this._authService.getUserForFeedPostServic(userId);
 
     return userFeedDetails;
   }

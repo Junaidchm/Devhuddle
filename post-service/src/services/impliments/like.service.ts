@@ -16,10 +16,10 @@ import {
 
 export class LikeService implements ILikeService {
   constructor(
-    private likeRepository: ILikeRepository,
-    private postRepository: IPostRepository,
-    private commentRepository: ICommentRepository,
-    private outboxService: IOutboxService
+    private _likeRepository: ILikeRepository,
+    private _postRepository: IPostRepository,
+    private _commentRepository: ICommentRepository,
+    private _outboxService: IOutboxService
   ) {}
 
   // ========== PUBLIC METHODS - POST LIKES (Explicit API) ==========
@@ -84,7 +84,7 @@ export class LikeService implements ILikeService {
       }
 
       // Check if already liked (active like)
-      const existingLike = await this.likeRepository.findLike(
+      const existingLike = await this._likeRepository.findLike(
         targetType,
         targetId,
         userId
@@ -96,7 +96,7 @@ export class LikeService implements ILikeService {
       }
 
       // Check if there's a soft-deleted like (for re-liking)
-      const softDeletedLike = await this.likeRepository.findSoftDeletedLike(
+      const softDeletedLike = await this._likeRepository.findSoftDeletedLike(
         targetType,
         targetId,
         userId
@@ -107,20 +107,20 @@ export class LikeService implements ILikeService {
       
       if (softDeletedLike) {
         // Restore the soft-deleted like instead of creating a new one
-        like = await this.likeRepository.restoreLike(softDeletedLike.id);
+        like = await this._likeRepository.restoreLike(softDeletedLike.id);
         logger.info(`Restored soft-deleted like for ${targetType} ${targetId} by user ${userId}`);
       } else {
         // Create new like
         try {
           if (targetType === ReactionTargetType.POST) {
-            like = await this.likeRepository.createLike({
+            like = await this._likeRepository.createLike({
               userId,
               type: "LIKE",
               postId: targetId,
               targetType: ReactionTargetType.POST,
             });
           } else if (targetType === ReactionTargetType.COMMENT) {
-            like = await this.likeRepository.createLike({
+            like = await this._likeRepository.createLike({
               userId,
               type: "LIKE",
               commentId: targetId,
@@ -137,7 +137,7 @@ export class LikeService implements ILikeService {
           if (createError.message?.includes("already exists") || createError.code === 'P2002') {
             logger.warn(`Like already exists for ${targetType} ${targetId} by user ${userId} (race condition)`);
             // Verify it exists now
-            const verifyLike = await this.likeRepository.findLike(targetType, targetId, userId);
+            const verifyLike = await this._likeRepository.findLike(targetType, targetId, userId);
             if (verifyLike) {
               // Like exists now, treat as success
               return;
@@ -159,7 +159,7 @@ export class LikeService implements ILikeService {
       let payload: any;
 
       if (targetType === ReactionTargetType.POST) {
-        await this.postRepository.incrementLikesCount(targetId);
+        await this._postRepository.incrementLikesCount(targetId);
         await RedisCacheService.incrementPostLikes(targetId);
         eventType = OutboxEventType.POST_LIKE_CREATED;
         topic = KAFKA_TOPICS.POST_LIKE_CREATED;
@@ -173,12 +173,12 @@ export class LikeService implements ILikeService {
         };
       } else if (targetType === ReactionTargetType.COMMENT) {
         // Verify comment exists before incrementing counter
-        const comment = await this.commentRepository.findComment(targetId);
+        const comment = await this._commentRepository.findComment(targetId);
         if (!comment) {
           throw new CustomError(HttpStatus.NOT_FOUND, "Comment not found");
         }
         
-        await this.commentRepository.incrementLikesCount(targetId);
+        await this._commentRepository.incrementLikesCount(targetId);
         await RedisCacheService.incrementCommentLikes(targetId);
         // Invalidate comment list cache so refetches get fresh data with updated likesCount
         if (targetDetails.postId) {
@@ -235,7 +235,7 @@ export class LikeService implements ILikeService {
     key: string,
     payload: any
   ): Promise<void> {
-    await this.outboxService.createOutboxEvent({
+    await this._outboxService.createOutboxEvent({
       aggregateType: OutboxAggregateType.REACTION, // Use REACTION, not ReactionTargetType
       aggregateId,
       type,
@@ -255,7 +255,7 @@ export class LikeService implements ILikeService {
   ): Promise<void> {
     try {
       // Check if like exists
-      const existingLike = await this.likeRepository.findLike(
+      const existingLike = await this._likeRepository.findLike(
         targetType,
         targetId,
         userId
@@ -265,7 +265,7 @@ export class LikeService implements ILikeService {
       }
 
       // Delete like
-      await this.likeRepository.deleteLike(targetType, targetId, userId);
+      await this._likeRepository.deleteLike(targetType, targetId, userId);
 
       // Get target details for event (before deleting)
       const targetDetails = await this._getTargetDetails(targetType, targetId);
@@ -283,7 +283,7 @@ export class LikeService implements ILikeService {
       let payload: any;
 
       if (targetType === ReactionTargetType.POST) {
-        await this.postRepository.decrementLikesCount(targetId);
+        await this._postRepository.decrementLikesCount(targetId);
         await RedisCacheService.decrementPostLikes(targetId);
         eventType = OutboxEventType.POST_LIKE_REMOVED;
         topic = KAFKA_TOPICS.POST_LIKE_REMOVED;
@@ -296,7 +296,7 @@ export class LikeService implements ILikeService {
           action: "UNLIKE", 
         };
       } else if (targetType === ReactionTargetType.COMMENT) {
-        await this.commentRepository.decrementLikesCount(targetId);
+        await this._commentRepository.decrementLikesCount(targetId);
         await RedisCacheService.decrementCommentLikes(targetId);
         // Invalidate comment list cache so refetches get fresh data with updated likesCount
         if (targetDetails.postId) {
@@ -352,7 +352,7 @@ export class LikeService implements ILikeService {
     userId: string
   ): Promise<boolean> {
     try {
-      const like = await this.likeRepository.findLike(
+      const like = await this._likeRepository.findLike(
         targetType,
         targetId,
         userId
@@ -387,7 +387,7 @@ export class LikeService implements ILikeService {
       }
 
       // Cache miss - get from database
-      const count = await this.likeRepository.getLikeCount(
+      const count = await this._likeRepository.getLikeCount(
         targetType,
         targetId
       );
@@ -418,13 +418,13 @@ export class LikeService implements ILikeService {
     targetId: string
   ): Promise<{ authorId: string; postId?: string } | undefined> {
     if (targetType === ReactionTargetType.POST) {
-      const post = await this.postRepository.findPost(targetId);
+      const post = await this._postRepository.findPost(targetId);
       if (!post) {
         return undefined;
       }
       return { authorId: post.userId };
     } else if (targetType === ReactionTargetType.COMMENT) {
-      const comment = await this.commentRepository.findComment(targetId);
+      const comment = await this._commentRepository.findComment(targetId);
       if (!comment) {
         return undefined;
       }
