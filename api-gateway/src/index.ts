@@ -34,8 +34,7 @@ app.use(
   })
 );
 
-// Body parser middleware (CRITICAL: Must be before proxy routes)
-// Configure with proper limits to handle UploadThing callbacks and large payloads
+
 app.use(express.json({
   limit: '10mb', // 10MB limit for JSON payloads (sufficient for UploadThing callbacks)
   verify: (req: Request, res, buf) => {

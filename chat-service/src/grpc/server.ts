@@ -6,7 +6,7 @@ import { ChatStatsService } from '../services/impliments/chat.stats.service';
 import { ChatInteractionRepository } from '../repositories/impliments/chat-interaction.repository';
 import logger from '../utils/logger.util';
 
-const PROTO_PATH = path.join(__dirname, '../../proto/chat-stats.proto');
+const PROTO_PATH = path.join(__dirname, '../../protos/chat-stats.proto');
 
 // Load proto file
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
@@ -23,14 +23,12 @@ const chatStatsService = protoDescriptor.chatstats.ChatStatsService;
 export function startGrpcServer(port: number = 50051): void {
   const server = new grpc.Server();
 
-  // Initialize layers (Repository → Service → Controller)
   const chatInteractionRepository = new ChatInteractionRepository();
   const chatStatsServiceLayer = new ChatStatsService(chatInteractionRepository);
   const chatStatsController = new ChatStatsController(chatStatsServiceLayer);
 
   logger.info('✅ gRPC layers initialized (Repository → Service → Controller)');
   
-  // DEBUG: Print expected service keys and paths
   const serviceDef = chatStatsService.service;
   const keys = Object.keys(serviceDef);
   logger.info(`🔍 Service Keys: ${JSON.stringify(keys)}`);

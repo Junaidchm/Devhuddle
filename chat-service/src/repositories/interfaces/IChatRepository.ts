@@ -23,4 +23,26 @@ export interface IChatRepository {
 
   // Get all conversations for a user
   getUserConversations(userId: string): Promise<Conversation[]>;
+
+  // Get conversations with metadata (last message, unread count)
+  getUserConversationsWithMetadata(
+    userId: string,
+    limit: number,
+    offset: number
+  ): Promise<ConversationWithMetadata[]>;
+
+  // Check if conversation exists between users (no creation)
+  conversationExists(participantIds: string[]): Promise<Conversation | null>;
+
+  // Get last message for a conversation
+  getLastMessage(conversationId: string): Promise<Message | null>;
+}
+
+/**
+ * Type definition for conversation with metadata
+ */
+export interface ConversationWithMetadata extends Conversation {
+  participants: Participant[];
+  lastMessage: Message | null;
+  unreadCount: number;
 }

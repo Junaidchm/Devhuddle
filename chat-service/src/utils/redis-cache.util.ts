@@ -156,4 +156,39 @@ export class RedisCacheService {
       });
     }
   }
+
+  /**
+   * Generic get method for custom cache keys
+   */
+  static async get(key: string): Promise<string | null> {
+    try {
+      const cached = await redisClient.get(key);
+      if (cached) {
+        logger.debug('Cache hit', { key });
+      }
+      return cached;
+    } catch (error) {
+      logger.error('Failed to get from cache', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        key
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Generic set method for custom cache keys with TTL
+   */
+  static async set(key: string, value: string, ttlSeconds: number): Promise<void> {
+    try {
+      await redisClient.setEx(key, ttlSeconds, value);
+      logger.debug('Cached data', { key, ttl: ttlSeconds });
+    } catch (error) {
+      logger.error('Failed to cache data', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        key
+      });
+    }
+  }
 }
+

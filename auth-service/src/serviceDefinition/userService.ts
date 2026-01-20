@@ -5,6 +5,8 @@ import {
   CheckFollowResponse,
   GetFollowersRequest,
   GetFollowersResponse,
+  GetUserProfilesRequest,
+  GetUserProfilesResponse,
   UserServiceServer,
 } from "../grpc/generated/user";
 import * as grpc from "@grpc/grpc-js";
@@ -136,4 +138,61 @@ export const userServic: UserServiceServer = {
       });
     }
   },
+  getUserProfiles: async (
+    call: grpc.ServerUnaryCall<GetUserProfilesRequest, GetUserProfilesResponse>,
+    callback: grpc.sendUnaryData<GetUserProfilesResponse>
+  ) => {
+    try {
+      const request = call.request;
+      const { user_ids } = request;
+
+      logger.info("gRPC getUserProfiles called", { userCount: user_ids.length });
+
+      // If no user IDs provided, return empty array
+      if (!user_ids || user_ids.length === 0) {
+        logger.info("No user IDs provided");
+        callback(null, { profiles: [] });
+        return;
+      }
+
+      // Fetch user profiles using prisma directly
+      const users = await prisma.user.findMany({
+        where: {
+          id: { in: user_ids },
+          isBlocked: false,
+        },
+        select: {
+          id: true,
+          username: true,
+          name: true,
+          profilePicture: true,
+        },
+      });
+
+      const profiles = users.map((user) => ({
+        id: user.id,
+        username: user.username,
+        name: user.name || user.username,
+        profilePhoto: user.profilePicture || "",
+      }));
+
+      logger.info("User profiles fetched successfully", {
+        requested: user_ids.length,
+        found: profiles.length,
+      });
+
+      callback(null, { profiles });
+    } catch (err: any) {
+      logger.error("gRPC getUserProfiles error", {
+        error: err.message,
+        stack: err.stack,
+        userCount: call.request.user_ids?.length || 0,
+      });
+      callback({
+        code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,
+        message: err.message || "Internal server error",
+      });
+    }
+  },
 };
+

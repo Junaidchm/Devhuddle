@@ -3,16 +3,20 @@ import { IChatRepository } from "../../repositories/interfaces/IChatRepository";
 import { Message, Conversation, Prisma, Participant } from "@prisma/client";
 import logger from "../../utils/logger.util";
 import { RedisCacheService } from "../../utils/redis-cache.util";
+import { authServiceClient } from "../../clients/auth-service.client";
 import {
     SendMessageCommand,
     CreateConversationCommand,
     GetMessagesQuery,
-    GetUserConversationsQuery
+    GetUserConversationsQuery,
+    GetUserConversationsWithMetadataQuery,
+    CheckConversationExistsQuery,
+    ConversationWithMetadataDto
 } from "../../dtos/chat-service.dto";
 
 export class ChatService implements IChatService {
 
-    constructor(private _chatRepository: IChatRepository) {}
+    constructor(private _chatRepository: IChatRepository) { }
 
     /**
      * Send a message (uses Command pattern with business validation)
@@ -210,14 +214,14 @@ export class ChatService implements IChatService {
         try {
             // Try cache first
             const cachedConversation = await RedisCacheService.getCachedConversation(conversationId);
-            
+
             if (cachedConversation) {
                 return cachedConversation;
             }
 
             // Cache miss - get from database
             const conversation = await this._chatRepository.findConversationById(conversationId);
-            
+
             if (!conversation) {
                 return null;
             }
@@ -231,4 +235,143 @@ export class ChatService implements IChatService {
             throw new Error("Failed to find conversation");
         }
     }
+
+    /**
+     * Get user conversations with metadata (uses Query pattern with business validation)
+     * Returns enriched conversation list with user profiles from auth-service
+     * Implements cache-aside pattern with 2-minute TTL
+     */
+    async getUserConversationsWithMetadata(
+        userId: string,
+        limit: number = 50,
+        offset: number = 0
+    ): Promise<ConversationWithMetadataDto[]> {
+        try {
+            // Create and validate query (business rules validated here)
+            const query = new GetUserConversationsWithMetadataQuery(userId, limit, offset);
+
+            // Try cache first (2 min TTL)
+            const cacheKey = `user:${query.userId}:conversations:metadata:${query.limit}:${query.offset}`;
+            const cached = await RedisCacheService.get(cacheKey);
+
+            if (cached) {
+                logger.info("Retrieved conversations with metadata from cache", {
+                    userId: query.userId,
+                    conversationCount: JSON.parse(cached).length
+                });
+                return JSON.parse(cached);
+            }
+
+            // Cache miss - get from repository with metadata
+            const conversationsWithMetadata = await this._chatRepository.getUserConversationsWithMetadata(
+                query.userId,
+                query.limit,
+                query.offset
+            );
+
+            // Enrich with user data from auth-service via gRPC
+            // Collect all unique participant IDs across all conversations
+            const allParticipantIds = new Set<string>();
+            conversationsWithMetadata.forEach((conv) => {
+                conv.participants.forEach(p => allParticipantIds.add(p.userId));
+            });
+
+            // Fetch user profiles via gRPC
+            const userProfilesMap = await authServiceClient.getUserProfiles(
+                Array.from(allParticipantIds)
+            );
+
+            logger.info("Enriching conversations with user profiles", {
+                conversationCount: conversationsWithMetadata.length,
+                uniqueUsers: allParticipantIds.size,
+                profilesFetched: userProfilesMap.size
+            });
+
+            // Map to enriched DTOs with user profile data
+            const enrichedConversations: ConversationWithMetadataDto[] = conversationsWithMetadata.map((conv) => {
+                return {
+                    conversationId: conv.id,
+                    participantIds: conv.participants.map(p => p.userId),
+                    // Enrich participants with profile data from gRPC
+                    participants: conv.participants.map(p => {
+                        const profile = userProfilesMap.get(p.userId);
+                        return {
+                            userId: p.userId,
+                            username: profile?.username || 'unknown',
+                            name: profile?.name || 'Unknown User',
+                            profilePhoto: profile?.profilePhoto || null
+                        };
+                    }),
+                    lastMessage: conv.lastMessage ? {
+                        content: conv.lastMessage.content,
+                        senderId: conv.lastMessage.senderId,
+                        senderName: userProfilesMap.get(conv.lastMessage.senderId)?.name || 'Unknown',
+                        createdAt: conv.lastMessage.createdAt
+                    } : null,
+                    lastMessageAt: conv.lastMessageAt,
+                    unreadCount: conv.unreadCount
+                };
+            });
+
+            // Cache the results (2 minutes)
+            await RedisCacheService.set(cacheKey, JSON.stringify(enrichedConversations), 120);
+
+            logger.info("Retrieved conversations with metadata from DB", {
+                userId: query.userId,
+                conversationCount: enrichedConversations.length,
+                limit: query.limit,
+                offset: query.offset
+            });
+
+            return enrichedConversations;
+        } catch (error) {
+            logger.error("Error in getUserConversationsWithMetadata service", {
+                error: (error as Error).message,
+                userId
+            });
+            throw error; // Re-throw to preserve business validation errors
+        }
+    }
+
+    /**
+     * Check if conversation exists between users (uses Query pattern with business validation)
+     * Used for duplicate prevention before creating new conversation
+     */
+    async checkConversationExists(
+        currentUserId: string,
+        participantIds: string[]
+    ): Promise<{ exists: boolean; conversationId?: string }> {
+        try {
+            // Create and validate query (business rules validated here)
+            const query = new CheckConversationExistsQuery(currentUserId, participantIds);
+
+            // Get all unique participant IDs
+            const allParticipants = query.getAllParticipants();
+
+            // Check if conversation exists
+            const conversation = await this._chatRepository.conversationExists(allParticipants);
+
+            const result = {
+                exists: !!conversation,
+                conversationId: conversation?.id
+            };
+
+            logger.info("Checked conversation existence", {
+                currentUserId,
+                participantIds,
+                exists: result.exists,
+                conversationId: result.conversationId
+            });
+
+            return result;
+        } catch (error) {
+            logger.error("Error in checkConversationExists service", {
+                error: (error as Error).message,
+                currentUserId,
+                participantIds
+            });
+            throw error; // Re-throw to preserve business validation errors
+        }
+    }
 }
+
