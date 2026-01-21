@@ -65,36 +65,36 @@ app.use(ROUTES.USERS.BASE, conditionalJwtMiddleware, authServiceProxy);
 
 app.use(ROUTES.FEED.BASE, conditionalJwtMiddleware, postServiceProxy);
 
-app.use(
-  ROUTES.MEDIA.BASE,
-  conditionalJwtMiddleware,
-  mediaServiceProxy
-);
+// app.use(
+//   ROUTES.MEDIA.BASE,
+//   conditionalJwtMiddleware,
+//   mediaServiceProxy
+// );
 
-app.use(
-  ROUTES.NOTIFICATIONS.BASE,
-  conditionalJwtMiddleware,
-  notificationServiceProxy
-);
+// app.use(
+//   ROUTES.NOTIFICATIONS.BASE,
+//   conditionalJwtMiddleware,
+//   notificationServiceProxy
+// );
 
-app.use(
-  ROUTES.ENGAGEMENT.BASE,
-  conditionalJwtMiddleware,
-  engagementServiceProxy
-);
+// app.use(
+//   ROUTES.ENGAGEMENT.BASE,
+//   conditionalJwtMiddleware,
+//   engagementServiceProxy
+// );
 
 
-app.use(ROUTES.PROJECTS.BASE, conditionalJwtMiddleware, projectServiceProxy);
+// app.use(ROUTES.PROJECTS.BASE, conditionalJwtMiddleware, projectServiceProxy);
 
 
 app.use(ROUTES.ADMIN.BASE, conditionalJwtMiddleware, adminServiceProxy);
 
-// // Chat Service Route
-// app.use(
-//   "/api/v1/chat", // Hardcoded for now as it might not be in ROUTES constant yet
-//   conditionalJwtMiddleware,
-//   chatServiceProxy
-// );
+// Chat Service Route
+app.use(
+  "/api/v1/chat",
+  conditionalJwtMiddleware,
+  chatServiceProxy
+);
 
 // Health check
 app.get(ROUTES.HEALTH, (req: Request, res: Response) => {

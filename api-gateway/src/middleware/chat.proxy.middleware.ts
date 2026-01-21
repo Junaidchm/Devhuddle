@@ -10,14 +10,48 @@ import { logger } from "../utils/logger";
  * - WebSockets: /api/v1/chat -> ws://chat-service:4004/api/v1/chat
  */
 export const chatServiceProxy = createProxyMiddleware({
-  target: app_config.chatServiceUrl || "http://chat-service:4004", // Fallback if env missing
+  target: app_config.chatServiceUrl || "http://chat-service:4004",
   changeOrigin: true,
-  ws: true, // Enable WebSocket proxying
+  ws: true,
   
-  onProxyReq: (proxyReq, req, res) => {
+  onProxyReq: (proxyReq, req: any, res) => {
     logger.info(
       `[Chat Proxy] Forwarding ${req.method} ${req.originalUrl} to ${app_config.chatServiceUrl}`
     );
+
+    // Forward user data from JWT middleware if available
+    const userData = req.user || (req.headers["x-user-data"] ? JSON.parse(req.headers["x-user-data"] as string) : null);
+    
+    if (userData) {
+      proxyReq.setHeader("x-user-data", JSON.stringify(userData));
+    }
+    
+    // Forward Authorization header
+    if (req.headers["authorization"]) {
+      proxyReq.setHeader("authorization", req.headers["authorization"] as string);
+    }
+    
+    // CRITICAL: Handle request body for POST/PUT/PATCH requests
+    if (req.method !== "GET" && req.method !== "HEAD" && req.method !== "DELETE" && req.body) {
+      const bodyData = JSON.stringify(req.body);
+      const bodyLength = Buffer.byteLength(bodyData);
+      
+      proxyReq.removeHeader("content-length");
+      proxyReq.setHeader("content-type", "application/json");
+      proxyReq.setHeader("content-length", bodyLength.toString());
+      
+      if (req.readable && !req.readableEnded) {
+        req.pause();
+      }
+      
+      proxyReq.write(bodyData);
+      proxyReq.end();
+      
+      logger.info(`[Chat Proxy] Writing body to proxy request`, {
+        bodyLength: bodyLength,
+        bodyKeys: Object.keys(req.body),
+      });
+    }
   },
 
   // WebSocket specific handling
@@ -39,6 +73,17 @@ export const chatServiceProxy = createProxyMiddleware({
         logger.debug("[Chat Proxy] Injected Authorization header from query param");
       }
     }
+  },
+
+  onProxyRes: (proxyRes, req, res) => {
+    // Log response for debugging
+    logger.info(`[Chat Proxy] Response ${proxyRes.statusCode} for ${req.method} ${req.originalUrl}`);
+    
+    // Explicitly set CORS headers for all responses to avoid network errors
+    proxyRes.headers["access-control-allow-origin"] = process.env.frontend_URL || "http://localhost:3000";
+    proxyRes.headers["access-control-allow-methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+    proxyRes.headers["access-control-allow-headers"] = "Content-Type, Authorization, x-user-data";
+    proxyRes.headers["access-control-allow-credentials"] = "true";
   },
 
   onError: (err, req, res) => {

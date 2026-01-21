@@ -15,4 +15,9 @@ export interface IChatController {
    * Create a new conversation
    */
   createConversation(req: Request, res: Response): Promise<void>;
+
+  /**
+   * Check if a conversation exists
+   */
+  checkConversationExists(req: Request, res: Response): Promise<void>;
 }

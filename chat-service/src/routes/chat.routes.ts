@@ -1,16 +1,17 @@
 import { Router } from 'express';
 import { ChatController } from '../controllers/impliments/chat.controller';
 import { validateDto, validateQuery } from '../middleware/validation.middleware';
-import { CreateConversationDto, GetMessagesDto } from '../dtos/chat.dto';
+import { CreateConversationDto, GetMessagesDto, CheckConversationDto } from '../dtos/chat.dto';
 
 export function createChatRoutes(chatController: ChatController): Router {
   const router = Router();
 
   /**
-   * GET /conversations
-   * Get all conversations for the authenticated user
+   * GET /conversations?limit=20&offset=0
+   * Get all conversations for the authenticated user with metadata
+   * Query params: limit (default: 50, max: 100), offset (default: 0)
    */
-  router.get('/conversations', chatController.getUserConversations.bind(chatController));
+  router.get('/conversations' , chatController.getUserConversations.bind(chatController));
 
   /**
    * GET /conversations/:conversationId/messages
@@ -32,5 +33,16 @@ export function createChatRoutes(chatController: ChatController): Router {
     chatController.createConversation.bind(chatController)
   );
 
+  /**
+   * POST /conversations/check
+   * Check if a conversation already exists between users (duplicate prevention)
+   * Body validated by CheckConversationDto
+   */
+  router.post('/conversations/check',
+    validateDto(CheckConversationDto),
+    chatController.checkConversationExists.bind(chatController)
+  );
+
   return router;
 }
+

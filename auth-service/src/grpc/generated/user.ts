@@ -55,6 +55,22 @@ export interface GetFollowersResponse {
   followers: Follower[];
 }
 
+/** Get user profiles for chat conversation enrichment */
+export interface GetUserProfilesRequest {
+  userIds: string[];
+}
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  name: string;
+  profilePhoto: string;
+}
+
+export interface GetUserProfilesResponse {
+  profiles: UserProfile[];
+}
+
 function createBasegetUserForFeedListingRequest(): getUserForFeedListingRequest {
   return { userId: "" };
 }
@@ -553,6 +569,240 @@ export const GetFollowersResponse: MessageFns<GetFollowersResponse> = {
   },
 };
 
+function createBaseGetUserProfilesRequest(): GetUserProfilesRequest {
+  return { userIds: [] };
+}
+
+export const GetUserProfilesRequest: MessageFns<GetUserProfilesRequest> = {
+  encode(message: GetUserProfilesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.userIds) {
+      writer.uint32(10).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetUserProfilesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetUserProfilesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.userIds.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetUserProfilesRequest {
+    return {
+      userIds: globalThis.Array.isArray(object?.userIds)
+        ? object.userIds.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.user_ids)
+        ? object.user_ids.map((e: any) => globalThis.String(e))
+        : [],
+    };
+  },
+
+  toJSON(message: GetUserProfilesRequest): unknown {
+    const obj: any = {};
+    if (message.userIds?.length) {
+      obj.userIds = message.userIds;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetUserProfilesRequest>, I>>(base?: I): GetUserProfilesRequest {
+    return GetUserProfilesRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetUserProfilesRequest>, I>>(object: I): GetUserProfilesRequest {
+    const message = createBaseGetUserProfilesRequest();
+    message.userIds = object.userIds?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseUserProfile(): UserProfile {
+  return { id: "", username: "", name: "", profilePhoto: "" };
+}
+
+export const UserProfile: MessageFns<UserProfile> = {
+  encode(message: UserProfile, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.username !== "") {
+      writer.uint32(18).string(message.username);
+    }
+    if (message.name !== "") {
+      writer.uint32(26).string(message.name);
+    }
+    if (message.profilePhoto !== "") {
+      writer.uint32(34).string(message.profilePhoto);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UserProfile {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUserProfile();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.profilePhoto = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UserProfile {
+    return {
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      profilePhoto: isSet(object.profilePhoto) ? globalThis.String(object.profilePhoto) : "",
+    };
+  },
+
+  toJSON(message: UserProfile): unknown {
+    const obj: any = {};
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.profilePhoto !== "") {
+      obj.profilePhoto = message.profilePhoto;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UserProfile>, I>>(base?: I): UserProfile {
+    return UserProfile.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UserProfile>, I>>(object: I): UserProfile {
+    const message = createBaseUserProfile();
+    message.id = object.id ?? "";
+    message.username = object.username ?? "";
+    message.name = object.name ?? "";
+    message.profilePhoto = object.profilePhoto ?? "";
+    return message;
+  },
+};
+
+function createBaseGetUserProfilesResponse(): GetUserProfilesResponse {
+  return { profiles: [] };
+}
+
+export const GetUserProfilesResponse: MessageFns<GetUserProfilesResponse> = {
+  encode(message: GetUserProfilesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.profiles) {
+      UserProfile.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetUserProfilesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetUserProfilesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.profiles.push(UserProfile.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetUserProfilesResponse {
+    return {
+      profiles: globalThis.Array.isArray(object?.profiles)
+        ? object.profiles.map((e: any) => UserProfile.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: GetUserProfilesResponse): unknown {
+    const obj: any = {};
+    if (message.profiles?.length) {
+      obj.profiles = message.profiles.map((e) => UserProfile.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetUserProfilesResponse>, I>>(base?: I): GetUserProfilesResponse {
+    return GetUserProfilesResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetUserProfilesResponse>, I>>(object: I): GetUserProfilesResponse {
+    const message = createBaseGetUserProfilesResponse();
+    message.profiles = object.profiles?.map((e) => UserProfile.fromPartial(e)) || [];
+    return message;
+  },
+};
+
 export type UserServiceService = typeof UserServiceService;
 export const UserServiceService = {
   /** User-related methods */
@@ -586,6 +836,17 @@ export const UserServiceService = {
       Buffer.from(GetFollowersResponse.encode(value).finish()),
     responseDeserialize: (value: Buffer): GetFollowersResponse => GetFollowersResponse.decode(value),
   },
+  getUserProfiles: {
+    path: "/UserService/GetUserProfiles",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: GetUserProfilesRequest): Buffer =>
+      Buffer.from(GetUserProfilesRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): GetUserProfilesRequest => GetUserProfilesRequest.decode(value),
+    responseSerialize: (value: GetUserProfilesResponse): Buffer =>
+      Buffer.from(GetUserProfilesResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer): GetUserProfilesResponse => GetUserProfilesResponse.decode(value),
+  },
 } as const;
 
 export interface UserServiceServer extends UntypedServiceImplementation {
@@ -593,6 +854,7 @@ export interface UserServiceServer extends UntypedServiceImplementation {
   getUserForFeedListing: handleUnaryCall<getUserForFeedListingRequest, getUserForFeedListingResponse>;
   checkFollow: handleUnaryCall<CheckFollowRequest, CheckFollowResponse>;
   getFollowers: handleUnaryCall<GetFollowersRequest, GetFollowersResponse>;
+  getUserProfiles: handleUnaryCall<GetUserProfilesRequest, GetUserProfilesResponse>;
 }
 
 export interface UserServiceClient extends Client {
@@ -641,6 +903,21 @@ export interface UserServiceClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: GetFollowersResponse) => void,
+  ): ClientUnaryCall;
+  getUserProfiles(
+    request: GetUserProfilesRequest,
+    callback: (error: ServiceError | null, response: GetUserProfilesResponse) => void,
+  ): ClientUnaryCall;
+  getUserProfiles(
+    request: GetUserProfilesRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: GetUserProfilesResponse) => void,
+  ): ClientUnaryCall;
+  getUserProfiles(
+    request: GetUserProfilesRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: GetUserProfilesResponse) => void,
   ): ClientUnaryCall;
 }
 

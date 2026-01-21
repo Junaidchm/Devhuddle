@@ -25,7 +25,7 @@ export interface IChatRepository {
   getUserConversations(userId: string): Promise<Conversation[]>;
 
   // Get conversations with metadata (last message, unread count)
-  getUserConversationsWithMetadata(
+    getUserConversationsWithMetadata(
     userId: string,
     limit: number,
     offset: number
