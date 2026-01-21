@@ -144,12 +144,12 @@ export const userServic: UserServiceServer = {
   ) => {
     try {
       const request = call.request;
-      const { user_ids } = request;
+      const { userIds } = request;
 
-      logger.info("gRPC getUserProfiles called", { userCount: user_ids.length });
+      logger.info("gRPC getUserProfiles called", { userCount: userIds?.length || 0 });
 
       // If no user IDs provided, return empty array
-      if (!user_ids || user_ids.length === 0) {
+      if (!userIds || userIds.length === 0) {
         logger.info("No user IDs provided");
         callback(null, { profiles: [] });
         return;
@@ -158,7 +158,7 @@ export const userServic: UserServiceServer = {
       // Fetch user profiles using prisma directly
       const users = await prisma.user.findMany({
         where: {
-          id: { in: user_ids },
+          id: { in: userIds },
           isBlocked: false,
         },
         select: {
@@ -177,7 +177,7 @@ export const userServic: UserServiceServer = {
       }));
 
       logger.info("User profiles fetched successfully", {
-        requested: user_ids.length,
+        requested: userIds.length,
         found: profiles.length,
       });
 
@@ -186,7 +186,7 @@ export const userServic: UserServiceServer = {
       logger.error("gRPC getUserProfiles error", {
         error: err.message,
         stack: err.stack,
-        userCount: call.request.user_ids?.length || 0,
+        userCount: call.request.userIds?.length || 0,
       });
       callback({
         code: err instanceof CustomError ? err.status : grpc.status.INTERNAL,

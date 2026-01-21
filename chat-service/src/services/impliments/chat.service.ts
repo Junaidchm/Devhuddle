@@ -54,6 +54,8 @@ export class ChatService implements IChatService {
             await RedisCacheService.invalidateConversationCache(conversation.id);
             for (const participantId of participantIds) {
                 await RedisCacheService.invalidateUserConversationsCache(participantId);
+                // Also invalidate the enriched metadata cache
+                await RedisCacheService.invalidateUserConversationsMetadataCache(participantId);
             }
 
             logger.info("Message sent successfully", {
@@ -250,16 +252,19 @@ export class ChatService implements IChatService {
             // Create and validate query (business rules validated here)
             const query = new GetUserConversationsWithMetadataQuery(userId, limit, offset);
 
-            // Try cache first (2 min TTL)
-            const cacheKey = `user:${query.userId}:conversations:metadata:${query.limit}:${query.offset}`;
-            const cached = await RedisCacheService.get(cacheKey);
+            // Try cache first (2 min TTL via dedicated cache method)
+            const cached = await RedisCacheService.getCachedUserConversationsWithMetadata(
+                query.userId,
+                query.limit,
+                query.offset
+            );
 
             if (cached) {
                 logger.info("Retrieved conversations with metadata from cache", {
                     userId: query.userId,
-                    conversationCount: JSON.parse(cached).length
+                    conversationCount: cached.length
                 });
-                return JSON.parse(cached);
+                return cached;
             }
 
             // Cache miss - get from repository with metadata
@@ -269,23 +274,75 @@ export class ChatService implements IChatService {
                 query.offset
             );
 
+            logger.info("Retrieved conversations with metadata from DB", {
+                userId: query.userId,
+                conversationCount: conversationsWithMetadata.length,
+                limit: query.limit,
+                offset: query.offset
+            });
+
+            // If no conversations, return early (don't cache empty results)
+            if (conversationsWithMetadata.length === 0) {
+                logger.info("No conversations found for user", { userId: query.userId });
+                return [];
+            }
+
             // Enrich with user data from auth-service via gRPC
             // Collect all unique participant IDs across all conversations
             const allParticipantIds = new Set<string>();
             conversationsWithMetadata.forEach((conv) => {
-                conv.participants.forEach(p => allParticipantIds.add(p.userId));
+                if (!conv.participants || !Array.isArray(conv.participants)) {
+                    logger.error("Conversation has invalid participants structure", {
+                        conversationId: conv.id,
+                        participants: conv.participants
+                    });
+                    return;
+                }
+                conv.participants.forEach(p => {
+                    if (p && p.userId) {
+                        allParticipantIds.add(p.userId);
+                    } else {
+                        logger.warn("Participant missing userId", { participant: p });
+                    }
+                });
+            });
+
+            logger.info("Collected participant IDs", {
+                conversationCount: conversationsWithMetadata.length,
+                uniqueParticipants: allParticipantIds.size,
+                participantIds: Array.from(allParticipantIds)
             });
 
             // Fetch user profiles via gRPC
-            const userProfilesMap = await authServiceClient.getUserProfiles(
-                Array.from(allParticipantIds)
-            );
+            let userProfilesMap: Map<string, any>;
+            try {
+                userProfilesMap = await authServiceClient.getUserProfiles(
+                    Array.from(allParticipantIds)
+                );
 
-            logger.info("Enriching conversations with user profiles", {
-                conversationCount: conversationsWithMetadata.length,
-                uniqueUsers: allParticipantIds.size,
-                profilesFetched: userProfilesMap.size
-            });
+                logger.info("Enriching conversations with user profiles", {
+                    conversationCount: conversationsWithMetadata.length,
+                    uniqueUsers: allParticipantIds.size,
+                    profilesFetched: userProfilesMap.size
+                });
+
+                // If gRPC failed and returned empty profiles, log warning but continue
+                if (allParticipantIds.size > 0 && userProfilesMap.size === 0) {
+                    logger.error("gRPC returned no profiles despite having participant IDs", {
+                        expectedProfiles: allParticipantIds.size,
+                        conversationCount: conversationsWithMetadata.length
+                    });
+                    // Return empty array and don't cache - indicates a system issue
+                    return [];
+                }
+            } catch (error) {
+                logger.error("Failed to fetch user profiles from gRPC", {
+                    error: (error as Error).message,
+                    participantCount: allParticipantIds.size
+                });
+                // Return empty array and don't cache - indicates a system issue
+                return [];
+            }
 
             // Map to enriched DTOs with user profile data
             const enrichedConversations: ConversationWithMetadataDto[] = conversationsWithMetadata.map((conv) => {
@@ -295,6 +352,12 @@ export class ChatService implements IChatService {
                     // Enrich participants with profile data from gRPC
                     participants: conv.participants.map(p => {
                         const profile = userProfilesMap.get(p.userId);
+                        if (!profile) {
+                            logger.warn("No profile found for participant", {
+                                userId: p.userId,
+                                conversationId: conv.id
+                            });
+                        }
                         return {
                             userId: p.userId,
                             username: profile?.username || 'unknown',
@@ -313,15 +376,19 @@ export class ChatService implements IChatService {
                 };
             });
 
-            // Cache the results (2 minutes)
-            await RedisCacheService.set(cacheKey, JSON.stringify(enrichedConversations), 120);
-
-            logger.info("Retrieved conversations with metadata from DB", {
-                userId: query.userId,
-                conversationCount: enrichedConversations.length,
-                limit: query.limit,
-                offset: query.offset
-            });
+            // Only cache if we successfully enriched conversations
+            if (enrichedConversations.length > 0) {
+                await RedisCacheService.cacheUserConversationsWithMetadata(
+                    query.userId,
+                    query.limit,
+                    query.offset,
+                    enrichedConversations
+                );
+                logger.info("Cached enriched conversations", {
+                    userId: query.userId,
+                    count: enrichedConversations.length
+                });
+            }
 
             return enrichedConversations;
         } catch (error) {
@@ -334,7 +401,7 @@ export class ChatService implements IChatService {
     }
 
     /**
-     * Check if conversation exists between users (uses Query pattern with business validation)
+     * Check if conversation exists between users 
      * Used for duplicate prevention before creating new conversation
      */
     async checkConversationExists(

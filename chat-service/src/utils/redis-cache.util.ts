@@ -10,6 +10,7 @@ const CACHE_TTL = {
   CONVERSATION: 3600,      // 1 hour
   MESSAGES: 1800,          // 30 minutes
   USER_CONVERSATIONS: 600, // 10 minutes
+  USER_CONVERSATIONS_METADATA: 120, // 2 minutes (highly dynamic data)
   PARTICIPANTS: 3600       // 1 hour
 };
 
@@ -152,6 +153,86 @@ export class RedisCacheService {
       logger.debug('Invalidated user conversations cache', { userId });
     } catch (error) {
       logger.error('Failed to invalidate user conversations cache', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  /**
+   * Cache user's conversations with metadata (enriched with last message, unread count, user profiles)
+   */
+  static async cacheUserConversationsWithMetadata(
+    userId: string,
+    limit: number,
+    offset: number,
+    conversations: any[]
+  ): Promise<void> {
+    try {
+      const key = `user:${userId}:conversations:metadata:${limit}:${offset}`;
+      await redisClient.setEx(
+        key,
+        CACHE_TTL.USER_CONVERSATIONS_METADATA,
+        JSON.stringify(conversations)
+      );
+      logger.debug('Cached user conversations with metadata', {
+        userId,
+        count: conversations.length,
+        limit,
+        offset
+      });
+    } catch (error) {
+      logger.error('Failed to cache user conversations with metadata', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  /**
+   * Get cached user conversations with metadata
+   */
+  static async getCachedUserConversationsWithMetadata(
+    userId: string,
+    limit: number,
+    offset: number
+  ): Promise<any[] | null> {
+    try {
+      const key = `user:${userId}:conversations:metadata:${limit}:${offset}`;
+      const cached = await redisClient.get(key);
+      if (cached) {
+        logger.debug('Cache hit for user conversations with metadata', {
+          userId,
+          limit,
+          offset
+        });
+        return JSON.parse(cached);
+      }
+      return null;
+    } catch (error) {
+      logger.error('Failed to get cached user conversations with metadata', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Invalidate user's conversation metadata cache
+   * Called when new messages are sent to update the conversation list
+   */
+  static async invalidateUserConversationsMetadataCache(userId: string): Promise<void> {
+    try {
+      const pattern = `user:${userId}:conversations:metadata:*`;
+      const keys = await redisClient.keys(pattern);
+
+      if (keys.length > 0) {
+        await redisClient.del(keys);
+        logger.debug('Invalidated user conversations metadata cache', {
+          userId,
+          keysDeleted: keys.length
+        });
+      }
+    } catch (error) {
+      logger.error('Failed to invalidate user conversations metadata cache', {
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }

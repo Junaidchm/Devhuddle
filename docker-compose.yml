@@ -81,6 +81,7 @@ services:
       - ./chat-service/.env
     volumes:
       - ./chat-service/src:/app/src
+      - ./chat-service/protos:/app/protos
       - ./chat-service/prisma:/app/prisma
       - /app/node_modules
     networks:
