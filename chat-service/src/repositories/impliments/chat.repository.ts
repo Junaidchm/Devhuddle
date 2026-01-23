@@ -1,4 +1,4 @@
-import { IChatRepository, ConversationWithMetadata } from "../interfaces/IChatRepository"; 
+import { IChatRepository, ConversationWithMetadata } from "../interfaces/IChatRepository";
 import { BaseRepository } from "./base.repository";
 import prisma from "../../config/db";
 import logger from "../../utils/logger.util";
@@ -83,9 +83,7 @@ export class ChatRepository extends BaseRepository<
                 data: {
                     participants: {
                         create: participantIds.map((userId) => ({
-                            userId,
-                            createdAt: new Date(),
-                            lastReadAt: new Date()
+                            userId
                         }))
                     }
                 },
@@ -101,7 +99,7 @@ export class ChatRepository extends BaseRepository<
         }
     }
 
-    async updateLastMessageAt(conversationId: string, timestamp: Date):Promise<void>{
+    async updateLastMessageAt(conversationId: string, timestamp: Date): Promise<void> {
         try {
             await prisma.conversation.update({
                 where: {
@@ -120,15 +118,15 @@ export class ChatRepository extends BaseRepository<
     async getUserConversations(userId: string): Promise<Conversation[]> {
         try {
             return await prisma.conversation.findMany({
-                where : {
+                where: {
                     participants: {
-                        some : {
+                        some: {
                             userId
                         }
                     }
                 },
-                include : {
-                    participants : true
+                include: {
+                    participants: true
                 }
             })
         } catch (error) {
@@ -142,7 +140,7 @@ export class ChatRepository extends BaseRepository<
      * WhatsApp/LinkedIn-style enriched conversation list
      */
 
-    
+
     async getUserConversationsWithMetadata(
         userId: string,
         limit: number,
@@ -164,11 +162,11 @@ export class ChatRepository extends BaseRepository<
                         orderBy: {
                             createdAt: 'desc'
                         },
-                        take: 1 // Only get the last message
+                        take: 1
                     }
                 },
                 orderBy: {
-                    lastMessageAt: 'desc' // Most recent conversations first
+                    lastMessageAt: 'desc'
                 },
                 take: limit,
                 skip: offset

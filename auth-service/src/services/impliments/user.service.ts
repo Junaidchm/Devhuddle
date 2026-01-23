@@ -171,10 +171,12 @@ export class UserService implements IUserService {
         id: item.user.id,
         username: item.user.username,
         fullName: item.user.fullName || item.user.name || item.user.username,
-        profilePhoto: item.user.profilePhoto || undefined,
+        profilePhoto: item.user.profilePicture || undefined, // DB field is profilePicture
         bio: item.user.bio || undefined,
         skills: item.user.skills || [],
       }));
+
+      console.log('suggestions --------------------->', suggestions);
 
       // 8. Cache results (5 min TTL)
       await cacheChatSuggestions(userId, limit, suggestions, 300);
@@ -208,7 +210,7 @@ export class UserService implements IUserService {
           id: user.id,
           username: user.username,
           fullName: user.fullName || user.name || user.username,
-          profilePhoto: user.profilePhoto || undefined,
+          profilePhoto: user.profilePicture || undefined, // DB field is profilePicture
           bio: user.bio || undefined,
           skills: user.skills || [],
         }));

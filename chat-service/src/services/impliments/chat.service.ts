@@ -178,13 +178,12 @@ export class ChatService implements IChatService {
     }
 
     /**
-     * Find or create conversation (uses Command pattern with business validation)
-     * Invalidates cache if conversation is created
+     * Find or create conversation and return enriched metadata
+     * Returns full conversation object with user profiles for immediate frontend use
      */
-    async findOrCreateConversation(participantIds: string[]): Promise<Conversation> {
+    async findOrCreateConversation(participantIds: string[]): Promise<ConversationWithMetadataDto> {
         try {
             // We need to extract initiator - assume first participant is initiator
-            // In real scenario, this would come from the request
             const [initiatorId, ...otherParticipants] = participantIds;
 
             // Create and validate command (business rules validated here)
@@ -198,6 +197,7 @@ export class ChatService implements IChatService {
             // Invalidate user conversations cache for all participants
             for (const participantId of allParticipants) {
                 await RedisCacheService.invalidateUserConversationsCache(participantId);
+                await RedisCacheService.invalidateUserConversationsMetadataCache(participantId);
             }
 
             logger.info("Found or created conversation", {
@@ -205,7 +205,28 @@ export class ChatService implements IChatService {
                 participantCount: allParticipants.length
             });
 
-            return conversation;
+            // Enrich with user profiles via gRPC (same logic as getUserConversationsWithMetadata)
+            const userProfilesMap = await authServiceClient.getUserProfiles(allParticipants);
+
+            // Build enriched conversation DTO
+            const enrichedConversation: ConversationWithMetadataDto = {
+                conversationId: conversation.id,
+                participantIds: allParticipants,
+                participants: allParticipants.map(userId => {
+                    const profile = userProfilesMap.get(userId);
+                    return {
+                        userId,
+                        username: profile?.username || 'unknown',
+                        name: profile?.name || 'Unknown User',
+                        profilePhoto: profile?.profilePhoto || null
+                    };
+                }),
+                lastMessage: null,
+                lastMessageAt: conversation.createdAt,
+                unreadCount: 0
+            };
+
+            return enrichedConversation;
         } catch (error) {
             logger.error("Error in findOrCreateConversation service", { error: (error as Error).message });
             throw error;
@@ -319,6 +340,8 @@ export class ChatService implements IChatService {
                 userProfilesMap = await authServiceClient.getUserProfiles(
                     Array.from(allParticipantIds)
                 );
+
+                console.log("userProfilesMap ---------------------------->", userProfilesMap);
 
                 logger.info("Enriching conversations with user profiles", {
                     conversationCount: conversationsWithMetadata.length,

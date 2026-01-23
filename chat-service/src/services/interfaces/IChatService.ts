@@ -5,7 +5,7 @@ export interface IChatService {
     sendMessage(senderId: string, recipientIds: string[], content: string): Promise<Message>;
     getConversationMessages(conversationId: string, userId: string, limit: number, offset: number): Promise<Message[]>;
     getUserConversations(userId: string): Promise<Conversation[]>;
-    findOrCreateConversation(participantIds: string[]): Promise<Conversation>;
+    findOrCreateConversation(participantIds: string[]): Promise<ConversationWithMetadataDto>;
     findConversationById(conversationId: string): Promise<(Conversation & { participants: Participant[] }) | null>;
     
     // Get conversations with enriched metadata (includes user profiles)
