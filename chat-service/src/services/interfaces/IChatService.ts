@@ -20,5 +20,18 @@ export interface IChatService {
         currentUserId: string,
         participantIds: string[]
     ): Promise<{ exists: boolean; conversationId?: string }>;
+    
+    // Update message delivery status
+    updateMessageStatus(
+        messageId: string,
+        status: 'DELIVERED' | 'READ'
+    ): Promise<void>;
+    
+    // Mark all messages up to lastReadMessageId as READ
+    markMessagesAsRead(
+        conversationId: string,
+        userId: string,
+        lastReadMessageId: string
+    ): Promise<void>;
 }
 

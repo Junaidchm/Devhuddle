@@ -135,6 +135,14 @@ export class WebSocketService {
                                     await this._handleSendMessage(ws, message);
                                     break;
 
+                                case 'message_delivered':
+                                    await this._handleMessageDelivered(ws, message);
+                                    break;
+
+                                case 'message_read':
+                                    await this._handleMessageRead(ws, message);
+                                    break;
+
                                 case 'typing':
                                     await this._handleTyping(ws, message);
                                     break;
@@ -301,7 +309,112 @@ export class WebSocketService {
             userId: ws.userId,
             conversationId: message.conversationId
         });
+    }
 
+    /**
+     * Handle delivery acknowledgment from client
+     * Updates message status to DELIVERED and broadcasts to sender
+     */
+    private async _handleMessageDelivered(
+        ws: AuthenticatedWebSocket,
+        message: { messageId: string }
+    ): Promise<void> {
+        try {
+            if (!message.messageId) {
+                ws.send(JSON.stringify({
+                    type: "error",
+                    error: "messageId is required"
+                }));
+                return;
+            }
+
+            // Update message status in database
+            await this.chatService.updateMessageStatus(
+                message.messageId,
+                'DELIVERED'
+            );
+
+            logger.info('Message marked as delivered', { 
+                messageId: message.messageId,
+                userId: ws.userId 
+            });
+
+            // Broadcast status update via Redis so sender gets notified
+            try {
+                await redisPublisher.publish(
+                    `message:status`,
+                    JSON.stringify({
+                        messageId: message.messageId,
+                        status: 'DELIVERED',
+                        deliveredAt: new Date().toISOString(),
+                    })
+                );
+            } catch (redisError) {
+                logger.error("Failed to publish status update to Redis", {
+                    error: redisError instanceof Error ? redisError.message : "Unknown error"
+                });
+            }
+        } catch (error) {
+            logger.error("Failed to update message delivery status", {
+                error: error instanceof Error ? error.message : "Unknown error",
+                messageId: message.messageId
+            });
+        }
+    }
+
+    /**
+     * Handle read acknowledgment from client
+     * Marks all messages up to lastReadMessageId as READ
+     */
+    private async _handleMessageRead(
+        ws: AuthenticatedWebSocket,
+        message: { conversationId: string; lastReadMessageId: string }
+    ): Promise<void> {
+        try {
+            if (!message.conversationId || !message.lastReadMessageId) {
+                ws.send(JSON.stringify({
+                    type: "error",
+                    error: "conversationId and lastReadMessageId are required"
+                }));
+                return;
+            }
+
+            // Mark messages as read in database
+            await this.chatService.markMessagesAsRead(
+                message.conversationId,
+                ws.userId!,
+                message.lastReadMessageId
+            );
+
+            logger.info('Messages marked as read', {
+                conversationId: message.conversationId,
+                lastReadMessageId: message.lastReadMessageId,
+                userId: ws.userId
+            });
+
+            // Broadcast read receipt via Redis
+            try {
+                await redisPublisher.publish(
+                    `message:status`,
+                    JSON.stringify({
+                        conversationId: message.conversationId,
+                        lastReadMessageId: message.lastReadMessageId,
+                        status: 'READ',
+                        readBy: ws.userId,
+                        readAt: new Date().toISOString(),
+                    })
+                );
+            } catch (redisError) {
+                logger.error("Failed to publish read receipt to Redis", {
+                    error: redisError instanceof Error ? redisError.message : "Unknown error"
+                });
+            }
+        } catch (error) {
+            logger.error("Failed to mark messages as read", {
+                error: error instanceof Error ? error.message : "Unknown error",
+                conversationId: message.conversationId
+            });
+        }
         // TODO: Broadcast via Redis in Part 3
     }
 

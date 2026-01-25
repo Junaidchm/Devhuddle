@@ -4,7 +4,8 @@ import { HttpStatus } from "../../constents/httpStatus";
 import { IUserService } from "../interface/IUserService";
 import { IFollowsService } from "../interface/IFollowsService";
 import { IUserRepository } from "../../repositories/interfaces/IUserRepository";
-import { ChatSuggestionUserDto } from "../../dtos/auth.dto";
+import { ChatSuggestionDto } from "../../dtos/response/chat-suggestion.dto";
+import { UserMapper } from "../../mappers/user.mapper";
 import { chatStatsClient } from "../../clients/chat-stats.client";
 import { getCachedChatSuggestions, cacheChatSuggestions } from "../../utils/redis.util";
 import logger from "../../utils/logger.util";
@@ -79,12 +80,12 @@ export class UserService implements IUserService {
   async getChatSuggestions(
     userId: string,
     limit: number = 20
-  ): Promise<ChatSuggestionUserDto[]> {
+  ): Promise<ChatSuggestionDto[]> {
     try {
       logger.info(`📊 Getting chat suggestions for user: ${userId}`, { limit });
 
       // 1. Check Redis cache first (5 min TTL)
-      const cached = await getCachedChatSuggestions<ChatSuggestionUserDto[]>(userId, limit);
+      const cached = await getCachedChatSuggestions<ChatSuggestionDto[]>(userId, limit);
 
       logger.info(`✅ Found cached connections`, { cached });
       if (cached) {
@@ -166,15 +167,10 @@ export class UserService implements IUserService {
         })),
       });
 
-      // 7. Return top N as DTOs
-      const suggestions = scored.slice(0, limit).map((item) => ({
-        id: item.user.id,
-        username: item.user.username,
-        fullName: item.user.fullName || item.user.name || item.user.username,
-        profilePhoto: item.user.profilePicture || undefined, // DB field is profilePicture
-        bio: item.user.bio || undefined,
-        skills: item.user.skills || [],
-      }));
+      // 7. Return top N as DTOs using UserMapper
+      const suggestions = scored.slice(0, limit).map((item) => 
+        UserMapper.toChatSuggestionDto(item.user as User)
+      );
 
       console.log('suggestions --------------------->', suggestions);
 
@@ -197,7 +193,7 @@ export class UserService implements IUserService {
   private async getFallbackSuggestions(
     userId: string,
     limit: number
-  ): Promise<ChatSuggestionUserDto[]> {
+  ): Promise<ChatSuggestionDto[]> {
     logger.warn('⚠️ Using fallback suggestions (alphabetical)');
 
     try {
@@ -206,14 +202,7 @@ export class UserService implements IUserService {
       return connections
         .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
         .slice(0, limit)
-        .map((user) => ({
-          id: user.id,
-          username: user.username,
-          fullName: user.fullName || user.name || user.username,
-          profilePhoto: user.profilePicture || undefined, // DB field is profilePicture
-          bio: user.bio || undefined,
-          skills: user.skills || [],
-        }));
+        .map((user) => UserMapper.toChatSuggestionDto(user as User));
     } catch (error) {
       logger.error('❌ Fallback also failed', { error: (error as Error).message });
       return [];

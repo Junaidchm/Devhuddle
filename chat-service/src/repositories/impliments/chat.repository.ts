@@ -294,5 +294,93 @@ export class ChatRepository extends BaseRepository<
         }
     }
 
+    /**
+     * Update a message (for status changes)
+     */
+    async updateMessage(messageId: string, data: Prisma.MessageUpdateInput): Promise<Message> {
+        try {
+            return await prisma.message.update({
+                where: { id: messageId },
+                data,
+            });
+        } catch (error) {
+            logger.error("Error updating message", { error: (error as Error).message, messageId });
+            throw new Error("Database error");
+        }
+    }
+
+    /**
+     * Find a message by ID
+     */
+    async findMessageById(messageId: string): Promise<Message | null> {
+        try {
+            return await prisma.message.findUnique({
+                where: { id: messageId },
+            });
+        } catch (error) {
+            logger.error("Error finding message by ID", { error: (error as Error).message, messageId });
+            throw new Error("Database error");
+        }
+    }
+
+    /**
+     * Mark all messages before a timestamp as READ (excluding sender's own messages)
+     */
+    async markMessagesAsReadBefore(
+        conversationId: string,
+        excludeUserId: string,
+        beforeTimestamp: Date
+    ): Promise<void> {
+        try {
+            await prisma.message.updateMany({
+                where: {
+                    conversationId,
+                    senderId: { not: excludeUserId }, // Don't mark own messages as read
+                    createdAt: { lte: beforeTimestamp },
+                    status: { not: 'READ' }, // Only update if not already READ
+                },
+                data: {
+                    status: 'READ',
+                    readAt: new Date(),
+                },
+            });
+        } catch (error) {
+            logger.error("Error marking messages as read", {
+                error: (error as Error).message,
+                conversationId,
+                excludeUserId,
+            });
+            throw new Error("Database error");
+        }
+    }
+
+    /**
+     * Update participant's lastReadAt timestamp
+     */
+    async updateParticipantLastReadAt(
+        conversationId: string,
+        userId: string,
+        timestamp: Date
+    ): Promise<void> {
+        try {
+            await prisma.participant.updateMany({
+                where: {
+                    conversationId,
+                    userId,
+                },
+                data: {
+                    lastReadAt: timestamp,
+                },
+            });
+        } catch (error) {
+            logger.error("Error updating participant lastReadAt", {
+                error: (error as Error).message,
+                conversationId,
+                userId,
+            });
+            throw new Error("Database error");
+        }
+    }
+
 }
 

@@ -463,5 +463,80 @@ export class ChatService implements IChatService {
             throw error; // Re-throw to preserve business validation errors
         }
     }
+
+    /**
+     * Update message status to DELIVERED or READ
+     * Used by WebSocket handlers for delivery acknowledgments
+     */
+    async updateMessageStatus(
+        messageId: string,
+        status: 'DELIVERED' | 'READ'
+    ): Promise<void> {
+        try {
+            const updateData: Prisma.MessageUpdateInput = {
+                status,
+                ...(status === 'DELIVERED' && { deliveredAt: new Date() }),
+                ...(status === 'READ' && { readAt: new Date() }),
+            };
+
+            await this._chatRepository.updateMessage(messageId, updateData);
+
+            logger.info('Message status updated', { messageId, status });
+        } catch (error) {
+            logger.error('Error updating message status', {
+                error: (error as Error).message,
+                messageId,
+                status,
+            });
+            throw new Error('Failed to update message status');
+        }
+    }
+
+    /**
+     * Mark all messages in a conversation as READ up to a certain message
+     * Used for read receipts (WhatsApp-style)
+     */
+    async markMessagesAsRead(
+        conversationId: string,
+        userId: string,
+        lastReadMessageId: string
+    ): Promise<void> {
+        try {
+            // Get the lastReadMessage to find its timestamp
+            const lastReadMessage = await this._chatRepository.findMessageById(lastReadMessageId);
+
+            if (!lastReadMessage || lastReadMessage.conversationId !== conversationId) {
+                throw new Error('Invalid lastReadMessageId for this conversation');
+            }
+
+            // Mark all messages before this timestamp as READ (excluding sender's own messages)
+            await this._chatRepository.markMessagesAsReadBefore(
+                conversationId,
+                userId,
+                lastReadMessage.createdAt
+            );
+
+            // Update participant's lastReadAt timestamp
+            await this._chatRepository.updateParticipantLastReadAt(
+                conversationId,
+                userId,
+                new Date()
+            );
+
+            logger.info('Messages marked as read', {
+                conversationId,
+                userId,
+                lastReadMessageId,
+            });
+        } catch (error) {
+            logger.error('Error marking messages as read', {
+                error: (error as Error).message,
+                conversationId,
+                userId,
+                lastReadMessageId,
+            });
+            throw new Error('Failed to mark messages as read');
+        }
+    }
 }
 

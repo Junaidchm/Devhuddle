@@ -31,6 +31,20 @@ export interface IChatRepository {
     offset: number
   ): Promise<ConversationWithMetadata[]>;
 
+    // Message status update methods
+    updateMessage(messageId: string, data: Prisma.MessageUpdateInput): Promise<Message>;
+    findMessageById(messageId: string): Promise<Message | null>;
+    markMessagesAsReadBefore(
+        conversationId: string,
+        excludeUserId: string,
+        beforeTimestamp: Date
+    ): Promise<void>;
+    updateParticipantLastReadAt(
+        conversationId: string,
+        userId: string,
+        timestamp: Date
+    ): Promise<void>;
+
   // Check if conversation exists between users (no creation)
   conversationExists(participantIds: string[]): Promise<Conversation | null>;
 
