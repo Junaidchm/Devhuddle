@@ -223,7 +223,14 @@ export class WebSocketService {
             const savedMessage = await this.chatService.sendMessage(
                 ws.userId!,
                 message.recipientIds,
-                message.content
+                message.content,
+                message.messageType || 'TEXT',
+                message.mediaUrl,
+                message.mediaId,
+                message.mediaMimeType,
+                message.mediaSize,
+                message.mediaName,
+                message.mediaDuration
             );
 
             // Send confirmation to sender

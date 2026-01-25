@@ -10,8 +10,23 @@ export class SendMessageCommand {
   constructor(
     public readonly senderId: string,
     public readonly recipientIds: string[],
-    public readonly content: string
+    public readonly content: string,
+    // Media fields (optional)
+    public readonly messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'FILE' | 'STICKER' = 'TEXT',
+    public readonly mediaUrl?: string,
+    public readonly mediaId?: string,
+    public readonly mediaMimeType?: string,
+    public readonly mediaSize?: number,
+    public readonly mediaName?: string,
+    public readonly mediaDuration?: number
   ) {
+    if (!senderId) throw new Error("Sender ID is required");
+    if (!recipientIds || recipientIds.length === 0) throw new Error("At least one recipient is required");
+    // Content is optional for media messages, but we'll enforce at least one of content or mediaUrl
+    if ((!content || content.trim().length === 0) && !mediaUrl) {
+        throw new Error("Message must have content or media");
+    }
+
     this.validate();
   }
 
@@ -21,13 +36,8 @@ export class SendMessageCommand {
       throw new Error('Cannot send message to yourself only');
     }
 
-    // Business rule: Message content cannot be empty after trimming
-    if (!this.content || this.content.trim().length === 0) {
-      throw new Error('Message content cannot be empty');
-    }
-
     // Business rule: Message too long
-    if (this.content.length > 5000) {
+    if (this.content && this.content.length > 5000) {
       throw new Error('Message content too long (max 5000 characters)');
     }
 

@@ -42,6 +42,15 @@ model Message {
   status         MessageStatus @default(SENT)
   deliveredAt    DateTime?
   readAt         DateTime?
+  
+  // Media support
+  type           MessageType   @default(TEXT)
+  mediaUrl       String?       // URL from Cloudflare R2
+  mediaId        String?       // Reference to media-service ID
+  mediaMimeType  String?
+  mediaSize      Int?          // Size in bytes
+  mediaName      String?       // Original filename
+  mediaDuration  Int?          // Duration in seconds (audio/video)
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
@@ -55,6 +64,15 @@ enum MessageStatus {
   DELIVERED // Recipient acknowledged
   READ      // Recipient marked as read
   FAILED    // Send failed
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  FILE
+  STICKER
 }
 
 model ChatInteraction {

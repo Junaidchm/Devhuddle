@@ -22,10 +22,33 @@ export class ChatService implements IChatService {
      * Send a message (uses Command pattern with business validation)
      * Invalidates cache after sending
      */
-    async sendMessage(senderId: string, recipientIds: string[], content: string): Promise<Message> {
+    async sendMessage(
+        senderId: string, 
+        recipientIds: string[], 
+        content: string,
+        // Optional media params
+        messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'FILE' | 'STICKER' = 'TEXT',
+        mediaUrl?: string,
+        mediaId?: string,
+        mediaMimeType?: string,
+        mediaSize?: number,
+        mediaName?: string,
+        mediaDuration?: number
+    ): Promise<Message> {
         try {
             // Create and validate command (business rules validated here)
-            const command = new SendMessageCommand(senderId, recipientIds, content);
+            const command = new SendMessageCommand(
+                senderId, 
+                recipientIds, 
+                content,
+                messageType,
+                mediaUrl,
+                mediaId,
+                mediaMimeType,
+                mediaSize,
+                mediaName,
+                mediaDuration
+            );
 
             // Combine sender and recipients to get all participants
             const participantIds = [senderId, ...recipientIds];
@@ -37,6 +60,14 @@ export class ChatService implements IChatService {
             const messageData: Prisma.MessageCreateInput = {
                 senderId: command.senderId,
                 content: command.content,
+                // Media fields
+                type: command.messageType,
+                mediaUrl: command.mediaUrl,
+                mediaId: command.mediaId,
+                mediaMimeType: command.mediaMimeType,
+                mediaSize: command.mediaSize,
+                mediaName: command.mediaName,
+                mediaDuration: command.mediaDuration,
                 conversation: {
                     connect: {
                         id: conversation.id

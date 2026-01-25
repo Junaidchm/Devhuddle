@@ -20,6 +20,14 @@ export interface SendMessagePayload {
     type: "send_message";
     recipientIds: string[];
     content: string;
+    // Media fields
+    messageType?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'FILE' | 'STICKER';
+    mediaUrl?: string;
+    mediaId?: string;
+    mediaMimeType?: string;
+    mediaSize?: number;
+    mediaName?: string;
+    mediaDuration?: number;
 }
 
 /**

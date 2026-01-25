@@ -23,9 +23,10 @@ export class ChatController implements IChatController {
         return;
       }
 
-      // Get pagination params from query (with defaults)
-      const limit = Math.min(Number(req.query.limit) || 50, 100); // Max 100
-      const offset = Math.max(Number(req.query.offset) || 0, 0); // Min 0
+      // Get pagination params from validated query (or raw query with defaults)
+      const queryParams = (req as any).validatedQuery || req.query;
+      const limit = Math.min(Number(queryParams.limit) || 50, 100); // Max 100
+      const offset = Math.max(Number(queryParams.offset) || 0, 0); // Min 0
 
       // Use the new metadata service for enriched conversations
       const conversations = await this._chatService.getUserConversationsWithMetadata(
@@ -73,8 +74,10 @@ export class ChatController implements IChatController {
       const userId = JSON.parse(req.headers["x-user-data"] as string).id;
       const conversationId = req.params.conversationId as string;
       
-      // Query params already validated AND transformed to numbers by middleware
-      const { limit = 50, offset = 0 } = req.query as { limit?: number; offset?: number };
+      // Query params validated by middleware
+      // Use validatedQuery if attached by middleware, otherwise fallback to req.query
+      const queryParams = (req as any).validatedQuery || req.query;
+      const { limit = 50, offset = 0 } = queryParams as { limit?: number; offset?: number };
 
       if (!userId) {
         res.status(401).json({

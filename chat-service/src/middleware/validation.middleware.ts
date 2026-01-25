@@ -75,7 +75,18 @@ export function validateQuery(dtoClass: any) {
       }
 
       // Attach validated and transformed DTO to request
-      req.query = dtoInstance as any;
+      // Attach validated and transformed DTO to request
+      // Note: req.query is read-only in some Express environments, so we attach to a custom property
+      // or modify properties individually if needed. For now, we'll keep the DTO available.
+      (req as any).validatedQuery = dtoInstance;
+      
+      // Also try to update query properties individually for backward compatibility if possible,
+      // but catch errors if it fails (it's read-only)
+      try {
+        Object.assign(req.query, dtoInstance);
+      } catch (e) {
+        // Ignore assignment errors for read-only query
+      }
       next();
     } catch (error) {
       logger.error('Query validation error', {
