@@ -66,7 +66,7 @@ export class MediaController implements IMediaController {
       }
 
       const result = await this._mediaService.completeUpload({
-        mediaId,
+        mediaId: mediaId as string,
         userId,
       });
 
@@ -102,7 +102,7 @@ export class MediaController implements IMediaController {
         });
       }
 
-      const media = await this._mediaService.getMediaById(mediaId, userId);
+      const media = await this._mediaService.getMediaById(mediaId as string, userId);
 
       res.status(200).json({
         success: true,
@@ -136,7 +136,7 @@ export class MediaController implements IMediaController {
         });
       }
 
-      await this._mediaService.deleteMedia(mediaId, userId);
+      await this._mediaService.deleteMedia(mediaId as string, userId);
 
       res.status(200).json({
         success: true,

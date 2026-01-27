@@ -1,5 +1,7 @@
-import compression from "compression";
 import dotenv from "dotenv";
+dotenv.config();
+
+import compression from "compression";
 import express, { Express, NextFunction, Request, Response } from "express";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
