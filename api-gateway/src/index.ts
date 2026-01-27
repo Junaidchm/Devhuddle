@@ -18,6 +18,7 @@ import { ROUTES } from "./constants/routes";
 import { engagementServiceProxy } from "./middleware/engagement.proxy.middleware";
 import { adminServiceProxy } from "./middleware/admin.proxy.middleware";
 import { chatServiceProxy } from "./middleware/chat.proxy.middleware";
+import { verifyAccessToken } from "./utils/jwt.util";
 
 dotenv.config();
 
@@ -65,17 +66,17 @@ app.use(ROUTES.USERS.BASE, conditionalJwtMiddleware, authServiceProxy);
 
 app.use(ROUTES.FEED.BASE, conditionalJwtMiddleware, postServiceProxy);
 
-// app.use(
-//   ROUTES.MEDIA.BASE,
-//   conditionalJwtMiddleware,
-//   mediaServiceProxy
-// );
+app.use(
+  ROUTES.MEDIA.BASE,
+  conditionalJwtMiddleware,
+  mediaServiceProxy
+);
 
-// app.use(
-//   ROUTES.NOTIFICATIONS.BASE,
-//   conditionalJwtMiddleware,
-//   notificationServiceProxy
-// );
+app.use(
+  ROUTES.NOTIFICATIONS.BASE,
+  conditionalJwtMiddleware,
+  notificationServiceProxy
+);
 
 // app.use(
 //   ROUTES.ENGAGEMENT.BASE,
@@ -106,10 +107,64 @@ app.get("/favicon.ico", (req: Request, res: Response) => {
   res.status(204).end();
 });
 
-// WebSocket upgrade handler (explicit handling for better logging)
-server.on("upgrade", (req, socket, head) => {
-  logger.info(`WebSocket upgrade request: ${req.url}`);
-  // http-proxy-middleware will handle this via the proxy middleware (notificationServiceProxy)
+// WebSocket upgrade handler (Manual handling for Async Auth)
+server.on("upgrade", async (req, socket, head) => {
+  const urlPath = req.url || "";
+  logger.info(`WebSocket upgrade request: ${urlPath}`);
+
+  // 1. Route to correct proxy
+  let proxy: any = null;
+  if (urlPath.startsWith("/api/v1/chat")) {
+    proxy = chatServiceProxy;
+  } else if (urlPath.startsWith("/api/v1/notifications")) {
+    proxy = notificationServiceProxy;
+  } else {
+    logger.warn(`Unknown WebSocket path: ${urlPath}`);
+    socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+    socket.destroy();
+    return;
+  }
+
+  // 2. Extract Token
+  // req.url is relative, construct full URL for parsing
+  let token: string | null = null;
+  try {
+    const urlObj = new URL(urlPath, `http://${req.headers.host || "localhost"}`);
+    token = urlObj.searchParams.get("token");
+  } catch (e) {
+    logger.error("Failed to parse WebSocket URL", { error: e });
+  }
+
+  if (!token) {
+    logger.warn("WebSocket connection rejected: Missing token");
+    socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+    socket.destroy();
+    return;
+  }
+
+  // 3. Authenticate (Async)
+  try {
+    const decoded = await verifyAccessToken(token);
+    
+    if (!decoded || !decoded.id) {
+      throw new Error("Invalid token or signature");
+    }
+
+    // 4. Inject Identity Headers
+    // Modify the request headers before passing to proxy
+    req.headers["x-user-id"] = decoded.id;
+    req.headers["x-user-data"] = JSON.stringify(decoded);
+
+    // 5. Upgrade
+    proxy.upgrade(req, socket, head);
+
+    logger.info(`WebSocket authenticated and upgraded for user ${decoded.id}`);
+
+  } catch (error) {
+    logger.warn(`WebSocket authentication failed: ${error}`);
+    socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+    socket.destroy();
+  }
 });
 
 // Error handling middleware

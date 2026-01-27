@@ -29,9 +29,23 @@ export class WebSocketService {
         this._wss = new Server({
             server: _server,
             path: WEBSOCKET_PATH,
-            verifyClient: () => {
-                //  No token check here - we'll authenticate after connection
-                return true;
+            verifyClient: (info, cb) => {
+                // TRUST THE GATEWAY
+                // The API Gateway has already validated the token and injected headers.
+                // We just need to check if the headers exist.
+                
+                const req = info.req as any;
+                const userId = req.headers['x-user-id'];
+                
+                if (!userId) {
+                    logger.warn("[WebSocket] Connection rejected: Missing x-user-id header (Gateway should have auth'd)");
+                    cb(false, 401, 'Unauthorized');
+                    return;
+                }
+
+                // Attach userId to request for connection handler
+                req.userId = userId;
+                cb(true);
             }
         });
 
@@ -43,156 +57,85 @@ export class WebSocketService {
 
     private _initializeWebSocket() {
 
-        this._wss.on("connection", (ws: AuthenticatedWebSocket, _req: IncomingMessage) => {
-            logger.info("New WebSocket connection (awaiting authentication)");
+        this._wss.on("connection", (ws: AuthenticatedWebSocket, req: IncomingMessage) => {
+            // Get userId from request (attached in verifyClient)
+            const userId = (req as any).userId;
 
-            // Mark as unauthenticated
-            ws.isAlive = false; // Don't ping until authenticated
+            if (!userId) {
+                logger.error("[WebSocket] Connection has no userId after verifyClient (Should not happen)");
+                ws.close(4001, "Unauthorized");
+                return;
+            }
 
-            // Set 5-second timeout
-            const authTimeout = setTimeout(() => {
-                if (!ws.userId) {
-                    logger.warn("Authentication timeout");
-                    ws.close(4002, "Authentication timeout");
-                    this._pendingConnections.delete(ws);
-                }
-            }, AUTH_TIMEOUT);
+            logger.info(`[WebSocket] Connection established for user ${userId}`);
 
-            this._pendingConnections.set(ws, authTimeout);
+            // Initialize authenticated connection immediately
+            ws.userId = userId;
+            ws.isAlive = true;
+            this._addConnection(userId, ws);
 
-            const handleAuth = async (data: Buffer) => {
+            // Send auth success immediately so client knows it's connected
+            ws.send(JSON.stringify({ type: "auth_success" }));
+
+            // Handle messages
+            ws.on('message', async (data) => {
                 try {
                     const message = JSON.parse(data.toString());
 
-                    // Validate it's auth message
-                    if (message.type !== "auth" || !message.token) {
-                        ws.send(JSON.stringify({
-                            type: "auth_error",
-                            error: "First message must be authentication"
-                        }));
-                        ws.close(4001, "Authentication required");
-                        this._pendingConnections.delete(ws);
-                        clearTimeout(authTimeout);
-                        return;
-                    }
+                    // Route based on message type
+                    switch (message.type) {
+                        case 'send_message':
+                            await this._handleSendMessage(ws, message);
+                            break;
 
-                    // Verify JWT
-                    let userId: string;
-                    try {
-                        const decoded = jwt.verify(
-                            message.token,
-                            process.env.ACCESS_TOKEN_SECRET as string
-                        ) as JWTPayload;
+                        case 'message_delivered':
+                            await this._handleMessageDelivered(ws, message);
+                            break;
 
-                        if (!decoded || !decoded.id) {
-                            throw new Error("Invalid token");
-                        }
+                        case 'message_read':
+                            await this._handleMessageRead(ws, message);
+                            break;
 
-                        userId = decoded.id;
-                    } catch (error) {
-                        ws.send(JSON.stringify({
-                            type: "auth_error",
-                            error: "Invalid token"
-                        }));
-                        ws.close(4001, "Unauthorized");
-                        this._pendingConnections.delete(ws);
-                        clearTimeout(authTimeout);
-                        return;
-                    }
+                        case 'typing':
+                            await this._handleTyping(ws, message);
+                            break;
 
-                    // Check connection limit
-                    const userConnections = this._connections.get(userId);
-                    if (userConnections && userConnections.size >= MAX_CONNECTIONS_PER_USER) {
-                        ws.send(JSON.stringify({
-                            type: "auth_error",
-                            error: "Too many connections"
-                        }));
-                        ws.close(4003, "Too many connections");
-                        this._pendingConnections.delete(ws);
-                        clearTimeout(authTimeout);
-                        return;
-                    }
-
-                    // SUCCESS! Authenticate the user
-                    ws.userId = userId;
-                    ws.isAlive = true;
-                    clearTimeout(authTimeout);
-                    this._pendingConnections.delete(ws);
-                    this._addConnection(userId, ws);
-
-                    ws.send(JSON.stringify({ type: "auth_success" }));
-                    logger.info("WebSocket authenticated", { userId });
-
-                    // Now switch to normal message handler
-                    ws.off('message', handleAuth);
-                    ws.on('message', async (data) => {
-                        try {
-                            const message = JSON.parse(data.toString());
-
-                            // Route based on message type
-                            switch (message.type) {
-                                case 'send_message':
-                                    await this._handleSendMessage(ws, message);
-                                    break;
-
-                                case 'message_delivered':
-                                    await this._handleMessageDelivered(ws, message);
-                                    break;
-
-                                case 'message_read':
-                                    await this._handleMessageRead(ws, message);
-                                    break;
-
-                                case 'typing':
-                                    await this._handleTyping(ws, message);
-                                    break;
-
-                                default:
-                                    logger.warn("Unknown message type", { type: message.type });
-                                    ws.send(JSON.stringify({
-                                        type: "error",
-                                        error: "Unknown message type"
-                                    }));
-                            }
-                        } catch (error) {
-                            logger.error("Message handling error", {
-                                error: error instanceof Error ? error.message : "Unknown error",
-                                userId: ws.userId
-                            });
+                        default:
+                            logger.warn("Unknown message type", { type: message.type, userId: ws.userId });
                             ws.send(JSON.stringify({
                                 type: "error",
-                                error: "Failed to process message"
+                                error: "Unknown message type"
                             }));
-                        }
-                    });
-
-                    ws.on("pong", () => {
-                        ws.isAlive = true;
-                    });
-                    // Handle close event
-                    ws.on("close", () => {
-                        this._removeConnection(ws.userId!, ws);
-                        logger.info("WebSocket disconnected", {
-                            userId: ws.userId
-                        });
-                    });
-                    // Handle error event
-                    ws.on("error", (error) => {
-                        logger.error("WebSocket error", {
-                            error: error.message,
-                            userId: ws.userId
-                        });
-                    });
-
+                    }
                 } catch (error) {
-                    logger.error("Auth error", { error: error instanceof Error ? error.message : "Unknown error" });
-                    ws.close(4000, "Invalid message");
-                    this._pendingConnections.delete(ws);
-                    clearTimeout(authTimeout);
+                    logger.error("Message handling error", {
+                        error: error instanceof Error ? error.message : "Unknown error",
+                        userId: ws.userId
+                    });
+                    ws.send(JSON.stringify({
+                        type: "error",
+                        error: "Failed to process message"
+                    }));
                 }
-            };
-            // Listen for first message
-            ws.once('message', handleAuth);
+            });
+
+            ws.on("pong", () => {
+                ws.isAlive = true;
+            });
+            // Handle close event
+            ws.on("close", () => {
+                this._removeConnection(ws.userId!, ws);
+                logger.info("WebSocket disconnected", {
+                    userId: ws.userId
+                });
+            });
+            // Handle error event
+            ws.on("error", (error) => {
+                logger.error("WebSocket error", {
+                    error: error.message,
+                    userId: ws.userId
+                });
+            });
         });
 
     }
