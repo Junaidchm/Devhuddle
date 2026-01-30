@@ -1,12 +1,12 @@
 import { User } from "@prisma/client";
-import { AdminRepository } from "../../repositories/impliments/admin.repository";
+import { IAdminRepository } from "../../repositories/interfaces/IAdminRepository";
 import logger from "../../utils/logger.util";
 import { CustomError } from "../../utils/error.util";
 import { setUsertoBlockBlackList } from "../../utils/redis.actions";
 import { IAdminService } from "../interface/IadminService";
 
 export class AdminService implements IAdminService {
-  constructor(private _adminRepository: AdminRepository) {}
+  constructor(private _adminRepository: IAdminRepository) {}
 
   async getUsers(
     page: number,

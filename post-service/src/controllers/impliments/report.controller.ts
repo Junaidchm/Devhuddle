@@ -25,7 +25,7 @@ export class ReportController implements IReportController {
       // Validation handled by DTO
 
       const report = await this._reportService.reportPost(
-        postId,
+        postId as string,
         reporterId,
         reason,
         metadata,
@@ -56,7 +56,7 @@ export class ReportController implements IReportController {
 
       // Validation handled by DTO
 
-      const report = await this._reportService.reportComment(commentId, reporterId, reason, metadata);
+      const report = await this._reportService.reportComment(commentId as string, reporterId, reason, metadata);
 
       res.status(HttpStatus.CREATED).json({
         success: true,

@@ -30,7 +30,7 @@ export class CommentController {
       // Validation handled by DTO
 
       const comment = await this._commentService.createComment(
-        postId,
+        postId as string,
         userId,
         content,
         parentCommentId
@@ -66,7 +66,7 @@ export class CommentController {
       // Validation handled by DTO
 
       const comment = await this._commentService.updateComment(
-        commentId,
+        commentId as string,
         userId,
         content
       );
@@ -97,7 +97,7 @@ export class CommentController {
         );
       }
 
-      await this._commentService.deleteComment(commentId, userId);
+      await this._commentService.deleteComment(commentId as string, userId);
 
       res.status(HttpStatus.OK).json({
         success: true,
@@ -127,7 +127,7 @@ export class CommentController {
       }
 
       const comments = await this._commentService.getComments(
-        postId,
+        postId as string,
         limit,
         offset,
         userId
@@ -162,7 +162,7 @@ export class CommentController {
         );
       }
 
-      const count = await this._commentService.getCommentCount(postId);
+      const count = await this._commentService.getCommentCount(postId as string);
 
       res.status(HttpStatus.OK).json({
         success: true,
@@ -187,7 +187,7 @@ export class CommentController {
         throw new CustomError(HttpStatus.BAD_REQUEST, "Comment ID is required");
       }
 
-      const replies = await this._commentService.getReplies(commentId, limit, userId);
+      const replies = await this._commentService.getReplies(commentId as string, limit, userId);
 
       res.status(HttpStatus.OK).json({
         success: true,
@@ -218,7 +218,7 @@ export class CommentController {
         );
       }
 
-      const preview = await this._commentService.getCommentPreview(postId, userId);
+      const preview = await this._commentService.getCommentPreview(postId as string, userId);
 
       res.status(HttpStatus.OK).json({
         success: true,

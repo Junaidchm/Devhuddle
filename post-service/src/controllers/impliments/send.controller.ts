@@ -135,7 +135,7 @@ export class SendController {
       // Validation handled by DTO
 
       const result = await this._sendService.sendPost(
-        postId,
+        postId as string,
         userId,
         recipientIds,
         message

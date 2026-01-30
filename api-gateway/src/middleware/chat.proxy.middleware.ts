@@ -12,7 +12,7 @@ import { logger } from "../utils/logger";
 export const chatServiceProxy = createProxyMiddleware({
   target: app_config.chatServiceUrl || "http://chat-service:4004",
   changeOrigin: true,
-  ws: true,
+  ws: false,
   
   onProxyReq: (proxyReq, req: any, res) => {
     logger.info(
@@ -54,26 +54,8 @@ export const chatServiceProxy = createProxyMiddleware({
     }
   },
 
-  // WebSocket specific handling
-  onProxyReqWs: (proxyReq, req, socket, options, head) => {
-    logger.debug("[Chat Proxy] WebSocket upgrade request", {
-      url: req.url,
-    });
+  // WebSocket handling is done manually in index.ts to support async auth
 
-    // LOGIC: Token Transformation (Query Param -> Header)
-    // WebSockets often send token in query param: ws://url?token=xyz
-    // We move it to 'Authorization' header so the service stays clean.
-    if (req.url) {
-      const url = new URL(req.url, `http://${req.headers.host}`);
-      const token = url.searchParams.get("token");
-
-      if (token) {
-        // Inject Authorization header for the backend service
-        proxyReq.setHeader("Authorization", `Bearer ${token}`);
-        logger.debug("[Chat Proxy] Injected Authorization header from query param");
-      }
-    }
-  },
 
   onProxyRes: (proxyRes, req, res) => {
     // Log response for debugging

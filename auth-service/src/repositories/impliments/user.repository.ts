@@ -216,6 +216,8 @@ export class UserRepository
         skills: true,
         yearsOfExperience: true,
         createdAt: true,
+        experience: true,
+        education: true,
         _count: {
           select: {
             // Filter counts to only include active (non-deleted) records
@@ -269,10 +271,62 @@ export class UserRepository
       company: user.company || undefined,
       yearsOfExperience: user.yearsOfExperience || null,
       skills: user.skills || [],
+      experience: user.experience || [],
+      education: user.education || [],
       isFollowing,
     };
 
-    return result;
+    return result as unknown as UserProfile;
+  }
+
+  async addExperience(userId: string, data: any): Promise<any> {
+    try {
+      return await prisma.experience.create({
+        data: {
+          ...data,
+          userId,
+        },
+      });
+    } catch (error) {
+      logger.error("Error adding experience", { error: (error as Error).message });
+      throw new Error("Database error");
+    }
+  }
+
+  async deleteExperience(id: string): Promise<void> {
+    try {
+      await prisma.experience.delete({
+         where: { id }
+      });
+    } catch (error) {
+      logger.error("Error deleting experience", { error: (error as Error).message });
+      throw new Error("Database error");
+    }
+  }
+
+  async addEducation(userId: string, data: any): Promise<any> {
+    try {
+      return await prisma.education.create({
+        data: {
+          ...data,
+          userId,
+        },
+      });
+    } catch (error) {
+      logger.error("Error adding education", { error: (error as Error).message });
+      throw new Error("Database error");
+    }
+  }
+
+  async deleteEducation(id: string): Promise<void> {
+    try {
+      await prisma.education.delete({
+         where: { id }
+      });
+    } catch (error) {
+      logger.error("Error deleting education", { error: (error as Error).message });
+      throw new Error("Database error");
+    }
   }
 
   async findFollowers(userId: string, currentUserId: string): Promise<UserWithFollowStatus[]> {

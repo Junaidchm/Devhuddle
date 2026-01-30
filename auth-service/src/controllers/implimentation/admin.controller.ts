@@ -1,5 +1,5 @@
 import { Request, response, Response } from "express";
-import { AdminService } from "../../services/impliments/admin.service";
+
 import logger from "../../utils/logger.util";
 import { CustomError, sendErrorResponse } from "../../utils/error.util";
 import { HttpStatus } from "../../constents/httpStatus";

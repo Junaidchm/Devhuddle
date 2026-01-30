@@ -3,6 +3,7 @@ import { BaseRepository } from "./base.repository";
 import { prisma } from "../../config/prisma.config";
 import { Share, Prisma, ShareType, TargetType } from ".prisma/client";
 import logger from "../../utils/logger.util";
+import { v4 as uuidv4 } from "uuid";
 
 export class ShareRepository
   extends BaseRepository<
@@ -18,6 +19,7 @@ export class ShareRepository
     super(prisma.share);
   }
 
+
   async createShare(data: {
     postId: string;
     userId: string;
@@ -29,17 +31,28 @@ export class ShareRepository
     sharedToUserId?: string;
   }): Promise<Share> {
     try {
-      return await super.create({
-        posts: {
-          connect: { id: data.postId },
-        },
-        userId: data.userId,
-        shareType: data.shareType as ShareType,
-        caption: data.caption,
-        visibility: (data.visibility as any) || "PUBLIC",
-        targetType: (data.targetType as TargetType) || TargetType.USER,
-        targetId: data.targetId || data.sharedToUserId,
-        sharedToUserId: data.sharedToUserId || data.targetId,
+      return await prisma.$transaction(async (tx) => {
+        const share = await tx.share.create({
+          data: {
+            id: uuidv4(),
+            postId: data.postId,
+            userId: data.userId,
+            shareType: data.shareType as ShareType,
+            caption: data.caption,
+            visibility: (data.visibility as any) || "PUBLIC",
+            targetType: (data.targetType as TargetType) || TargetType.USER,
+            targetId: data.targetId || data.sharedToUserId,
+            sharedToUserId: data.sharedToUserId || data.targetId,
+          },
+        });
+
+        // Increment share count on post
+        await tx.posts.update({
+          where: { id: data.postId },
+          data: { sharesCount: { increment: 1 } },
+        });
+
+        return share;
       });
     } catch (error: any) {
       logger.error("Error creating share", { error: error.message });

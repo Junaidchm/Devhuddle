@@ -39,7 +39,7 @@ export class ShareController implements IShareController {
       }
 
       const share = await this._shareService.sharePost(
-        postId,
+        postId as string,
         userId,
         shareType,
         targetType,
@@ -73,7 +73,7 @@ export class ShareController implements IShareController {
         );
       }
 
-      const count = await this._shareService.getShareCount(postId);
+      const count = await this._shareService.getShareCount(postId as string);
 
       res.status(HttpStatus.OK).json({
         success: true,
@@ -104,7 +104,7 @@ export class ShareController implements IShareController {
         );
       }
 
-      const hasShared = await this._shareService.hasShared(postId, userId);
+      const hasShared = await this._shareService.hasShared(postId as string, userId);
 
       res.status(HttpStatus.OK).json({
         success: true,

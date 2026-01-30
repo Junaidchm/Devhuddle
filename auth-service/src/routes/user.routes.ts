@@ -37,6 +37,28 @@ router.get(
   userController.getMyFollowing.bind(userController)
 );
 
+// Profile Update Routes
+router.post(
+  "/experience",
+  userController.addExperience.bind(userController)
+);
+router.delete(
+  "/experience/:id",
+  userController.deleteExperience.bind(userController)
+);
+router.post(
+  "/education",
+  userController.addEducation.bind(userController)
+);
+router.delete(
+  "/education/:id",
+  userController.deleteEducation.bind(userController)
+);
+router.put(
+  "/skills",
+  userController.updateSkills.bind(userController)
+);
+
 // Profile routes
 router.get(
   "/:username",

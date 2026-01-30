@@ -23,7 +23,7 @@ export class MentionController {
         throw new CustomError(HttpStatus.BAD_REQUEST, "Post ID is required");
       }
 
-      const mentions = await this._mentionRepository.getPostMentions(postId);
+      const mentions = await this._mentionRepository.getPostMentions(postId as string);
 
       res.status(HttpStatus.OK).json({
         success: true,
@@ -47,7 +47,7 @@ export class MentionController {
         throw new CustomError(HttpStatus.BAD_REQUEST, "Comment ID is required");
       }
 
-      const mentions = await this._mentionRepository.getCommentMentions(commentId);
+      const mentions = await this._mentionRepository.getCommentMentions(commentId as string);
 
       res.status(HttpStatus.OK).json({
         success: true,

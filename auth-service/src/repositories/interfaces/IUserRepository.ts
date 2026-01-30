@@ -26,4 +26,8 @@ export interface IUserRepository {
   ): Promise<any | null>;
   findFollowers(userId: string, currentUserId: string): Promise<any[]>;
   findFollowing(userId: string, currentUserId: string): Promise<any[]>;
+  addExperience(userId: string, data: any): Promise<any>;
+  deleteExperience(id: string): Promise<void>;
+  addEducation(userId: string, data: any): Promise<any>;
+  deleteEducation(id: string): Promise<void>;
 }

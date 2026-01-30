@@ -358,6 +358,7 @@ enum OutboxEventType {
   POST_SENT
   POST_CREATED  // ✅ NEW: For fan-out and notifications
   POST_UPDATED  // ✅ NEW: For feed updates on post edits
+  POST_DELETED  // ✅ NEW: For post deletion saga
 }
 
 enum OutboxStatus {

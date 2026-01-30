@@ -1,4 +1,4 @@
-import { posts, Prisma } from ".prisma/client";
+import { posts, Prisma, Media } from ".prisma/client";
 import {
   SubmitPostRequest,
   SubmitPostResponse,
@@ -38,4 +38,17 @@ export interface IPostRepository {
   unlockEditing(postId: string): Promise<void>;
   // ✅ NEW: Get posts by IDs (for feed retrieval)
   getPostsByIds(postIds: string[]): Promise<posts[]>;
+  // For Edit Post Transaction
+  updatePostWithVersions(params: {
+    postId: string;
+    userId: string;
+    newContent: string;
+    addAttachmentIds?: string[];
+    removeAttachmentIds?: string[];
+    versionRepository?: any; // To avoid circular dependency type issues or strict IPostVersionRepository
+  }): Promise<{ post: posts; versionNumber: number }>;
+  // Get Media Ids
+  getMediaIds(postId: string): Promise<string[]>;
+  findMediaByIds(mediaIds: string[]): Promise<Media[]>;
+  countPostsAfter(date: Date): Promise<number>;
 }

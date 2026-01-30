@@ -3,13 +3,15 @@ import logger from "../../utils/logger.util";
 import { BaseRepository } from "./base.repository";
 import { Prisma, User } from "@prisma/client";
 
+import { IAdminRepository } from "../interfaces/IAdminRepository";
+
 export class AdminRepository extends BaseRepository<
   typeof prisma.user,
   User,
   Prisma.UserCreateInput,
   Prisma.UserUpdateInput,
   Prisma.UserWhereUniqueInput
-> {
+> implements IAdminRepository {
   constructor() {
     super(prisma.user);
   }
