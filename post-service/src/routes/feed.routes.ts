@@ -58,14 +58,15 @@ router
   // Upload media
   .post("/media", mediaController.uploadMediaHttp.bind(mediaController))
 
-  // Delete post by path parameter
-  .delete("/:postId", postController.deletePostHttp.bind(postController))
-
   // Delete post by body (backward compatibility)
   .delete("/delete", postController.deletePostFromBodyHttp.bind(postController))
 
   // Delete unused medias
-  .delete("/medias/unused", mediaController.deleteUnusedMediaHttp.bind(mediaController));
+  .delete("/medias/unused", mediaController.deleteUnusedMediaHttp.bind(mediaController))
+
+  // Delete post by path parameter
+  // CRITICAL: This must be defined AFTER specific paths like /delete and /medias/unused
+  .delete("/:postId", postController.deletePostHttp.bind(postController));
 
 export default router;
 

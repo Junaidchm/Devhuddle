@@ -87,30 +87,24 @@ export class UserService implements IUserService {
       // 1. Check Redis cache first (5 min TTL)
       const cached = await getCachedChatSuggestions<ChatSuggestionDto[]>(userId, limit);
 
-      logger.info(`✅ Found cached connections`, { cached });
       if (cached) {
+        logger.info(`✅ Found cached suggestions`);
         return cached;
       }
 
       // 2. Get user's connections
       const connections = await this.userRepository.findFollowing(userId, userId);
 
-      logger.info(`✅ Found ${connections.length} connections`, { connections });
-
       if (!connections || connections.length === 0) {
-        logger.info('⚠️ No connections found');
         return [];
       }
-
-      logger.info(`✅ Found ${connections.length} connections`);
 
       // 3. Extract partner IDs
       const partnerIds = connections.map((c) => c.id);
 
       // 4. Fetch chat interaction stats from chat-service (via gRPC)
+      // Note: This matches the previous logic, assuming chatStatsClient is available
       const chatStats = await chatStatsClient.getChatStats(userId, partnerIds, 30);
-
-      logger.info(`📈 Received stats for ${chatStats.size} users`);
 
       // 5. Calculate scores for each connection
       const scored = connections.map((user) => {
@@ -119,7 +113,6 @@ export class UserService implements IUserService {
 
         if (stats) {
           // Factor 1: Message Frequency (40% weight) - max 40 points
-          // More messages = higher score (capped at 40)
           score += Math.min(40, stats.messageCount * 2);
 
           // Factor 2: Recent Activity (30% weight)
@@ -128,11 +121,9 @@ export class UserService implements IUserService {
           else if (stats.daysSinceLastMessage <= 30) score += 10; // Last month
 
           // Factor 3: Response Rate (20% weight)
-          // Higher response rate = more engagement
           score += stats.responseRate * 20;
 
           // Factor 4: Balanced Conversation (10% weight)
-          // Penalize one-sided conversations
           if (stats.userSentCount > 0 && stats.partnerSentCount > 0) {
             const balance =
               Math.min(stats.userSentCount, stats.partnerSentCount) /
@@ -142,9 +133,8 @@ export class UserService implements IUserService {
         }
 
         // Factor 5: Profile Completeness (5% for users with no chat history)
-        // Ensures users without chat history still get some score
         let completeness = 0;
-        if (user.profilePhoto) completeness += 2;
+        if (user.profilePicture) completeness += 2; // corrected property name
         if (user.bio) completeness += 2;
         if (user.skills && user.skills.length > 0) completeness += 1;
         score += completeness;
@@ -159,20 +149,10 @@ export class UserService implements IUserService {
       // 6. Sort by score (highest first)
       scored.sort((a, b) => b.score - a.score);
 
-      logger.info(`🎯 Top 5 scores:`, {
-        top5: scored.slice(0, 5).map((s) => ({
-          name: s.user.name,
-          score: s.score.toFixed(2),
-          hasHistory: s.hasHistory,
-        })),
-      });
-
       // 7. Return top N as DTOs using UserMapper
       const suggestions = scored.slice(0, limit).map((item) => 
         UserMapper.toChatSuggestionDto(item.user as User)
       );
-
-      console.log('suggestions --------------------->', suggestions);
 
       // 8. Cache results (5 min TTL)
       await cacheChatSuggestions(userId, limit, suggestions, 300);
@@ -206,6 +186,46 @@ export class UserService implements IUserService {
     } catch (error) {
       logger.error('❌ Fallback also failed', { error: (error as Error).message });
       return [];
+    }
+  }
+
+  async addExperience(userId: string, data: any): Promise<any> {
+    try {
+      return await this.userRepository.addExperience(userId, data);
+    } catch (error) {
+      throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, (error as Error).message);
+    }
+  }
+
+  async deleteExperience(userId: string, experienceId: string): Promise<void> {
+    try {
+      await this.userRepository.deleteExperience(experienceId);
+    } catch (error) {
+       throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, (error as Error).message);
+    }
+  }
+
+  async addEducation(userId: string, data: any): Promise<any> {
+    try {
+      return await this.userRepository.addEducation(userId, data);
+    } catch (error) {
+       throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, (error as Error).message);
+    }
+  }
+
+  async deleteEducation(userId: string, educationId: string): Promise<void> {
+    try {
+      await this.userRepository.deleteEducation(educationId);
+    } catch (error) {
+       throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, (error as Error).message);
+    }
+  }
+
+  async updateSkills(userId: string, skills: string[]): Promise<void> {
+    try {
+       await this.userRepository.updateProfile(userId, { skills });
+    } catch (error) {
+       throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, (error as Error).message);
     }
   }
 }

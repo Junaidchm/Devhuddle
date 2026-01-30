@@ -1,7 +1,7 @@
 import { KafkaConfig } from "kafkajs";
 
 export const KAFKA_CONFIG: KafkaConfig = {
-  brokers: [process.env.KAFKA_BROKER || "localhost:9092"],
+  brokers: [process.env.KAFKA_BROKER || "kafka:9092"],
   clientId: process.env.KAFKA_CLIENT_ID || "post-service",
   retry: {
     initialRetryTime: 100,
@@ -46,4 +46,8 @@ export const KAFKA_TOPICS = {
     // Mention events
     USER_MENTIONED: "user.mentioned.v1",
     USER_MENTIONED_DLQ: "user.mentioned.v1-dlq",
+
+    // Post Deletion events
+    POST_DELETED: "post.deleted.v1",
+    POST_DELETED_DLQ: "post.deleted.v1-dlq",
   } as const;

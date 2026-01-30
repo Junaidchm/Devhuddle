@@ -6,8 +6,6 @@ import { v4 as uuidv4 } from "uuid";
 let producer: Producer | null = null;
 let admin: Admin | null = null;
 
-
-
 /**
  * Initialize Kafka topics (create if they don't exist)
  * This should be called once when the service starts

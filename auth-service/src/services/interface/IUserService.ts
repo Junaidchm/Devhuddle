@@ -11,4 +11,9 @@ export interface IUserService {
   searchUsers(query: string, currentUserId: string): Promise<Partial<User>[]>;
   getUserById(userId: string): Promise<Partial<User> | null>;
   getChatSuggestions(userId: string, limit: number): Promise<ChatSuggestionUserDto[]>
+  addExperience(userId: string, data: any): Promise<any>;
+  deleteExperience(userId: string, experienceId: string): Promise<void>;
+  addEducation(userId: string, data: any): Promise<any>;
+  deleteEducation(userId: string, educationId: string): Promise<void>;
+  updateSkills(userId: string, skills: string[]): Promise<void>;
 }

@@ -228,5 +228,81 @@ export class UserController {
       );
     }
   }
+
+  async addExperience(req: Request, res: Response): Promise<void> {
+    try {
+      const currentUserId = JSON.parse(req.headers["x-user-data"] as string).id;
+      const data = req.body;
+      const experience = await this._userService.addExperience(currentUserId, data);
+      res.status(HttpStatus.CREATED).json(experience);
+    } catch (err: unknown) {
+      logger.error("Add experience error", { error: (err as Error).message });
+      sendErrorResponse(
+        res,
+        err instanceof CustomError ? err : { status: 500, message: "Server error" }
+      );
+    }
+  }
+
+  async deleteExperience(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const currentUserId = JSON.parse(req.headers["x-user-data"] as string).id;
+      // Ideally check ownership logic here or in service
+      await this._userService.deleteExperience(currentUserId, Array.isArray(id) ? id[0] : id);
+      res.status(HttpStatus.OK).json({ message: "Experience deleted" });
+    } catch (err: unknown) {
+      logger.error("Delete experience error", { error: (err as Error).message });
+      sendErrorResponse(
+        res,
+        err instanceof CustomError ? err : { status: 500, message: "Server error" }
+      );
+    }
+  }
+
+  async addEducation(req: Request, res: Response): Promise<void> {
+    try {
+      const currentUserId = JSON.parse(req.headers["x-user-data"] as string).id;
+      const data = req.body;
+      const education = await this._userService.addEducation(currentUserId, data);
+      res.status(HttpStatus.CREATED).json(education);
+    } catch (err: unknown) {
+      logger.error("Add education error", { error: (err as Error).message });
+      sendErrorResponse(
+        res,
+        err instanceof CustomError ? err : { status: 500, message: "Server error" }
+      );
+    }
+  }
+
+  async deleteEducation(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const currentUserId = JSON.parse(req.headers["x-user-data"] as string).id;
+      await this._userService.deleteEducation(currentUserId, Array.isArray(id) ? id[0] : id);
+      res.status(HttpStatus.OK).json({ message: "Education deleted" });
+    } catch (err: unknown) {
+      logger.error("Delete education error", { error: (err as Error).message });
+      sendErrorResponse(
+        res,
+        err instanceof CustomError ? err : { status: 500, message: "Server error" }
+      );
+    }
+  }
+
+  async updateSkills(req: Request, res: Response): Promise<void> {
+    try {
+      const currentUserId = JSON.parse(req.headers["x-user-data"] as string).id;
+      const { skills } = req.body;
+      await this._userService.updateSkills(currentUserId, skills);
+      res.status(HttpStatus.OK).json({ message: "Skills updated" });
+    } catch (err: unknown) {
+      logger.error("Update skills error", { error: (err as Error).message });
+      sendErrorResponse(
+        res,
+        err instanceof CustomError ? err : { status: 500, message: "Server error" }
+      );
+    }
+  }
 }
 

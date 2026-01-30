@@ -78,11 +78,11 @@ app.use(
   notificationServiceProxy
 );
 
-// app.use(
-//   ROUTES.ENGAGEMENT.BASE,
-//   conditionalJwtMiddleware,
-//   engagementServiceProxy
-// );
+app.use(
+  ROUTES.ENGAGEMENT.BASE,
+  conditionalJwtMiddleware,
+  engagementServiceProxy
+);
 
 
 // app.use(ROUTES.PROJECTS.BASE, conditionalJwtMiddleware, projectServiceProxy);

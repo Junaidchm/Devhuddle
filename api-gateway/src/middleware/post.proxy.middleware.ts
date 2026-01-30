@@ -17,6 +17,7 @@ export const postServiceProxy = createProxyMiddleware({
     "^/feed/list": "/api/v1/posts/list",
     "^/feed/media": "/api/v1/posts/media",
     "^/feed/medias": "/api/v1/posts/medias/unused",
+    "^/feed/delete": "/api/v1/posts/delete",
   },
   onProxyReq: (proxyReq, req: any, res: Response) => {
     // Forward user data from JWT middleware if available
@@ -65,10 +66,11 @@ export const postServiceProxy = createProxyMiddleware({
     }
     
     // Special handling for DELETE /feed/delete - extract postId from body and add to path
-    if (req.method === "DELETE" && req.url === "/feed/delete" && req.body?.Id) {
-      const postId = req.body.Id;
-      proxyReq.path = `/api/v1/posts/delete`;
-      // Keep body for DELETE /delete route (post-service handles it)
+    // FIX: Do not manually set proxyReq.path here as it conflicts with createProxyMiddleware's pathRewrite
+    // The pathRewrite mapping "^/feed/delete": "/api/v1/posts/delete" should handle it
+    // if req.url is /feed/delete
+    if (req.method === "DELETE" && req.url === "/feed/delete") {
+         // just ensure the body is passed correctly (handled above)
     }
     
     logger.info(

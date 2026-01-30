@@ -142,6 +142,8 @@ export class PostController implements IfeedController {
       
       const pageParam = req.query?.cursor as string | undefined;
       const userId = req.query?.userId as string | undefined;
+      const authorId = req.query?.authorId as string | undefined; // Get authorId from query
+      
       // Get userId from headers (set by API Gateway)
       const userIdFromHeader = req.headers["x-user-data"]
         ? JSON.parse(req.headers["x-user-data"] as string)?.id
@@ -152,12 +154,15 @@ export class PostController implements IfeedController {
       logger.info("Fetching posts", {
         pageParam,
         finalUserId,
+        authorId
       });
 
-      const response = await this.getPostsController({
+      // Call service directly to support authorId (bypassing strict gRPC request type)
+      const response = await this._postService.getPosts(
         pageParam,
-        userId: finalUserId,
-      });
+        finalUserId,
+        authorId
+      );
 
       logger.info("Posts fetched successfully", {
         postsCount: response?.pages?.length || 0,

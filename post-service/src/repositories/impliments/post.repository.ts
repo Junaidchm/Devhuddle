@@ -6,7 +6,7 @@ import { BaseRepository } from "./base.repository";
 import { prisma } from "../../config/prisma.config";
 import logger from "../../utils/logger.util";
 import redisClient from "../../config/redis.config";
-import { posts, Prisma } from ".prisma/client";
+import { posts, Prisma, Media } from ".prisma/client";
 
 import { userClient } from "../../config/grpc.client";
 import {
@@ -435,4 +435,174 @@ export class PostRepository
     }
   }
 
+  async getMediaIds(postId: string): Promise<string[]> {
+    try {
+      const mediaItems = await prisma.media.findMany({
+        where: { postId: postId },
+        select: { id: true },
+      });
+      return mediaItems.map((m) => m.id);
+    } catch (error: unknown) {
+      logger.error("Error getting media IDs", {
+        error: (error as Error).message,
+        postId,
+      });
+      throw new Error("Database error");
+    }
+  }
+
+  async findMediaByIds(mediaIds: string[]): Promise<Media[]> {
+    try {
+      return await prisma.media.findMany({
+        where: { id: { in: mediaIds } },
+      });
+    } catch (error: unknown) {
+      logger.error("Error finding media by IDs", {
+        error: (error as Error).message,
+        mediaIds,
+      });
+      throw new Error("Database error");
+    }
+  }
+
+  async updatePostWithVersions(params: {
+    postId: string;
+    userId: string;
+    newContent: string;
+    addAttachmentIds?: string[];
+    removeAttachmentIds?: string[];
+    versionRepository?: any;
+  }): Promise<{ post: posts; versionNumber: number }> {
+    try {
+      const {
+        postId,
+        userId,
+        newContent,
+        addAttachmentIds,
+        removeAttachmentIds,
+        versionRepository,
+      } = params;
+
+      return await prisma.$transaction(async (tx) => {
+        // Get current post to find current version
+        const post = await tx.posts.findUnique({ where: { id: postId } });
+        if (!post) throw new Error("Post not found");
+
+        // Get current attachments
+        const currentAttachments = await tx.media.findMany({
+          where: { postId: postId },
+        });
+
+        // Calculate new attachment set
+        const attachmentIdsToKeep = currentAttachments
+          .map((a) => a.id)
+          .filter((id) => !removeAttachmentIds?.includes(id));
+        const newAttachmentIds = [
+          ...attachmentIdsToKeep,
+          ...(addAttachmentIds || []),
+        ];
+
+        const newVersionNumber = post.currentVersion + 1;
+
+        // Create version
+        if (versionRepository) {
+          // Use the repository method but inside transaction if supported, 
+          // or manually create if repository doesn't support passing tx.
+          // Since IPostVersionRepository usually uses 'prisma' global, we might need to duplicate logic 
+          // or pass tx to repository if we refactor repositories to accept tx.
+          // For now, to keep it simple and safe, we will manually create version here ensuring transactional integrity
+          // BUT prompt said "refactor", so ideally we shouldn't duplicate.
+          // However, strict DI + Prisma Transaction usually requires passing the TransactionClient around.
+          // Let's assume we can just do the DB operations here.
+          
+          /* 
+             Ideally: versionRepository.withTx(tx).createVersion(...)
+             But versionRepository is injected.
+             Let's just implement the logic here for now to satisfy the "move logic out of service" requirement.
+          */
+             
+          // This implies copying logic from PostVersionRepository OR injecting PostVersionRepository Logic.
+          // But since we are INSIDE PostRepository, and PostVersion is closely related, it's okay.
+          // Actually, PostVersionRepository logic is simple create.
+        }
+        
+         // Note: If versionRepository was passed, we might want to use it, but since it's a separate repository, 
+         // calling it might use a different prisma client instance or not be part of this transaction.
+         // Unless we use Interactive Transactions with a passed client.
+         // Let's do the version creation manually here to ensure it's in the same transaction.
+         
+          // Was: await this.postVersionRepository.createVersion(...)
+          // We'll mimic it:
+           await tx.postVersion.create({
+              data: {
+                id: uuidv4(),
+                postId: postId,
+                versionNumber: newVersionNumber,
+                content: newContent,
+                attachmentIds: newAttachmentIds, // Stored as string array
+                editedById: userId,
+                editedAt: new Date(),
+              }
+            });
+
+        // Update post
+        const updatedPost = await tx.posts.update({
+          where: { id: postId },
+          data: {
+            content: newContent,
+            currentVersion: newVersionNumber,
+            lastEditedAt: new Date(),
+            editCount: { increment: 1 },
+            isEditing: false, // Unlock
+          },
+          include: {
+            Media: true,
+          },
+        });
+
+        // Update attachments
+        if (removeAttachmentIds && removeAttachmentIds.length > 0) {
+          await tx.media.deleteMany({
+            where: {
+              id: { in: removeAttachmentIds },
+              postId: postId,
+            },
+          });
+        }
+
+        if (addAttachmentIds && addAttachmentIds.length > 0) {
+          await tx.media.updateMany({
+            where: { id: { in: addAttachmentIds } },
+            data: { postId: postId },
+          });
+        }
+
+        return { post: updatedPost, versionNumber: newVersionNumber };
+      });
+    } catch (error: unknown) {
+      logger.error("Error updating post with versions", {
+        error: (error as Error).message,
+        postId: params.postId,
+      });
+      throw new Error((error as Error).message || "Database error");
+    }
+  }
+
+
+  async countPostsAfter(date: Date): Promise<number> {
+    try {
+      return await prisma.posts.count({
+        where: {
+          createdAt: {
+            gt: date,
+          },
+        },
+      });
+    } catch (error: unknown) {
+      logger.error("Error counting newer posts", {
+        error: (error as Error).message,
+      });
+      throw new Error("Database error");
+    }
+  }
 }

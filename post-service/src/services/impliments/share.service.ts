@@ -14,7 +14,6 @@ import {
   TargetType,
   Visibility,
 } from "@prisma/client";
-import { prisma } from "../../config/prisma.config";
 import { sanitizeInput, validateContentLength } from "../../utils/xss.util";
 
 export class ShareService implements IShareService {
@@ -97,28 +96,16 @@ export class ShareService implements IShareService {
         finalTargetId = userId;
       }
 
-      // 7. Create share (transaction to ensure atomicity)
-      const share = await prisma.$transaction(async (tx) => {
-        const share = await tx.share.create({
-          data: {
-            postId,
-            userId,
-            shareType: shareType as ShareType,
-            caption: sanitizedCaption,
-            visibility: effectiveVisibility,
-            targetType: finalTargetType,
-            targetId: finalTargetId,
-            sharedToUserId: finalTargetId,
-          } as any, // Type assertion - id will be auto-generated
-        });
-
-        // Update post shares counter (denormalized)
-        await tx.posts.update({
-          where: { id: postId },
-          data: { sharesCount: { increment: 1 } },
-        });
-
-        return share;
+      // 7. Create share (via repository which handles transaction)
+      const share = await this._shareRepository.createShare({
+        postId,
+        userId,
+        shareType,
+        caption: sanitizedCaption,
+        visibility: effectiveVisibility,
+        targetType: finalTargetType,
+        targetId: finalTargetId,
+        sharedToUserId: finalTargetId,
       });
 
       // 8. Invalidate cache

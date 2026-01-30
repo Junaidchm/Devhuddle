@@ -54,7 +54,7 @@ export class AdminController implements IAdminController {
         throw new CustomError(400, "Report ID is required");
       }
 
-      const report = await this._adminService.getReportById(reportId);
+      const report = await this._adminService.getReportById(reportId as string);
 
       res.status(200).json({
         success: true,
@@ -90,7 +90,7 @@ export class AdminController implements IAdminController {
       }
 
       const result = await this._adminService.takeReportAction({
-        reportId,
+        reportId: reportId as string,
         action,
         resolution,
         hideContent: hideContent === true,
@@ -197,7 +197,7 @@ export class AdminController implements IAdminController {
         throw new CustomError(400, "Post ID is required");
       }
 
-      const post = await this._adminService.getPostById(postId);
+      const post = await this._adminService.getPostById(postId as string);
 
       res.status(200).json({
         success: true,
@@ -228,7 +228,7 @@ export class AdminController implements IAdminController {
       }
 
       const post = await this._adminService.hidePost({
-        postId,
+        postId: postId as string,
         hidden,
         reason,
       });
@@ -257,7 +257,7 @@ export class AdminController implements IAdminController {
         throw new CustomError(400, "Post ID is required");
       }
 
-      const post = await this._adminService.deletePostAdmin(postId);
+      const post = await this._adminService.deletePostAdmin(postId as string);
 
       res.status(200).json({
         success: true,
@@ -350,7 +350,7 @@ export class AdminController implements IAdminController {
         throw new CustomError(400, "Comment ID is required");
       }
 
-      const comment = await this._adminService.getCommentById(commentId);
+      const comment = await this._adminService.getCommentById(commentId as string);
 
       res.status(200).json({
         success: true,
@@ -375,7 +375,7 @@ export class AdminController implements IAdminController {
         throw new CustomError(400, "Comment ID is required");
       }
 
-      const comment = await this._adminService.deleteCommentAdmin(commentId);
+      const comment = await this._adminService.deleteCommentAdmin(commentId as string);
 
       res.status(200).json({
         success: true,
@@ -494,7 +494,7 @@ export class AdminController implements IAdminController {
         throw new CustomError(HttpStatus.BAD_REQUEST, "User ID is required");
       }
 
-      const result = await this._adminService.getUserReportedContent(userId);
+      const result = await this._adminService.getUserReportedContent(userId as string);
 
       res.status(200).json({
         success: true,
@@ -519,7 +519,7 @@ export class AdminController implements IAdminController {
         throw new CustomError(HttpStatus.BAD_REQUEST, "User ID is required");
       }
 
-      const reports = await this._adminService.getUserReportsHistory(userId);
+      const reports = await this._adminService.getUserReportsHistory(userId as string);
 
       res.status(200).json({
         success: true,

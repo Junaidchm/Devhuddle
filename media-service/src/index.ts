@@ -40,6 +40,11 @@ const mediaController = new MediaController(mediaService);
 // Setup routes
 const mediaRouter = setupMediaRoutes(mediaController);
 
+// Initialize Consumers
+import { PostConsumer } from "./events/consumers/post.consumer";
+const postConsumer = new PostConsumer(mediaService);
+postConsumer.init().catch(err => logger.error("Failed to init Post Consumer", {error: (err as Error).message}));
+
 // Register auth middleware
 app.use(extractUserFromHeader);
 

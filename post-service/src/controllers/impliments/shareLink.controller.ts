@@ -30,7 +30,7 @@ export class ShareLinkController {
       }
 
       const shareLink = await this._shareLinkService.generateShareLink(
-        postId,
+        postId as string,
         userId,
         {
           generateShort: generateShort === "true",
@@ -62,7 +62,7 @@ export class ShareLinkController {
         );
       }
 
-      const result = await this._shareLinkService.resolveShareLink(tokenOrShortId);
+      const result = await this._shareLinkService.resolveShareLink(tokenOrShortId as string);
 
       // Redirect to the post URL
       res.redirect(result.redirectUrl);

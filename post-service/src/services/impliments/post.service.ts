@@ -29,7 +29,7 @@ import { ICommentRepository } from "../../repositories/interface/ICommentReposit
 import { IShareRepository } from "../../repositories/interface/IShareRepository";
 import { IPostVersionRepository } from "../../repositories/interface/IPostVersionRepository";
 import { RedisCacheService } from "../../utils/redis.util";
-import { prisma } from "../../config/prisma.config";
+// import { prisma } from "../../config/prisma.config"; // Removed direct dependency
 import { IFeedService } from "../interfaces/IFeedService";
 import { IOutboxService } from "../interfaces/IOutboxService";
 import { OutboxAggregateType, OutboxEventType } from "@prisma/client";
@@ -176,10 +176,15 @@ export class PostSerive implements IpostService {
     }
   }
 
-  async getPosts(pageParam?: string, userId?: string): Promise<ListPostsResponse> {
+  async getPosts(
+    pageParam?: string,
+    userId?: string, // This is viewerId
+    authorId?: string // This is filter by author
+  ): Promise<ListPostsResponse> {
     try {
-      //  NEW: Use personalized feed if feedService is available and userId provided
-      if (this.feedService && userId) {
+      // If authorId is provided, we are fetching a profile feed (not a personal timeline)
+      // So we skip the FeedService logic and go straight to the repository with a filter
+      if (!authorId && this.feedService && userId) {
         try {
           const feedResponse = await this.feedService.getFeed(
             userId,
@@ -259,14 +264,7 @@ export class PostSerive implements IpostService {
         const cursorPost = await this._postRepository.findPost(pageParam);
         if (cursorPost && cursorPost.createdAt) {
           // Count posts created after this one (newer posts) to determine skip count
-          const newerPostsCount = await prisma.posts.count({
-            where: {
-              createdAt: {
-                gt: cursorPost.createdAt,
-              },
-            },
-          });
-          skipCount = newerPostsCount;
+          skipCount = await this._postRepository.countPostsAfter(cursorPost.createdAt);
         }
       }
       
@@ -276,6 +274,7 @@ export class PostSerive implements IpostService {
         },
         take: PAGE_SIZE + 1,
         skip: skipCount,
+        where: authorId ? { userId: authorId } : undefined, // Filter by author if provided
         orderBy: { createdAt: "desc" }, //  CRITICAL FIX: Order by createdAt DESC for chronological ordering (UUIDs are not chronological!)
       };
 
@@ -349,16 +348,44 @@ export class PostSerive implements IpostService {
         throw new CustomError(grpc.status.NOT_FOUND, "Post Not found");
       }
 
+      // 1. Get media IDs before deletion for cleanup saga
+      const mediaIds = await this._postRepository.getMediaIds(postId);
+
       const deletedPost = await this._postRepository.deletePost(postId);
 
-      //  NEW: Remove post from all user feeds
+      // 2. Remove post from all user feeds
       if (this.feedService) {
         try {
           await this.feedService.removeFromAllFeeds(postId);
         } catch (feedError: unknown) {
-          // Log but don't fail deletion
           logger.error("Error removing post from feeds (non-fatal)", {
             error: (feedError as Error).message,
+            postId,
+          });
+        }
+      }
+
+      // 3. Publish POST_DELETED event for Media Service cleanup
+      if (this.outboxService && mediaIds.length > 0) {
+        try {
+          await this.outboxService.createOutboxEvent({
+            aggregateType: OutboxAggregateType.POST,
+            aggregateId: postId,
+            type: "POST_DELETED" as OutboxEventType, // Cast if enum not updated yet
+            topic: KAFKA_TOPICS.POST_DELETED,
+            key: isthere.userId, // Use userId as partition key
+            payload: {
+              postId,
+              userId: isthere.userId,
+              mediaIds,
+              action: "POST_DELETED",
+              timestamp: new Date().toISOString(),
+            },
+          });
+          logger.info("Outbox event created: POST_DELETED", { postId, mediaCount: mediaIds.length });
+        } catch (eventError: unknown) {
+          logger.error("Error creating POST_DELETED event", {
+            error: (eventError as Error).message,
             postId,
           });
         }
@@ -401,9 +428,7 @@ export class PostSerive implements IpostService {
       try {
         // 5. Validate attachments if adding
         if (req.addAttachmentIds && req.addAttachmentIds.length > 0) {
-          const existingMedia = await prisma.media.findMany({
-            where: { id: { in: req.addAttachmentIds } },
-          });
+          const existingMedia = await this._postRepository.findMediaByIds(req.addAttachmentIds);
           if (existingMedia.length !== req.addAttachmentIds.length) {
             throw new CustomError(
               grpc.status.NOT_FOUND,
@@ -412,69 +437,14 @@ export class PostSerive implements IpostService {
           }
         }
 
-        // 6. Create new version (transaction)
-        const result = await prisma.$transaction(async (tx) => {
-          // Get current attachments
-          const currentAttachments = await tx.media.findMany({
-            where: { postId: req.postId },
-          });
-
-          // Calculate new attachment set
-          const attachmentIdsToKeep = currentAttachments
-            .map((a) => a.id)
-            .filter((id) => !req.removeAttachmentIds?.includes(id));
-          const newAttachmentIds = [
-            ...attachmentIdsToKeep,
-            ...(req.addAttachmentIds || []),
-          ];
-
-          const newVersionNumber = post.currentVersion + 1;
-          const newContent = req.content ?? post.content;
-
-          // Create version
-          if (this.postVersionRepository) {
-            await this.postVersionRepository.createVersion({
-              postId: req.postId,
-              versionNumber: newVersionNumber,
-              content: newContent,
-              attachmentIds: newAttachmentIds,
-              editedById: req.userId,
-            });
-          }
-
-          // Update post
-          const updatedPost = await tx.posts.update({
-            where: { id: req.postId },
-            data: {
-              content: newContent,
-              currentVersion: newVersionNumber,
-              lastEditedAt: new Date(),
-              editCount: { increment: 1 },
-              isEditing: false, // Unlock
-            },
-            include: {
-              Media: true,
-            },
-          });
-
-          // Update attachments
-          if (req.removeAttachmentIds && req.removeAttachmentIds.length > 0) {
-            await tx.media.deleteMany({
-              where: {
-                id: { in: req.removeAttachmentIds },
-                postId: req.postId,
-              },
-            });
-          }
-
-          if (req.addAttachmentIds && req.addAttachmentIds.length > 0) {
-            await tx.media.updateMany({
-              where: { id: { in: req.addAttachmentIds } },
-              data: { postId: req.postId },
-            });
-          }
-
-          return { post: updatedPost, versionNumber: newVersionNumber };
+        // 6. Create new version (transaction via repository)
+        const result = await this._postRepository.updatePostWithVersions({
+            postId: req.postId,
+            userId: req.userId,
+            newContent: req.content ?? post.content,
+            addAttachmentIds: req.addAttachmentIds,
+            removeAttachmentIds: req.removeAttachmentIds,
+            versionRepository: this.postVersionRepository
         });
 
         // 7. Invalidate caches

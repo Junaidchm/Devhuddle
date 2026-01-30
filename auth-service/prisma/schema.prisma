@@ -35,6 +35,35 @@ model User {
   // relations 
   following Follow[] @relation("Followers")
   followers Follow[] @relation("Following")
+  experience Experience[]
+  education  Education[]
+}
+
+model Experience {
+  id          String   @id @default(uuid())
+  title       String
+  company     String
+  location    String?
+  startDate   DateTime
+  endDate     DateTime?
+  current     Boolean  @default(false)
+  description String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Education {
+  id           String   @id @default(uuid())
+  school       String
+  degree       String
+  fieldOfStudy String
+  startDate    DateTime
+  endDate      DateTime?
+  grade        String?
+  activities   String?
+  description  String?
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Follow {
