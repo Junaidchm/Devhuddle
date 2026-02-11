@@ -110,7 +110,6 @@ export class WebSocketService {
                             ws.isAlive = true;
                             ws.send(JSON.stringify({ type: 'pong' }));
                             break;
-
                         case 'pong':
                             ws.isAlive = true;
                             break;
@@ -197,7 +196,6 @@ export class WebSocketService {
             // Send confirmation to sender
             ws.send(JSON.stringify({
                 type: "message_sent",
-                // ✅ FIX: Include tempId/dedupeId so frontend can replace optimistic message
                 tempId: message.dedupeId,
                 data: savedMessage
             }));
@@ -208,12 +206,11 @@ export class WebSocketService {
             // NEW: Publish to Redis for broadcasting
             try {
                 const redisMessage = JSON.stringify({
-                    id: savedMessage.id, // ✅ FIX: Use 'id' to match Message interface expected by client
+                    id: savedMessage.id,
                     conversationId: savedMessage.conversationId,
                     senderId: savedMessage.senderId,
                     content: savedMessage.content,
                     createdAt: savedMessage.createdAt,
-                    // ✅ FIX: Include dedupeId for other clients (or sender via broadcast)
                     dedupeId: message.dedupeId
                 });
 
@@ -486,7 +483,7 @@ export class WebSocketService {
                     userConnections.forEach(ws => {
                         if (ws.readyState === WebSocket.OPEN) {
                             ws.send(JSON.stringify({
-                                type: "new_message",
+                                type: (messageData.type as string) || "new_message",
                                 data: messageData
                             }));
                             sentCount++;
