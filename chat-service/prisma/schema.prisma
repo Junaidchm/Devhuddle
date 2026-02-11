@@ -37,6 +37,10 @@ model Message {
   senderId       String
   content        String
   createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  
+  // Idempotency key for deduplication
+  dedupeId       String?       @unique
   
   // Message status tracking for delivery acknowledgments
   status         MessageStatus @default(SENT)
@@ -52,6 +56,18 @@ model Message {
   mediaName      String?       // Original filename
   mediaDuration  Int?          // Duration in seconds (audio/video)
 
+  // Refactored fields
+  isForwarded      Boolean  @default(false)
+  forwardedFrom    String?
+  replyToId        String?
+  formattedContent String?
+  isStarred        Boolean  @default(false)
+  deletedForAll    Boolean  @default(false)
+  deletedFor       String[]
+
+  replyTo      Message?     @relation("MessageToMessage", fields: [replyToId], references: [id])
+  replies      Message[]    @relation("MessageToMessage")
+  reactions    MessageReaction[]
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, createdAt])
@@ -92,3 +108,19 @@ model ChatInteraction {
   @@index([userId, lastMessageAt(sort: Desc)], map: "idx_chat_interactions_last_message")
   @@map("chat_interactions")
 }
+
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+}
+
+

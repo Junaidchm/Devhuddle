@@ -15,7 +15,7 @@ export interface IChatService {
         mediaName?: string,
         mediaDuration?: number
     ): Promise<Message>;
-    getConversationMessages(conversationId: string, userId: string, limit: number, offset: number): Promise<Message[]>;
+    getConversationMessages(conversationId: string, userId: string, limit: number, offset: number, before?: Date): Promise<Message[]>;
     getUserConversations(userId: string): Promise<Conversation[]>;
     findOrCreateConversation(participantIds: string[]): Promise<ConversationWithMetadataDto>;
     findConversationById(conversationId: string): Promise<(Conversation & { participants: Participant[] }) | null>;
@@ -37,7 +37,7 @@ export interface IChatService {
     updateMessageStatus(
         messageId: string,
         status: 'DELIVERED' | 'READ'
-    ): Promise<void>;
+    ): Promise<Message>;
     
     // Mark all messages up to lastReadMessageId as READ
     markMessagesAsRead(

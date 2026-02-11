@@ -9,7 +9,7 @@
 export class SendMessageCommand {
   constructor(
     public readonly senderId: string,
-    public readonly recipientIds: string[],
+    public readonly recipientIds: string[] = [],
     public readonly content: string,
     // Media fields (optional)
     public readonly messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'FILE' | 'STICKER' = 'TEXT',
@@ -18,10 +18,18 @@ export class SendMessageCommand {
     public readonly mediaMimeType?: string,
     public readonly mediaSize?: number,
     public readonly mediaName?: string,
-    public readonly mediaDuration?: number
+    public readonly mediaDuration?: number,
+    // ✅ FIX: Add conversationId for existing conversations
+    public readonly conversationId?: string,
+    // ✅ FIX: Add dedupeId for idempotency
+    public readonly dedupeId?: string
   ) {
     if (!senderId) throw new Error("Sender ID is required");
-    if (!recipientIds || recipientIds.length === 0) throw new Error("At least one recipient is required");
+    
+    // ✅ FIX: Allow empty recipientIds if conversationId is provided (we can look up participants)
+    if ((!recipientIds || recipientIds.length === 0) && !conversationId) {
+        throw new Error("At least one recipient or a conversation ID is required");
+    }
     // Content is optional for media messages, but we'll enforce at least one of content or mediaUrl
     if ((!content || content.trim().length === 0) && !mediaUrl) {
         throw new Error("Message must have content or media");

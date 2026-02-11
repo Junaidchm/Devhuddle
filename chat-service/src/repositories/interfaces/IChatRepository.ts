@@ -5,10 +5,12 @@ export interface IChatRepository {
   createMessage(data: Prisma.MessageCreateInput): Promise<Message>;
 
   // Get messages from a conversation (paginated)
-  getMessagesByConversationId(
+  // Get messages from a conversation (paginated with offset)
+    getMessagesByConversationId(
     conversationId: string,
     limit: number,
-    offset: number
+    offset: number,
+    before?: Date
   ): Promise<Message[]>;
 
 
@@ -16,7 +18,7 @@ export interface IChatRepository {
   findConversationById(conversationId: string): Promise<(Conversation & { participants: Participant[] }) | null>;
 
   // Find existing conversation between users, or create new one
-  findOrCreateConversation(participantIds: string[]): Promise<Conversation>;
+  findOrCreateConversation(participantIds: string[]): Promise<Conversation & { participants: Participant[] }>;
 
   // Update the lastMessageAt timestamp when a new message is sent
   updateLastMessageAt(conversationId: string, timestamp: Date): Promise<void>;

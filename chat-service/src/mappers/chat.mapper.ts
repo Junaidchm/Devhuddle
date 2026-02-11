@@ -7,6 +7,27 @@ import { ConversationResponseDto, ConversationWithMetadataDto, ParticipantDto } 
  */
 export class MessageMapper {
   /**
+   * Map SendMessageCommand to Prisma message create input
+   */
+  static toPersistence(command: import('../dtos/chat-service.dto').SendMessageCommand, conversationId: string): Prisma.MessageCreateInput {
+    return {
+      conversation: {
+        connect: { id: conversationId }
+      },
+      senderId: command.senderId,
+      content: command.content,
+      type: command.messageType, // ✅ FIX: Prisma field is 'type', not 'messageType'
+      status: 'SENT',
+      mediaUrl: command.mediaUrl || null,
+      mediaId: command.mediaId || null,
+      mediaMimeType: command.mediaMimeType || null,
+      mediaSize: command.mediaSize || null,
+      mediaName: command.mediaName || null,
+      mediaDuration: command.mediaDuration || null
+    };
+  }
+
+  /**
    * Map Prisma Message entity to MessageResponseDto
    */
   static toResponseDto(entity: Message): MessageResponseDto {

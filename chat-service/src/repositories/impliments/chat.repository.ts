@@ -18,6 +18,7 @@ export class ChatRepository extends BaseRepository<
 
     async createMessage(data: Prisma.MessageCreateInput): Promise<Message> {
         try {
+            logger.info("👉 [DEBUG] ChatRepository.createMessage called", { data: JSON.stringify(data) });
             return await super.create(data);
         } catch (error) {
             logger.error("Error creating message", { error: (error as Error).message });
@@ -25,16 +26,24 @@ export class ChatRepository extends BaseRepository<
         }
     }
 
-    async getMessagesByConversationId(conversationId: string, limit: number, offset: number): Promise<Message[]> {
+    async getMessagesByConversationId(
+        conversationId: string,
+        limit: number,
+        offset: number,
+        before?: Date
+    ): Promise<Message[]> {
         try {
             return await this.model.findMany({
                 where: {
-                    conversationId
+                    conversationId,
+                    ...(before ? { createdAt: { lt: before } } : {})
                 },
                 take: limit,
-                skip: offset,
-
-            })
+                skip: before ? 0 : offset,
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            });
         } catch (error) {
             logger.error("Error getting messages by conversation id", { error: (error as Error).message });
             throw new Error("Database error");
@@ -57,9 +66,13 @@ export class ChatRepository extends BaseRepository<
         }
     }
 
-    async findOrCreateConversation(participantIds: string[]): Promise<Conversation> {
+    async findOrCreateConversation(participantIds: string[]): Promise<Conversation & { participants: Participant[] }> {
         try {
-            const possibleConversation = await prisma.conversation.findFirst({
+            logger.info("👉 [DEBUG] findOrCreateConversation", { participantIds });
+            // ✅ FIXED: Use findMany to get ALL potential matches (where participants are a subset of provided IDs)
+            // Then filter in memory for EXACT match. This prevents "findFirst" returning a subset conversation (e.g. self-chat)
+            // and causing the code to skip the real group/pair chat and create a duplicate.
+            const candidates = await prisma.conversation.findMany({
                 where: {
                     participants: {
                         every: {
@@ -72,10 +85,15 @@ export class ChatRepository extends BaseRepository<
                 include: {
                     participants: true
                 }
-            })
+            });
 
-            // Ensure EXACT match (no extra, no missing participants)
-            if (possibleConversation && possibleConversation.participants.length === participantIds.length && possibleConversation.participants.every((participant) => participantIds.includes(participant.userId))) {
+            // Find exact match
+            const possibleConversation = candidates.find(c => 
+                c.participants.length === participantIds.length && 
+                c.participants.every(p => participantIds.includes(p.userId))
+            );
+
+            if (possibleConversation) {
                 return possibleConversation;
             }
 

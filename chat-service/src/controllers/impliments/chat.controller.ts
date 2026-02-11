@@ -77,7 +77,10 @@ export class ChatController implements IChatController {
       // Query params validated by middleware
       // Use validatedQuery if attached by middleware, otherwise fallback to req.query
       const queryParams = (req as any).validatedQuery || req.query;
+      // Extract limit, offset AND before (for cursor pagination)
       const { limit = 50, offset = 0 } = queryParams as { limit?: number; offset?: number };
+      const beforeQuery = queryParams.before as string;
+      const before = beforeQuery ? new Date(beforeQuery) : undefined;
 
       if (!userId) {
         res.status(401).json({
@@ -87,12 +90,13 @@ export class ChatController implements IChatController {
         return;
       }
 
-      // No need to validate conversationId, limit, offset - middleware did it
+      // No need to validate conversationId, limit, offset - middleware did it (mostly)
       const messages = await this._chatService.getConversationMessages(
         conversationId,
         userId,
         limit,
-        offset
+        offset,
+        before
       );
 
       res.status(200).json({

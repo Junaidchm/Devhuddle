@@ -1,4 +1,4 @@
-import { IsOptional, IsInt, Min } from 'class-validator';
+import { IsOptional, IsInt, Min, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 /**
@@ -17,4 +17,7 @@ export class GetMessagesDto {
   @IsInt()
   @Min(0, { message: 'Offset cannot be negative' })
   offset?: number = 0;
+  @IsOptional()
+  @IsString()
+  before?: string;
 }

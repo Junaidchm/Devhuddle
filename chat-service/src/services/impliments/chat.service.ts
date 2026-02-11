@@ -33,7 +33,9 @@ export class ChatService implements IChatService {
         mediaMimeType?: string,
         mediaSize?: number,
         mediaName?: string,
-        mediaDuration?: number
+        mediaDuration?: number,
+        conversationId?: string,
+        dedupeId?: string
     ): Promise<Message> {
         try {
             // Create and validate command (business rules validated here)
@@ -47,14 +49,37 @@ export class ChatService implements IChatService {
                 mediaMimeType,
                 mediaSize,
                 mediaName,
-                mediaDuration
+                mediaDuration,
+                conversationId,
+                dedupeId
             );
 
-            // Combine sender and recipients to get all participants
-            const participantIds = [senderId, ...recipientIds];
+            let conversation;
 
-            // Find or create conversation
-            const conversation = await this._chatRepository.findOrCreateConversation(participantIds);
+            // 1. Try to find by conversationId first (Primary strategy)
+            if (command.conversationId) {
+                conversation = await this._chatRepository.findConversationById(command.conversationId);
+                
+                if (!conversation) {
+                    logger.warn(`Conversation ID ${command.conversationId} not found, falling back to participant lookup`);
+                } else {
+                    // Check if sender is participant
+                    const isParticipant = conversation.participants.some(p => p.userId === command.senderId);
+                    if (!isParticipant) {
+                        throw new Error("Sender is not a participant in this conversation");
+                    }
+                }
+            }
+
+            // 2. Fallback: Find or create by participants
+            if (!conversation) {
+                if (!command.recipientIds || command.recipientIds.length === 0) {
+                     logger.error("Missing recipients and invalid conversation ID", { senderId: command.senderId });
+                     throw new Error("Cannot send message: Recipient IDs required if conversation ID is missing/invalid");
+                }
+                const participantIds = [command.senderId, ...command.recipientIds];
+                conversation = await this._chatRepository.findOrCreateConversation(participantIds);
+            }
 
             // Create message data
             const messageData: Prisma.MessageCreateInput = {
@@ -68,6 +93,7 @@ export class ChatService implements IChatService {
                 mediaSize: command.mediaSize,
                 mediaName: command.mediaName,
                 mediaDuration: command.mediaDuration,
+                dedupeId: command.dedupeId,
                 conversation: {
                     connect: {
                         id: conversation.id
@@ -83,6 +109,8 @@ export class ChatService implements IChatService {
 
             // Invalidate cache for this conversation and all participants
             await RedisCacheService.invalidateConversationCache(conversation.id);
+            
+            const participantIds = conversation.participants.map(p => p.userId);
             for (const participantId of participantIds) {
                 await RedisCacheService.invalidateUserConversationsCache(participantId);
                 // Also invalidate the enriched metadata cache
@@ -106,61 +134,51 @@ export class ChatService implements IChatService {
      * Get conversation messages (uses Query pattern with business validation)
      * Implements cache-aside pattern
      */
-    async getConversationMessages(conversationId: string, userId: string, limit: number = 50, offset: number = 0): Promise<Message[]> {
+    async getConversationMessages(conversationId: string, userId: string, limit: number, offset: number, before?: Date): Promise<Message[]> {
         try {
-            // Create and validate query (business rules validated here)
-            const query = new GetMessagesQuery(conversationId, userId, limit, offset);
+            // Validate limits (capped at 100)
+            const safeLimit = Math.min(limit, 100);
 
-            // Try to get from cache first
-            const cachedMessages = await RedisCacheService.getCachedMessages(
-                query.conversationId,
-                query.limit,
-                query.offset
-            );
-
-            if (cachedMessages) {
-                logger.info("Retrieved messages from cache", {
-                    conversationId: query.conversationId,
-                    messageCount: cachedMessages.length
-                });
-                return cachedMessages;
+            // ✅ OPTIMIZATION: If requesting a temporary ID (optimistic), return empty immediately
+            if (conversationId.startsWith('temp-') || conversationId.startsWith('optimistic-')) {
+                logger.info("Skipping fetch for temporary conversation ID", { conversationId });
+                return [];
             }
 
-            // Cache miss - verify user is a participant
-            const conversation = await this._chatRepository.findConversationById(query.conversationId);
+            // check cache first? (Caching with cursors is tricky, maybe skip for now or cache head only)
+            // For now, let's hit DB for safety with cursors to ensure no gaps
+
+            // Verify user is a participant (could be cached)
+            // For now, let's just get messages - repository will return empty if not found? 
+            // Actually verification is good.
+            const conversation = await this._chatRepository.findConversationById(conversationId);
 
             if (!conversation) {
                 throw new Error("Conversation not found");
             }
 
-            // Check if user is a participant
             const isParticipant = conversation.participants.some(
-                (p: Participant) => p.userId === query.userId
+                (p: Participant) => p.userId === userId
             );
 
             if (!isParticipant) {
                 throw new Error("Unauthorized: User is not a participant in this conversation");
             }
 
-            // Get messages from database
+            // Get messages from database using offset-based pagination
+            // Get messages from database using cursor or offset
             const messages = await this._chatRepository.getMessagesByConversationId(
-                query.conversationId,
-                query.limit,
-                query.offset
-            );
-
-            // Cache the results
-            await RedisCacheService.cacheMessages(
-                query.conversationId,
-                query.limit,
-                query.offset,
-                messages
+                conversationId,
+                safeLimit,
+                offset,
+                before
             );
 
             logger.info("Retrieved conversation messages from DB", {
-                conversationId: query.conversationId,
-                userId: query.userId,
-                messageCount: messages.length
+                conversationId,
+                userId,
+                messageCount: messages.length,
+                offset
             });
 
             return messages;
@@ -502,7 +520,7 @@ export class ChatService implements IChatService {
     async updateMessageStatus(
         messageId: string,
         status: 'DELIVERED' | 'READ'
-    ): Promise<void> {
+    ): Promise<Message> {
         try {
             const updateData: Prisma.MessageUpdateInput = {
                 status,
@@ -510,9 +528,10 @@ export class ChatService implements IChatService {
                 ...(status === 'READ' && { readAt: new Date() }),
             };
 
-            await this._chatRepository.updateMessage(messageId, updateData);
+            const updatedMessage = await this._chatRepository.updateMessage(messageId, updateData);
 
             logger.info('Message status updated', { messageId, status });
+            return updatedMessage;
         } catch (error) {
             logger.error('Error updating message status', {
                 error: (error as Error).message,

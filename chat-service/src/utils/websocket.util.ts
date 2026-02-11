@@ -81,6 +81,11 @@ export class WebSocketService {
             ws.on('message', async (data) => {
                 try {
                     const message = JSON.parse(data.toString());
+                    logger.info("👉 [DEBUG] WebSocket Received Message", { 
+                        type: message.type, 
+                        userId: ws.userId,
+                        payload: JSON.stringify(message) 
+                    });
 
                     // Route based on message type
                     switch (message.type) {
@@ -98,6 +103,16 @@ export class WebSocketService {
 
                         case 'typing':
                             await this._handleTyping(ws, message);
+                            break;
+
+                        // ✅ FIX: Handle ping/pong to keep connection alive
+                        case 'ping':
+                            ws.isAlive = true;
+                            ws.send(JSON.stringify({ type: 'pong' }));
+                            break;
+
+                        case 'pong':
+                            ws.isAlive = true;
                             break;
 
                         default:
@@ -145,7 +160,8 @@ export class WebSocketService {
         message: SendMessagePayload
     ): Promise<void> {
         // Validate message structure
-        if (!message.recipientIds || !Array.isArray(message.recipientIds)) {
+        // ✅ FIX: Allow missing recipientIds if conversationId is present
+        if ((!message.recipientIds || !Array.isArray(message.recipientIds)) && !message.conversationId) {
             ws.send(JSON.stringify({
                 type: "error",
                 error: "Invalid recipientIds"
@@ -173,12 +189,16 @@ export class WebSocketService {
                 message.mediaMimeType,
                 message.mediaSize,
                 message.mediaName,
-                message.mediaDuration
+                message.mediaDuration,
+                message.conversationId,
+                message.dedupeId
             );
 
             // Send confirmation to sender
             ws.send(JSON.stringify({
                 type: "message_sent",
+                // ✅ FIX: Include tempId/dedupeId so frontend can replace optimistic message
+                tempId: message.dedupeId,
                 data: savedMessage
             }));
             logger.info("Message sent successfully", {
@@ -188,11 +208,13 @@ export class WebSocketService {
             // NEW: Publish to Redis for broadcasting
             try {
                 const redisMessage = JSON.stringify({
-                    messageId: savedMessage.id,
+                    id: savedMessage.id, // ✅ FIX: Use 'id' to match Message interface expected by client
                     conversationId: savedMessage.conversationId,
                     senderId: savedMessage.senderId,
                     content: savedMessage.content,
-                    createdAt: savedMessage.createdAt
+                    createdAt: savedMessage.createdAt,
+                    // ✅ FIX: Include dedupeId for other clients (or sender via broadcast)
+                    dedupeId: message.dedupeId
                 });
 
                 await redisPublisher.publish(
@@ -224,7 +246,9 @@ export class WebSocketService {
                     senderId: savedMessage.senderId,
                     recipientIds: message.recipientIds,
                     content: savedMessage.content,
-                    timestamp: savedMessage.createdAt
+                    timestamp: savedMessage.createdAt,
+                    // ✅ FIX: Include dedupeId in Kafka event too
+                    dedupeId: message.dedupeId
                 });
 
             } catch (kafkaError) {
@@ -278,8 +302,8 @@ export class WebSocketService {
                 return;
             }
 
-            // Update message status in database
-            await this.chatService.updateMessageStatus(
+            // Update message status in database (returns updated message)
+            const updatedMessage = await this.chatService.updateMessageStatus(
                 message.messageId,
                 'DELIVERED'
             );
@@ -294,7 +318,10 @@ export class WebSocketService {
                 await redisPublisher.publish(
                     `message:status`,
                     JSON.stringify({
+                        type: 'message_status_updated', // Add explicit type
+                        conversationId: updatedMessage.conversationId, // Use from DB
                         messageId: message.messageId,
+                        senderId: updatedMessage.senderId, // Help frontend optimize?
                         status: 'DELIVERED',
                         deliveredAt: new Date().toISOString(),
                     })
@@ -370,34 +397,65 @@ export class WebSocketService {
 
     private async _setupRedisSubscription(): Promise<void> {
         try {
-            // Subscribe to all chat channels using pattern matching
+            // Subscribe to channel patterns
+            // 1. Chat messages: chat:*
+            // 2. Status updates: message:status
             await redisSubscriber.pSubscribe('chat:*', async (message, channel) => {
-                try {
-                    const data = JSON.parse(message);
-                    logger.debug("Received Redis message", { channel, data });
-
-                    // Extract conversationId from channel name
-                    // Channel format: "chat:conversationId"
-                    const conversationId = channel.split(':')[1];
-
-                    // Broadcast to all users in this conversation
-                    await this._broadcastToConversation(conversationId, data);
-
-                } catch (error) {
-                    logger.error("Failed to process Redis message", {
-                        error: error instanceof Error ? error.message : "Unknown error",
-                        channel
-                    });
-                }
+                await this._handleRedisMessage(channel, message);
+            });
+            
+            await redisSubscriber.subscribe('message:status', async (message) => {
+                await this._handleRedisMessage('message:status', message);
             });
 
-            logger.info("Redis subscription established for chat:*");
+            logger.info("Redis subscriptions established (chat:*, message:status)");
 
         } catch (error) {
             logger.error("Failed to setup Redis subscription", {
                 error: error instanceof Error ? error.message : "Unknown error"
             });
             throw error;
+        }
+    }
+
+    private async _handleRedisMessage(channel: string, message: string): Promise<void> {
+        try {
+            const data = JSON.parse(message);
+            // logger.debug("Received Redis message", { channel, type: data.type });
+
+            let conversationId: string | undefined;
+
+            if (channel === 'message:status') {
+                // Status update channel
+                // Payload must contain conversationId
+                conversationId = data.conversationId;
+                
+                // If the payload type is missing, ensure we set it for frontend
+                if (!data.type) {
+                    data.type = 'message_status_updated';
+                }
+
+            } else {
+                // Chat message channel: chat:conversationId
+                conversationId = channel.split(':')[1];
+            }
+
+            if (conversationId) {
+                // ✅ FIX: Unwrap the 'data' from the Redis message
+                // The Redis message structure is { type: 'new_message', data: { id: ... }, ... }
+                // We want to broadcast just the inner message data to the client
+                // so the client receives { type: 'new_message', data: { id: ... } }
+                const payload = data.data || data; 
+                await this._broadcastToConversation(conversationId, payload);
+            } else {
+                logger.warn("Received Redis message without conversationId", { channel, data });
+            }
+
+        } catch (error) {
+            logger.error("Failed to process Redis message", {
+                error: error instanceof Error ? error.message : "Unknown error",
+                channel
+            });
         }
     }
 
