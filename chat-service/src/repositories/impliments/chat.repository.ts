@@ -400,5 +400,146 @@ export class ChatRepository extends BaseRepository<
         }
     }
 
+
+    async createGroupConversation(
+        creatorId: string, 
+        name: string, 
+        participantIds: string[], 
+        icon?: string,
+        onlyAdminsCanPost: boolean = false,
+        onlyAdminsCanEditInfo: boolean = false,
+        topics: string[] = []
+    ): Promise<Conversation & { participants: Participant[] }> {
+        return await prisma.conversation.create({
+            data: {
+                type: 'GROUP',
+                name,
+                icon,
+                ownerId: creatorId,
+                onlyAdminsCanPost,
+                onlyAdminsCanEditInfo,
+                topics,
+                participants: {
+                    create: [
+                        { userId: creatorId, role: 'ADMIN' },
+                        ...participantIds.filter(id => id !== creatorId).map(id => ({ userId: id, role: 'MEMBER' as const }))
+                    ]
+                }
+            },
+            include: {
+                participants: true
+            }
+        });
+    }
+
+    async findAllGroups(
+        query?: string,
+        topics?: string[],
+        limit: number = 20,
+        offset: number = 0
+    ): Promise<(Conversation & { participants: Participant[] })[]> {
+        const whereClause: Prisma.ConversationWhereInput = {
+            type: 'GROUP',
+            ...(query ? {
+                OR: [
+                    { name: { contains: query, mode: 'insensitive' } },
+                    { description: { contains: query, mode: 'insensitive' } }
+                ]
+            } : {}),
+             ...(topics && topics.length > 0 ? {
+                topics: {
+                    hasSome: topics
+                }
+            } : {})
+        };
+
+        return await prisma.conversation.findMany({
+            where: whereClause,
+            include: {
+                participants: true
+            },
+            take: limit,
+            skip: offset,
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+    }
+
+    async addParticipantToGroup(groupId: string, userId: string, role: 'ADMIN' | 'MEMBER' = 'MEMBER'): Promise<void> {
+        await prisma.participant.create({
+            data: {
+                conversationId: groupId,
+                userId,
+                role
+            }
+        });
+    }
+
+    async removeParticipantFromGroup(groupId: string, userId: string): Promise<void> {
+        await prisma.participant.deleteMany({
+            where: {
+                conversationId: groupId,
+                userId
+            }
+        });
+    }
+
+    async updateParticipantRole(groupId: string, userId: string, role: 'ADMIN' | 'MEMBER'): Promise<void>  {
+        await prisma.participant.updateMany({
+            where: {
+                conversationId: groupId,
+                userId
+            },
+            data: { role }
+        });
+    }
+
+    async updateGroupMetadata(
+        groupId: string, 
+        data: { 
+            name?: string; 
+            description?: string; 
+            icon?: string;
+            onlyAdminsCanPost?: boolean;
+            onlyAdminsCanEditInfo?: boolean;
+        }
+    ): Promise<Conversation> {
+        return await prisma.conversation.update({
+            where: { id: groupId },
+            data
+        });
+    }
+
+    async deleteConversation(conversationId: string): Promise<void> {
+        await prisma.$transaction([
+            // Delete messages first
+            prisma.message.deleteMany({
+                where: { conversationId }
+            }),
+            // Delete participants
+            prisma.participant.deleteMany({
+                where: { conversationId }
+            }),
+            // Delete conversation
+            prisma.conversation.delete({
+                where: { id: conversationId }
+            })
+        ]);
+        logger.info("Conversation deleted successfully", { conversationId });
+    }
+
+    async findParticipantInConversation(userId: string, conversationId: string): Promise<Participant & { role: 'ADMIN' | 'MEMBER' } | null> {
+        // @ts-ignore - Prisma types update might be lagging, role is definitely there
+        return await prisma.participant.findUnique({
+            where: {
+                userId_conversationId: {
+                    userId,
+                    conversationId
+                }
+            }
+        }) as (Participant & { role: 'ADMIN' | 'MEMBER' }) | null;
+    }
 }
+
 

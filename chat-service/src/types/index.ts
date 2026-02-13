@@ -13,4 +13,7 @@ export type {
 } from "./websocket.types";
 
 // Authentication types
-export type { JWTPayload } from "./auth.types";
+export type { JWTPayload, IAuthenticatedRequest } from "./auth.types";
+
+// Call types
+export * from "./call.types";

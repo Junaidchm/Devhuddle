@@ -221,12 +221,21 @@ export class CheckConversationExistsQuery {
  */
 export interface ConversationWithMetadataDto {
   conversationId: string;
+  type?: 'DIRECT' | 'GROUP'; // Make optional to avoid breaking existing code immediately, or 'DIRECT' as default?
+  // Actually better to match frontend type
+  name?: string | null;
+  icon?: string | null;
+  description?: string | null;
+  ownerId?: string | null;
+  onlyAdminsCanPost?: boolean;
+  onlyAdminsCanEditInfo?: boolean;
   participantIds: string[];
   participants: {
     userId: string;
     username: string;
     name: string;
     profilePhoto: string | null;
+    role?: 'ADMIN' | 'MEMBER';
   }[];
   lastMessage: {
     content: string;

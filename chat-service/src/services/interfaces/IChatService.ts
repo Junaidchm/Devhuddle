@@ -45,5 +45,11 @@ export interface IChatService {
         userId: string,
         lastReadMessageId: string
     ): Promise<void>;
+
+    // Delete a group conversation (owner only)
+    deleteGroup(conversationId: string, userId: string): Promise<void>;
+
+    // Get single conversation with metadata
+    getConversationWithMetadata(conversationId: string, userId: string): Promise<ConversationWithMetadataDto | null>;
 }
 

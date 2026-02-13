@@ -11,6 +11,10 @@ enum MediaType {
   POST_IMAGE
   POST_VIDEO
   PROFILE_IMAGE
+  CHAT_IMAGE
+  CHAT_VIDEO
+  CHAT_AUDIO
+  CHAT_FILE
 }
 
 enum MediaStatus {

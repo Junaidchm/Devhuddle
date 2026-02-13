@@ -15,6 +15,7 @@ export interface IChatRepository {
 
 
   // Find a conversation by ID (with participants)
+  
   findConversationById(conversationId: string): Promise<(Conversation & { participants: Participant[] }) | null>;
 
   // Find existing conversation between users, or create new one
@@ -52,6 +53,39 @@ export interface IChatRepository {
 
   // Get last message for a conversation
   getLastMessage(conversationId: string): Promise<Message | null>;
+
+  // Group Management Methods
+    createGroupConversation(
+        creatorId: string, 
+        name: string, 
+        participantIds: string[], 
+        icon?: string,
+        onlyAdminsCanPost?: boolean,
+        onlyAdminsCanEditInfo?: boolean,
+        topics?: string[]
+    ): Promise<Conversation & { participants: Participant[] }>;
+
+    findAllGroups(
+        query?: string,
+        topics?: string[],
+        limit?: number,
+        offset?: number
+    ): Promise<(Conversation & { participants: Participant[] })[]>;
+  addParticipantToGroup(groupId: string, userId: string, role?: 'ADMIN' | 'MEMBER'): Promise<void>;
+  removeParticipantFromGroup(groupId: string, userId: string): Promise<void>;
+  updateParticipantRole(groupId: string, userId: string, role: 'ADMIN' | 'MEMBER'): Promise<void>;
+  updateGroupMetadata(
+    groupId: string, 
+    data: { 
+      name?: string; 
+      description?: string; 
+      icon?: string;
+      onlyAdminsCanPost?: boolean;
+      onlyAdminsCanEditInfo?: boolean;
+    }
+  ): Promise<Conversation>;
+  findParticipantInConversation(userId: string, conversationId: string): Promise<Participant | null>;
+  deleteConversation(conversationId: string): Promise<void>;
 }
 
 /**

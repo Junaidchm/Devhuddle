@@ -20,4 +20,9 @@ export interface IChatController {
    * Check if a conversation exists
    */
   checkConversationExists(req: Request, res: Response): Promise<void>;
+
+  /**
+   * Delete a group conversation (owner only)
+   */
+  deleteGroup(req: Request, res: Response): Promise<void>;
 }

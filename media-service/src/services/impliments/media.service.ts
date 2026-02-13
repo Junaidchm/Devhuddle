@@ -378,14 +378,36 @@ export class MediaService implements IMediaService {
   private validateFileType(fileType: string, mediaType: MediaType): void {
     const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     const allowedVideoTypes = ["video/mp4", "video/webm", "video/quicktime", "video/x-msvideo"];
+    const allowedAudioTypes = ["audio/mpeg", "audio/mp3", "audio/wav", "audio/webm", "audio/ogg", "audio/m4a"];
+    const allowedDocumentTypes = [
+      "application/pdf", 
+      "application/msword", 
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+      "text/plain",
+      "application/zip",
+      "application/x-zip-compressed"
+    ];
 
-    if (mediaType === "POST_IMAGE" || mediaType === "PROFILE_IMAGE") {
-      if (!allowedImageTypes.includes(fileType.toLowerCase())) {
-        throw new CustomError(400, `Invalid file type. Allowed types: ${allowedImageTypes.join(", ")}`);
+    const normalizedType = fileType.toLowerCase();
+
+    if (mediaType === "POST_IMAGE" || mediaType === "PROFILE_IMAGE" || mediaType === "CHAT_IMAGE") {
+      if (!allowedImageTypes.includes(normalizedType)) {
+        throw new CustomError(400, `Invalid image type. Allowed: ${allowedImageTypes.join(", ")}`);
       }
-    } else if (mediaType === "POST_VIDEO") {
-      if (!allowedVideoTypes.includes(fileType.toLowerCase())) {
-        throw new CustomError(400, `Invalid file type. Allowed types: ${allowedVideoTypes.join(", ")}`);
+    } else if (mediaType === "POST_VIDEO" || mediaType === "CHAT_VIDEO") {
+      if (!allowedVideoTypes.includes(normalizedType)) {
+        throw new CustomError(400, `Invalid video type. Allowed: ${allowedVideoTypes.join(", ")}`);
+      }
+    } else if (mediaType === "CHAT_AUDIO") {
+      if (!allowedAudioTypes.includes(normalizedType)) {
+        throw new CustomError(400, `Invalid audio type. Allowed: ${allowedAudioTypes.join(", ")}`);
+      }
+    } else if (mediaType === "CHAT_FILE") {
+      // For generic files, we might be more lenient or check strict list
+      if (!allowedDocumentTypes.includes(normalizedType)) {
+        throw new CustomError(400, `Invalid file type. Allowed: PDF, DOC, DOCX, XLS, XLSX, TXT, ZIP`);
       }
     }
   }
@@ -393,12 +415,30 @@ export class MediaService implements IMediaService {
   private validateFileSize(fileSize: number, mediaType: MediaType): void {
     let maxSize: number;
 
-    if (mediaType === "PROFILE_IMAGE") {
-      maxSize = MAX_FILE_SIZE.PROFILE_IMAGE;
-    } else if (mediaType === "POST_IMAGE") {
-      maxSize = MAX_FILE_SIZE.IMAGE;
-    } else {
-      maxSize = MAX_FILE_SIZE.VIDEO;
+    switch (mediaType) {
+      case "PROFILE_IMAGE":
+        maxSize = MAX_FILE_SIZE.PROFILE_IMAGE;
+        break;
+      case "POST_IMAGE":
+        maxSize = MAX_FILE_SIZE.IMAGE;
+        break;
+      case "POST_VIDEO":
+        maxSize = MAX_FILE_SIZE.VIDEO;
+        break;
+      case "CHAT_IMAGE":
+        maxSize = MAX_FILE_SIZE.CHAT_IMAGE;
+        break;
+      case "CHAT_VIDEO":
+        maxSize = MAX_FILE_SIZE.CHAT_VIDEO;
+        break;
+      case "CHAT_AUDIO":
+        maxSize = MAX_FILE_SIZE.CHAT_AUDIO;
+        break;
+      case "CHAT_FILE":
+        maxSize = MAX_FILE_SIZE.CHAT_FILE;
+        break;
+      default:
+        maxSize = MAX_FILE_SIZE.IMAGE; // Default fallback
     }
 
     if (fileSize > maxSize) {

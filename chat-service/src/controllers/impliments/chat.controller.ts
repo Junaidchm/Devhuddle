@@ -99,9 +99,12 @@ export class ChatController implements IChatController {
         before
       );
 
+      // ✅ FIX: Return structure that matches frontend expectations
+      // Frontend expects: { messages: Message[], hasMore: boolean, pagination?: {} }
       res.status(200).json({
         success: true,
-        data: messages,
+        messages: messages,  // Changed from 'data' to 'messages'
+        hasMore: messages.length === limit,  // Added hasMore flag
         pagination: {
           limit,
           offset,
@@ -185,6 +188,7 @@ export class ChatController implements IChatController {
       // Check if conversation exists (doesn't create one)
       const result = await this._chatService.checkConversationExists(userId, participantIds);
 
+
       res.status(200).json({
         success: true,
         data: result
@@ -211,5 +215,116 @@ export class ChatController implements IChatController {
       });
     }
   }
+
+  /**
+   * GET /conversations/:conversationId
+   * Get a single conversation with enriched metadata
+   */
+  async getConversationById(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = JSON.parse(req.headers["x-user-data"] as string).id;
+      const conversationId = req.params.conversationId as string;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'User not authenticated'
+        });
+        return;
+      }
+
+      if (!conversationId) {
+        res.status(400).json({
+          success: false,
+          message: 'Conversation ID is required'
+        });
+        return;
+      }
+
+      const conversation = await this._chatService.getConversationWithMetadata(conversationId, userId);
+
+      if (!conversation) {
+        res.status(404).json({
+          success: false,
+          message: 'Conversation not found or you are not a participant'
+        });
+        return;
+      }
+
+      res.status(200).json(conversation);
+    } catch (error) {
+      logger.error('Error getting conversation by ID', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        userId: req.headers["x-user-data"] ? JSON.parse(req.headers["x-user-data"] as string).id : undefined,
+        conversationId: req.params.conversationId
+      });
+
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch conversation'
+      });
+    }
+  }
+
+  /**
+   * DELETE /group/:conversationId
+   * Delete a group conversation (owner only)
+   */
+  async deleteGroup(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = JSON.parse(req.headers["x-user-data"] as string).id;
+      const conversationId = req.params.conversationId as string;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'User not authenticated'
+        });
+        return;
+      }
+
+      if (!conversationId) {
+        res.status(400).json({
+          success: false,
+          message: 'Conversation ID is required'
+        });
+        return;
+      }
+
+      await this._chatService.deleteGroup(conversationId, userId);
+
+      res.status(200).json({
+        success: true,
+        message: 'Group deleted successfully'
+      });
+    } catch (error) {
+        logger.error('Error deleting group', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            userId: req.headers["x-user-data"] ? JSON.parse(req.headers["x-user-data"] as string).id : undefined,
+            conversationId: req.params.conversationId
+        });
+
+        if (error instanceof Error) {
+            if (error.message === 'Conversation not found') {
+                res.status(404).json({ success: false, message: error.message });
+                return;
+            }
+            if (error.message.includes('Only group conversations')) {
+                res.status(400).json({ success: false, message: error.message });
+                return;
+            }
+             if (error.message.includes('Only the group owner')) {
+                res.status(403).json({ success: false, message: error.message });
+                return;
+            }
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete group'
+        });
+    }
+  }
 }
+
 

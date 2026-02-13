@@ -38,3 +38,51 @@ export class CheckConversationDto {
   participantIds!: string[];
 }
 
+
+/**
+ * DTO for creating a new group
+ */
+export class CreateGroupDto {
+  @IsString()
+  name!: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayMinSize(1, { message: 'At least one participant is required' })
+  participantIds!: string[];
+
+  @IsOptional()
+  @IsString()
+  icon?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  topics?: string[];
+}
+
+/**
+ * DTO for fetching groups with filtering
+ */
+export class GetGroupsDto {
+  @IsOptional()
+  @IsString()
+  query?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  topics?: string[];
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  limit?: number = 20;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  offset?: number = 0;
+}

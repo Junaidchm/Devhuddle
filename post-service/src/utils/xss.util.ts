@@ -1,4 +1,4 @@
-import sanitizeHtml from "sanitize-html";
+import DOMPurify from "isomorphic-dompurify";
 
 /**
  * Sanitize user input to prevent XSS attacks
@@ -9,12 +9,15 @@ export function sanitizeInput(input: string): string {
     return "";
   }
 
-  // Configure sanitize-html to be very strict
-  const sanitized = sanitizeHtml(input, {
-    allowedTags: [], // No HTML tags allowed
-    allowedAttributes: {},
-    disallowedTagsMode: "discard",
-  });
+  // Configure DOMPurify to be very strict
+  const config = {
+    ALLOWED_TAGS: [], // No HTML tags allowed
+    ALLOWED_ATTR: [],
+    KEEP_CONTENT: true, // Keep text content but strip tags
+  };
+
+  // Sanitize the input (isomorphic-dompurify works without window)
+  const sanitized = DOMPurify.sanitize(input, config);
 
   // Additional cleanup: remove any remaining HTML entities
   return sanitized

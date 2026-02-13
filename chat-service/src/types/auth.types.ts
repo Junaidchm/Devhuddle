@@ -1,7 +1,5 @@
-/**
- * Authentication-related type definitions
- * @module types/auth
- */
+
+import { Request } from "express";
 
 /**
  * JWT token payload structure
@@ -11,4 +9,11 @@ export interface JWTPayload {
     id: string;
     /** Additional JWT claims */
     [key: string]: unknown;
+}
+
+/**
+ * Express Request with authenticated user
+ */
+export interface IAuthenticatedRequest extends Request {
+    user?: JWTPayload;
 }

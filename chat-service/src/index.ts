@@ -8,7 +8,9 @@ import { WebSocketService } from "./utils/websocket.util";
 import { ChatRepository } from "./repositories/impliments/chat.repository";
 import { ChatService } from "./services/impliments/chat.service";
 import { ChatController } from "./controllers/impliments/chat.controller";
+import { GroupController } from './controllers/impliments/group.controller';
 import { createChatRoutes } from "./routes/chat.routes";
+import { GroupService } from "./services/impliments/group.service";
 import { connectRedis } from "./config/redis.config";
 import { getProducer } from "./utils/kafka.util";
 import logger from "./utils/logger.util";
@@ -50,12 +52,17 @@ async function startServer() {
 
         // 3. Initialize services
         const chatRepository = new ChatRepository();
+        
         const chatService = new ChatService(chatRepository);
+        const groupService = new GroupService(chatRepository);
+
         const chatController = new ChatController(chatService);
+        const groupController = new GroupController(groupService);
+
         logger.info("✅ Chat service initialized");
 
         // 4. Register REST API routes
-        const chatRoutes = createChatRoutes(chatController);
+        const chatRoutes = createChatRoutes(chatController, groupController);
         app.use('/api/v1/chat', chatRoutes);
         logger.info("✅ REST API routes registered");
 

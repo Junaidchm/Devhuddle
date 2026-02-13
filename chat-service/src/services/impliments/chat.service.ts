@@ -1,6 +1,6 @@
 import { IChatService } from "../interfaces/IChatService";
 import { IChatRepository } from "../../repositories/interfaces/IChatRepository";
-import { Message, Conversation, Prisma, Participant } from "@prisma/client";
+import { Message, Conversation, Prisma, Participant, GroupRole } from "@prisma/client";
 import logger from "../../utils/logger.util";
 import { RedisCacheService } from "../../utils/redis-cache.util";
 import { authServiceClient } from "../../clients/auth-service.client";
@@ -79,6 +79,14 @@ export class ChatService implements IChatService {
                 }
                 const participantIds = [command.senderId, ...command.recipientIds];
                 conversation = await this._chatRepository.findOrCreateConversation(participantIds);
+            }
+
+            // 3. Check group permissions: onlyAdminsCanPost
+            if (conversation.type === 'GROUP' && conversation.onlyAdminsCanPost) {
+                const senderParticipant = conversation.participants.find(p => p.userId === command.senderId);
+                if (!senderParticipant || (senderParticipant.role !== GroupRole.ADMIN && conversation.ownerId !== command.senderId)) {
+                    throw new Error("Only admins can send messages in this group");
+                }
             }
 
             // Create message data
@@ -166,13 +174,38 @@ export class ChatService implements IChatService {
             }
 
             // Get messages from database using offset-based pagination
-            // Get messages from database using cursor or offset
             const messages = await this._chatRepository.getMessagesByConversationId(
                 conversationId,
                 safeLimit,
                 offset,
                 before
             );
+
+            // Enrich with sender details
+            const senderIds = Array.from(new Set(messages.map(m => m.senderId)));
+            let userProfilesMap = new Map<string, any>();
+            
+            if (senderIds.length > 0) {
+                try {
+                    userProfilesMap = await authServiceClient.getUserProfiles(senderIds);
+                } catch (error) {
+                    logger.warn("Failed to fetch user profiles for messages", { error: (error as Error).message });
+                }
+            }
+
+            const enrichedMessages = messages.map(message => {
+                const profile = userProfilesMap.get(message.senderId);
+                return {
+                    ...message,
+                    sender: profile ? {
+                        id: message.senderId,
+                        username: profile.username,
+                        email: profile.email,
+                        profileImage: profile.profilePhoto,
+                        isOnline: profile.isOnline
+                    } : undefined
+                };
+            });
 
             logger.info("Retrieved conversation messages from DB", {
                 conversationId,
@@ -181,7 +214,7 @@ export class ChatService implements IChatService {
                 offset
             });
 
-            return messages;
+            return enrichedMessages as unknown as Message[];
         } catch (error) {
             logger.error("Error in getConversationMessages service", { error: (error as Error).message });
             throw error;
@@ -260,13 +293,20 @@ export class ChatService implements IChatService {
             // Build enriched conversation DTO
             const enrichedConversation: ConversationWithMetadataDto = {
                 conversationId: conversation.id,
+                type: conversation.type as 'DIRECT' | 'GROUP',
+                name: conversation.name,
+                icon: conversation.icon,
+                description: conversation.description,
+                ownerId: conversation.ownerId,
                 participantIds: allParticipants,
                 participants: allParticipants.map(userId => {
                     const profile = userProfilesMap.get(userId);
                     return {
                         userId,
                         username: profile?.username || 'unknown',
-                        name: profile?.name || 'Unknown User',
+                        // ✅ FIX: Fallback to username if name is missing/empty
+                        // This prevents "Unknown User" when we have a valid username
+                        name: profile?.name || profile?.username || 'Unknown User',
                         profilePhoto: profile?.profilePhoto || null
                     };
                 }),
@@ -420,6 +460,14 @@ export class ChatService implements IChatService {
             const enrichedConversations: ConversationWithMetadataDto[] = conversationsWithMetadata.map((conv) => {
                 return {
                     conversationId: conv.id,
+                    type: conv.type as 'DIRECT' | 'GROUP',
+                    name: conv.name,
+                    icon: conv.icon,
+                    description: conv.description,
+                    ownerId: conv.ownerId,
+                    // ✅ FIX: Include permission fields for group settings
+                    onlyAdminsCanPost: conv.onlyAdminsCanPost,
+                    onlyAdminsCanEditInfo: conv.onlyAdminsCanEditInfo,
                     participantIds: conv.participants.map(p => p.userId),
                     // Enrich participants with profile data from gRPC
                     participants: conv.participants.map(p => {
@@ -432,15 +480,24 @@ export class ChatService implements IChatService {
                         }
                         return {
                             userId: p.userId,
-                            username: profile?.username || 'unknown',
-                            name: profile?.name || 'Unknown User',
-                            profilePhoto: profile?.profilePhoto || null
+                            username: profile?.username || `user_${p.userId.slice(0, 8)}`,
+                            name: profile?.name || profile?.username || `User ${p.userId.slice(0, 8)}`,
+                            profilePhoto: profile?.profilePhoto || null,
+                            // ✅ CRITICAL FIX: Include role field from participant record
+                            role: p.role as 'ADMIN' | 'MEMBER',
+                            joinedAt: p.joinedAt instanceof Date ? p.joinedAt.toISOString() : (p.joinedAt as any)
                         };
                     }),
                     lastMessage: conv.lastMessage ? {
+                        id: conv.lastMessage.id, // Include ID
                         content: conv.lastMessage.content,
+                        type: conv.lastMessage.type, // ✅ FIX: Include message type for previews
+                        status: conv.lastMessage.status, // Include status
                         senderId: conv.lastMessage.senderId,
-                        senderName: userProfilesMap.get(conv.lastMessage.senderId)?.name || 'Unknown',
+                        senderName: (() => {
+                            const profile = userProfilesMap.get(conv.lastMessage.senderId);
+                            return profile?.name || profile?.username || 'Unknown';
+                        })(),
                         createdAt: conv.lastMessage.createdAt
                     } : null,
                     lastMessageAt: conv.lastMessageAt,
@@ -588,5 +645,131 @@ export class ChatService implements IChatService {
             throw new Error('Failed to mark messages as read');
         }
     }
-}
 
+    /**
+     * Delete a group conversation (owner only)
+     */
+    async deleteGroup(conversationId: string, userId: string): Promise<void> {
+        try {
+            // 1. Get conversation to check ownership and type
+            const conversation = await this._chatRepository.findConversationById(conversationId);
+            
+            if (!conversation) {
+                throw new Error("Conversation not found");
+            }
+
+            // 2. Verify it is a group
+            if (conversation.type !== 'GROUP') {
+                throw new Error("Cannot delete a direct message conversation");
+            }
+
+            // 3. Verify ownership
+            if (conversation.ownerId !== userId) {
+                throw new Error("Unauthorized: Only the group owner can delete the group");
+            }
+
+            // 4. Delete
+            await this._chatRepository.deleteConversation(conversationId);
+            
+            // 5. Invalidate cache
+            await RedisCacheService.invalidateConversationCache(conversationId);
+            
+            logger.info('Group deleted successfully', { conversationId, userId });
+        } catch (error) {
+            logger.error('Error deleting group', { 
+                error: (error as Error).message, 
+                conversationId, 
+                userId 
+            });
+            throw error;
+        }
+    }
+    
+    /**
+     * Get a single conversation with enriched metadata
+     */
+    async getConversationWithMetadata(conversationId: string, userId: string): Promise<ConversationWithMetadataDto | null> {
+        try {
+            // 1. Get conversation from DB
+            const conversation = await this._chatRepository.findConversationById(conversationId);
+            
+            if (!conversation) return null;
+
+            // 2. Verify user is a participant
+            const isParticipant = conversation.participants.some(p => p.userId === userId);
+            if (!isParticipant) {
+               logger.warn(`User ${userId} attempted to access conversation ${conversationId} without being a participant`);
+               return null; // Or throw specialized error
+            }
+
+            // 3. Collect participant IDs
+            const participantIds = conversation.participants.map(p => p.userId);
+
+            // 4. Fetch user profiles
+            let userProfilesMap = new Map<string, any>();
+            try {
+                userProfilesMap = await authServiceClient.getUserProfiles(participantIds);
+            } catch (error) {
+                logger.error("Failed to fetch user profiles", { error: (error as Error).message });
+            }
+
+            // 5. Build DTO
+            const enrichedConversation: ConversationWithMetadataDto = {
+                conversationId: conversation.id,
+                type: conversation.type as 'DIRECT' | 'GROUP',
+                name: conversation.name,
+                icon: conversation.icon,
+                description: conversation.description,
+                ownerId: conversation.ownerId,
+                onlyAdminsCanPost: conversation.onlyAdminsCanPost,
+                onlyAdminsCanEditInfo: conversation.onlyAdminsCanEditInfo,
+                participantIds: participantIds,
+                participants: conversation.participants.map(p => {
+                    const profile = userProfilesMap.get(p.userId);
+                    return {
+                        userId: p.userId,
+                        username: profile?.username || `user_${p.userId.slice(0, 8)}`,
+                        name: profile?.name || profile?.username || `User ${p.userId.slice(0, 8)}`,
+                        profilePhoto: profile?.profilePhoto || null,
+                        role: p.role as 'ADMIN' | 'MEMBER',
+                        joinedAt: p.joinedAt instanceof Date ? p.joinedAt.toISOString() : (p.joinedAt as any)
+                    };
+                }),
+                lastMessage: null, // Will fetch separately below
+                lastMessageAt: conversation.lastMessageAt,
+                unreadCount: 0 // Fetching single conversation, usually implies opening it, so unread count might be irrelevant or needs specific calculation logic if we want to show it before read
+            };
+
+            // Fetch last message separately if needed
+            try {
+                const lastMsg = await this._chatRepository.getMessagesByConversationId(conversationId, 1, 0);
+                if (lastMsg && lastMsg.length > 0) {
+                    const msg = lastMsg[0];
+                    const senderProfile = userProfilesMap.get(msg.senderId);
+                    enrichedConversation.lastMessage = {
+                        content: msg.content,
+                        senderId: msg.senderId,
+                        senderName: senderProfile?.name || senderProfile?.username || 'Unknown',
+                        createdAt: msg.createdAt
+                    };
+                }
+            } catch (error) {
+                logger.warn("Failed to fetch last message for conversation", { conversationId, error: (error as Error).message });
+            }
+            
+            // Calculate unread count for this user
+            const userParticipant = conversation.participants.find(p => p.userId === userId);
+            if (userParticipant && userParticipant.lastReadAt) {
+                 // ideally repo method to count messages after lastReadAt
+                 // simplified: set to 0 as we are likely opening it
+                 // or leave as 0
+            }
+
+            return enrichedConversation;
+
+        } catch (error) {
+            logger.error("Error in getConversationWithMetadata", { error: (error as Error).message });
+            throw error;
+        }
+    }
+}

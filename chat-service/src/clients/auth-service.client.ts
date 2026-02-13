@@ -43,7 +43,7 @@ export class AuthServiceClient {
   private _client: any;
   private _circuitBreaker: CircuitBreaker<[string[]], Map<string, UserProfile>>;
   private readonly _maxRetries = 3;
-  private readonly _timeout = 5000; // 5 seconds
+  private readonly _timeout = 2000; // 2 seconds (reduced from 5s for faster fallback)
 
   constructor() {
     const AUTH_SERVICE_GRPC_URL =

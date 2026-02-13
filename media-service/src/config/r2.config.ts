@@ -23,6 +23,10 @@ export const MAX_FILE_SIZE = {
   IMAGE: parseInt(process.env.MAX_IMAGE_SIZE || "10485760", 10), // 10MB default
   VIDEO: parseInt(process.env.MAX_VIDEO_SIZE || "104857600", 10), // 100MB default
   PROFILE_IMAGE: parseInt(process.env.MAX_PROFILE_IMAGE_SIZE || "5242880", 10), // 5MB default
+  CHAT_IMAGE: parseInt(process.env.MAX_CHAT_IMAGE_SIZE || "10485760", 10), // 10MB
+  CHAT_VIDEO: parseInt(process.env.MAX_CHAT_VIDEO_SIZE || "104857600", 10), // 100MB
+  CHAT_AUDIO: parseInt(process.env.MAX_CHAT_AUDIO_SIZE || "26214400", 10), // 25MB
+  CHAT_FILE: parseInt(process.env.MAX_CHAT_FILE_SIZE || "26214400", 10), // 25MB
 };
 export const MULTIPART_THRESHOLD = parseInt(process.env.MULTIPART_THRESHOLD || "5242880", 10); // 5MB default
 export const MULTIPART_PART_SIZE = parseInt(process.env.MULTIPART_PART_SIZE || "5242880", 10); // 5MB per part

@@ -2,7 +2,7 @@ import logger from "./logger.util";
 import express, { Express } from "express";
 import { grpcServer } from "../grpc-server";
 import { connectRedis } from "../config/redis.config";
-import { disconnectAdmin, disconnectProducer, initializeKafkaTopics } from "./kafka.util";
+import { disconnectProducer } from "./kafka.util";
 
 export const app: Express = express();
 
@@ -12,10 +12,7 @@ export const startServer = async () => {
 
     await connectRedis();
     logger.info("Redis connection established");
-
-    await initializeKafkaTopics();
-    logger.info("Kafka topics initialized");
-
+    
     const PORT = process.env.PORT || 3002;
     app.listen(PORT, () => {
       logger.info(`Post Service running on port ${PORT}`);
@@ -30,17 +27,3 @@ export const startServer = async () => {
     process.exit(1);
   }
 };
-
-// Graceful shutdown
-const gracefulShutdown = async () => {
-  logger.info("Shutting down gracefully...");
-  
-  // Disconnect Kafka clients
-  await disconnectProducer();
-  await disconnectAdmin();
-  logger.info("Kafka clients disconnected");
-
-};
-
-process.on("SIGTERM", gracefulShutdown);
-process.on("SIGINT", gracefulShutdown);

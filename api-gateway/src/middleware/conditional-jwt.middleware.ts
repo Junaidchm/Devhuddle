@@ -81,9 +81,14 @@ async function optionalJwtMiddleware(
 ) {
   try {
     const authHeader = req.headers["authorization"];
-    const token = authHeader?.startsWith("Bearer ")
+    let token = authHeader?.startsWith("Bearer ")
       ? authHeader.split(" ")[1]
       : null;
+
+    // Check cookies if header token is missing
+    if (!token && req.cookies && req.cookies["access_token"]) {
+      token = req.cookies["access_token"];
+    }
 
     if (token) {
       // If token is present, try to validate it

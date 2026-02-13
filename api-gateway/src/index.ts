@@ -20,10 +20,13 @@ import { adminServiceProxy } from "./middleware/admin.proxy.middleware";
 import { chatServiceProxy } from "./middleware/chat.proxy.middleware";
 import { verifyAccessToken } from "./utils/jwt.util";
 
+import cookieParser from "cookie-parser";
+
 dotenv.config();
 
 // create app
 const app = express();
+app.use(cookieParser());
 const server = createServer(app);
 
 app.use(

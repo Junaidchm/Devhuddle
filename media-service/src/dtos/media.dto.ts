@@ -4,6 +4,10 @@ export enum MediaType {
   POST_IMAGE = 'POST_IMAGE',
   POST_VIDEO = 'POST_VIDEO',
   PROFILE_IMAGE = 'PROFILE_IMAGE',
+  CHAT_IMAGE = 'CHAT_IMAGE',
+  CHAT_VIDEO = 'CHAT_VIDEO',
+  CHAT_AUDIO = 'CHAT_AUDIO',
+  CHAT_FILE = 'CHAT_FILE',
 }
 
 export class CreateUploadSessionDto {

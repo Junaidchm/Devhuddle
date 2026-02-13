@@ -8,8 +8,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
 model Conversation {
-  id            String   @id @default(cuid())
+  id            String           @id @default(cuid())
+  type          ConversationType @default(DIRECT)
+  
+  // Group/Hub specific fields
+  name          String?
+  description   String?
+  icon          String?
+  ownerId       String?
+  
+  // Group permissions (WhatsApp-style)
+  onlyAdminsCanPost     Boolean @default(false)
+  onlyAdminsCanEditInfo Boolean @default(false)
+
+  // Hubs feature
+  topics        String[] @default([])
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   lastMessageAt DateTime @default(now())
@@ -18,17 +34,30 @@ model Conversation {
   participants Participant[]
 }
 
+enum ConversationType {
+  DIRECT
+  GROUP
+}
+
 model Participant {
   id             String       @id @default(cuid())
   userId         String
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
+  // Role management for groups
+  role           GroupRole    @default(MEMBER)
+
   joinedAt   DateTime @default(now())
   lastReadAt DateTime @default(now())
 
   @@unique([userId, conversationId])
   @@index([userId])
+}
+
+enum GroupRole {
+  ADMIN
+  MEMBER
 }
 
 model Message {

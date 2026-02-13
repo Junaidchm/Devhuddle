@@ -9,7 +9,6 @@ import {
   OutboxEventType,
 } from ".prisma/client";
 import logger from "../../utils/logger.util";
-import { v4 as uuidv4 } from "uuid";
 
 export class OutboxRepository
   extends BaseRepository<
@@ -34,18 +33,9 @@ export class OutboxRepository
     payload: any;
   }): Promise<OutboxEvent> {
     try {
-      // Generate unique ID for the outbox event
-      const eventId = uuidv4();
-      
-      return await super.create({
-        ...data,
-        id: eventId,
-      });
+      return await super.create(data);
     } catch (error: any) {
-      logger.error("Error creating outbox event", { 
-        error: error.message,
-        stack: error.stack,
-      });
+      logger.error("Error creating outbox event", { error: error.message });
       throw new Error("Failed to create outbox event");
     }
   }
