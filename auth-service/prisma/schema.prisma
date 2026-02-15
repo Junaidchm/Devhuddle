@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,46 +8,44 @@ datasource db {
 }
 
 model User {
-  id                String   @id @default(uuid())
-  email             String   @unique
-  username          String   @unique
+  id                String       @id @default(uuid())
+  email             String       @unique
+  username          String       @unique
   name              String
   password          String
-  role              String   @default("user")
-  emailVerified     Boolean  @default(false)
-  profilePicture    String? // URL to profile picture
+  role              String       @default("user")
+  emailVerified     Boolean      @default(false)
+  profilePicture    String?
   location          String?
   bio               String?
-  skills            String[] @default([]) // Array of skills
+  skills            String[]     @default([])
   yearsOfExperience String?
   jobTitle          String?
   company           String?
-  isBlocked         Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // relations 
-  following Follow[] @relation("Followers")
-  followers Follow[] @relation("Following")
-  experience Experience[]
-  education  Education[]
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  isBlocked         Boolean      @default(false)
+  education         Education[]
+  experience        Experience[]
+  following         Follow[]     @relation("Followers")
+  followers         Follow[]     @relation("Following")
 }
 
 model Experience {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   title       String
   company     String
   location    String?
   startDate   DateTime
   endDate     DateTime?
-  current     Boolean  @default(false)
+  current     Boolean   @default(false)
   description String?
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Education {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   school       String
   degree       String
   fieldOfStudy String
@@ -63,19 +55,19 @@ model Education {
   activities   String?
   description  String?
   userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Follow {
   followerId  String
-  follower    User      @relation(name: "Followers", fields: [followerId], references: [id], onDelete: Cascade)
   followingId String
-  following   User      @relation(name: "Following", fields: [followingId], references: [id], onDelete: Cascade)
   deletedAt   DateTime?
   version     Int       @default(0)
+  follower    User      @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User      @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId])
   @@index([followerId])
   @@index([followingId])
   @@map("follows")
-} 
+}

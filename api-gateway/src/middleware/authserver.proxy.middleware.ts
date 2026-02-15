@@ -47,7 +47,7 @@ export const authServiceProxy = createProxyMiddleware({
     // When Express.json() parses the body, it consumes the request stream
     // http-proxy-middleware will try to pipe the consumed stream (which is empty)
     // We MUST manually write the parsed body to the proxy request
-    if (req.method !== "GET" && req.method !== "HEAD" && req.method !== "DELETE" && req.body) {
+    if (req.method !== "GET" && req.method !== "HEAD" && req.body && Object.keys(req.body).length > 0) {
       const bodyData = JSON.stringify(req.body);
       const bodyLength = Buffer.byteLength(bodyData);
       

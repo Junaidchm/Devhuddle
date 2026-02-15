@@ -10,7 +10,14 @@ export class CommentNotificationHandler implements INotificationHandler {
   async handle(payload: any): Promise<void> {
     const { issuerId, recipientId, postId, commentId, content } = payload;
     try {
-      //   await this._notificationRepository.createCommentNotification(issuerId, recipientId, postId, commentId, content);
+      await this._notificationRepository.createCommentNotification(
+        issuerId,
+        recipientId,
+        postId,
+        commentId,
+        "POST", // Always POST for these engagement events for now
+        Date.now()
+      );
       logger.info(
         `Comment notification created for user ${recipientId} by ${issuerId} on post ${postId}`
       );

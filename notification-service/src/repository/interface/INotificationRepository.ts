@@ -23,7 +23,9 @@ export interface INotificationRepository {
     recipientId: string,
     entityId: string,
     entityType: "POST" | "COMMENT",
-    version: number 
+    version: number,
+    contextId?: string,
+    metadata?: any
   ): Promise<void>;
 
   deleteLikeNotification(

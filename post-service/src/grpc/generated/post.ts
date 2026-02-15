@@ -205,9 +205,9 @@ export interface SubmitPostRequest {
   content: string;
   userId: string;
   mediaIds: string[];
-  /** ✅ FIXED P0-2: Add visibility (PUBLIC, VISIBILITY_CONNECTIONS) */
+  /** ✅ FIXED P0-2: Add visibility (PUBLIC, CONNECTIONS) */
   visibility: string;
-  /** ✅ FIXED P0-2: Add commentControl (ANYONE, CONNECTIONS, NONE) */
+  /** ✅ FIXED P0-2: Add commentControl (ANYONE, CONNECTIONS, NOBODY) */
   commentControl: string;
 }
 
@@ -317,6 +317,8 @@ export interface EditPostRequest {
   addAttachmentIds: string[];
   removeAttachmentIds: string[];
   idempotencyKey: string;
+  visibility?: string | undefined;
+  commentControl?: string | undefined;
 }
 
 export interface EditPostResponse {
@@ -4073,6 +4075,8 @@ function createBaseEditPostRequest(): EditPostRequest {
     addAttachmentIds: [],
     removeAttachmentIds: [],
     idempotencyKey: "",
+    visibility: undefined,
+    commentControl: undefined,
   };
 }
 
@@ -4095,6 +4099,12 @@ export const EditPostRequest: MessageFns<EditPostRequest> = {
     }
     if (message.idempotencyKey !== "") {
       writer.uint32(50).string(message.idempotencyKey);
+    }
+    if (message.visibility !== undefined) {
+      writer.uint32(58).string(message.visibility);
+    }
+    if (message.commentControl !== undefined) {
+      writer.uint32(66).string(message.commentControl);
     }
     return writer;
   },
@@ -4154,6 +4164,22 @@ export const EditPostRequest: MessageFns<EditPostRequest> = {
           message.idempotencyKey = reader.string();
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.visibility = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.commentControl = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4191,6 +4217,12 @@ export const EditPostRequest: MessageFns<EditPostRequest> = {
         : isSet(object.idempotency_key)
         ? globalThis.String(object.idempotency_key)
         : "",
+      visibility: isSet(object.visibility) ? globalThis.String(object.visibility) : undefined,
+      commentControl: isSet(object.commentControl)
+        ? globalThis.String(object.commentControl)
+        : isSet(object.comment_control)
+        ? globalThis.String(object.comment_control)
+        : undefined,
     };
   },
 
@@ -4214,6 +4246,12 @@ export const EditPostRequest: MessageFns<EditPostRequest> = {
     if (message.idempotencyKey !== "") {
       obj.idempotencyKey = message.idempotencyKey;
     }
+    if (message.visibility !== undefined) {
+      obj.visibility = message.visibility;
+    }
+    if (message.commentControl !== undefined) {
+      obj.commentControl = message.commentControl;
+    }
     return obj;
   },
 
@@ -4228,6 +4266,8 @@ export const EditPostRequest: MessageFns<EditPostRequest> = {
     message.addAttachmentIds = object.addAttachmentIds?.map((e) => e) || [];
     message.removeAttachmentIds = object.removeAttachmentIds?.map((e) => e) || [];
     message.idempotencyKey = object.idempotencyKey ?? "";
+    message.visibility = object.visibility ?? undefined;
+    message.commentControl = object.commentControl ?? undefined;
     return message;
   },
 };

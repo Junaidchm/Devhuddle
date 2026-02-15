@@ -97,11 +97,11 @@ export const ROUTES = {
   
   // Feed Service Routes (HTTP Proxy to Post Service)
   FEED: {
-    BASE: '/feed',
-    LIST: '/feed/list',
-    SUBMIT: '/feed/submit',
-    DELETE: '/feed/delete',
-    MEDIA: '/feed/media',
+    BASE: `${API_VERSION}/feed`,
+    LIST: `${API_VERSION}/feed/list`,
+    SUBMIT: `${API_VERSION}/feed/submit`,
+    DELETE: `${API_VERSION}/feed/delete`,
+    MEDIA: `${API_VERSION}/feed/media`,
   },
   
   // Media Service Routes (HTTP Proxy)

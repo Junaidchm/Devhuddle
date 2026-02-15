@@ -9,15 +9,11 @@ import { Request, Response } from "express";
  * - /feed/* -> /api/v1/posts/* (after mapping)
  */
 export const postServiceProxy = createProxyMiddleware({
-  target: process.env.POST_SERVICE_URL!,
+  target: app_config.postServiceUrl,
   changeOrigin: true,
   // Map /feed routes to /api/v1/posts routes
   pathRewrite: {
-    "^/feed/submit": "/api/v1/posts/submit",
-    "^/feed/list": "/api/v1/posts/list",
-    "^/feed/media": "/api/v1/posts/media",
-    "^/feed/medias": "/api/v1/posts/medias/unused",
-    "^/feed/delete": "/api/v1/posts/delete",
+    "^/api/v1/feed": "/api/v1/posts",
   },
   onProxyReq: (proxyReq, req: any, res: Response) => {
     // Forward user data from JWT middleware if available
@@ -74,9 +70,9 @@ export const postServiceProxy = createProxyMiddleware({
     }
     
     logger.info(
-      `[Post Proxy] Forwarding ${req.method} ${req.originalUrl} to ${process.env.POST_SERVICE_URL}${proxyReq.path}`,
+      `[Post Proxy] Forwarding ${req.method} ${req.originalUrl} to ${app_config.postServiceUrl}${proxyReq.path}`,
       {
-        target: process.env.POST_SERVICE_URL,
+        target: app_config.postServiceUrl,
         targetPath: proxyReq.path,
         originalPath: req.path,
         hasBody: !!req.body,

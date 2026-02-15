@@ -4,7 +4,7 @@ import {
 } from "../interface/ICommentRepository";
 import { BaseRepository } from "./base.repository";
 import { prisma } from "../../config/prisma.config";
-import { Comment, Prisma } from ".prisma/client";
+import { Comment, Prisma } from "@prisma/client";
 import logger from "../../utils/logger.util";
 import { v4 as uuidv4 } from "uuid";
 
@@ -42,16 +42,14 @@ export class CommentRepository
     }
   }
 
-  async updateComment(commentId: string, content: string): Promise<Comment> {
+  async updateComment(
+    commentId: string,
+    data: Partial<Prisma.CommentUpdateInput>
+  ): Promise<Comment> {
     try {
-      const comment = await super.findById(commentId);
-      if (!comment) {
-        throw new Error("Comment not found");
-      }
-
       return await prisma.comment.update({
         where: { id: commentId },
-        data: { content, editedAt: new Date(), version: comment.version + 1 },
+        data,
       });
     } catch (error: any) {
       logger.error("Error updating comment", { error: error.message });

@@ -95,6 +95,20 @@ interface PostCreatedEvent extends BaseEngagementEvent {
   action: "POST_CREATED";
 }
 
+interface PostReportedEvent extends BaseEngagementEvent {
+  reportId: string;
+  postId?: string;
+  commentId?: string;
+  reporterId: string;
+  postAuthorId?: string;
+  commentAuthorId?: string;
+  reason: string;
+  severity?: string;
+  reportCount?: number;
+  description?: string;
+  metadata?: any;
+}
+
 export async function startEngagementConsumer(
   wsService: WebSocketService
 ): Promise<void> {
@@ -181,6 +195,9 @@ export async function startEngagementConsumer(
           case KAFKA_TOPICS.POST_CREATED:
             await handlePostCreated(event as PostCreatedEvent, repo, wsService);
             break;
+          case KAFKA_TOPICS.POST_REPORTED:
+            await handlePostReported(event as PostReportedEvent, repo);
+            break;
           default:
             logger.warn(`Unhandled topic: ${topic}`);
         }
@@ -218,7 +235,9 @@ async function handlePostLikeCreated(
     postAuthorId,
     postId,
     "POST",
-    versionNumber
+    versionNumber,
+    undefined, // contextId
+    { postId } // metadata
   );
 
   logger.info(`Post like notification created for ${postAuthorId}`);
@@ -249,7 +268,7 @@ async function handleCommentLikeCreated(
   event: CommentLikeCreatedEvent,
   repo: NotificationsRepository
 ): Promise<void> {
-  const { commentId, userId, commentAuthorId, version } = event;
+  const { commentId, userId, commentAuthorId, postId, version } = event;
 
   if (userId === commentAuthorId) return;
 
@@ -260,7 +279,9 @@ async function handleCommentLikeCreated(
     commentAuthorId,
     commentId,
     "COMMENT",
-    versionNumber
+    versionNumber,
+    postId, // contextId
+    { postId, commentId } // metadata
   );
 
   logger.info(`Comment like notification created for ${commentAuthorId}`);
@@ -442,4 +463,37 @@ async function handlePostSent(
   );
 
   logger.info(`Post sent notification created for ${recipientId} from ${senderId}`);
+}
+
+async function handlePostReported(
+  event: PostReportedEvent,
+  repo: NotificationsRepository
+): Promise<void> {
+  const { 
+    reportId, 
+    postId, 
+    commentId, 
+    reporterId, 
+    postAuthorId, 
+    commentAuthorId, 
+    reason, 
+    severity 
+  } = event;
+
+  // For now, we mainly log this as it's a moderation event.
+  // In a full production system, this could:
+  // 1. Notify admins via a separate channel
+  // 2. Track user moderation history
+  // 3. Trigger auto-moderation workflows
+  
+  logger.info(`Report handled: ${reportId}`, {
+    target: commentId ? `Comment ${commentId}` : `Post ${postId}`,
+    reporter: reporterId,
+    author: commentId ? commentAuthorId : postAuthorId,
+    reason,
+    severity
+  });
+
+  // Optional: We could notify the author that their post was reported (if policy allows)
+  // Or just notify that it was hidden if reportCount exceeded threshold
 }

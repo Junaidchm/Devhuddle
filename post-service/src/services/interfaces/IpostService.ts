@@ -21,8 +21,10 @@ export interface IpostService {
   getPosts(
     pageParam?: string,
     userId?: string,
-    authorId?: string
+    authorId?: string,
+    sortBy?: string // 'RECENT' | 'TOP'
   ): Promise<ListPostsResponse>;
+  getPostById(postId: string, userId?: string): Promise<any>;
   submitPost(req: SubmitPostRequest): Promise<SubmitPostResponse>;
   deletePostServ(postId: string): Promise<DeletePostResponse>;
   editPost(req: EditPostRequest): Promise<EditPostResponse>;

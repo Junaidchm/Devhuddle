@@ -32,7 +32,7 @@ export const chatServiceProxy = createProxyMiddleware({
     }
     
     // CRITICAL: Handle request body for POST/PUT/PATCH requests
-    if (req.method !== "GET" && req.method !== "HEAD" && req.method !== "DELETE" && req.body) {
+    if (req.method !== "GET" && req.method !== "HEAD" && req.body && Object.keys(req.body).length > 0) {
       const bodyData = JSON.stringify(req.body);
       const bodyLength = Buffer.byteLength(bodyData);
       

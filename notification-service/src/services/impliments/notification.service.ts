@@ -55,20 +55,31 @@ export class NotificationService implements INotificationService {
   async createLikeNotification(
     issuerId: string,
     recipientId: string,
-    postId: string,
-    version: number
+    entityId: string,
+    entityType: "POST" | "COMMENT",
+    version: number,
+    contextId?: string,
+    metadata?: any
   ): Promise<void> {
     try {
-      //   await this._notificationRepository.createLikeNotification(issuerId, recipientId, postId, version);
+      await this._notificationRepository.createLikeNotification(
+        issuerId,
+        recipientId,
+        entityId,
+        entityType,
+        version,
+        contextId,
+        metadata
+      );
       logger.info(
-        `Like notification created for user ${recipientId} by ${issuerId} on post ${postId}`
+        `Like notification created for user ${recipientId} by ${issuerId} on ${entityType} ${entityId}`
       );
     } catch (error: unknown) {
       logger.error("Error in notification service - createLikeNotification", {
         error: (error as Error).message,
         issuerId,
         recipientId,
-        postId,
+        entityId,
       });
       throw error;
     }
@@ -77,19 +88,27 @@ export class NotificationService implements INotificationService {
   async deleteLikeNotification(
     issuerId: string,
     recipientId: string,
-    postId: string
+    entityId: string,
+    entityType: "POST" | "COMMENT",
+    version: number
   ): Promise<void> {
     try {
-      //   await this._notificationRepository.deleteLikeNotification(issuerId, recipientId, postId);
+      await this._notificationRepository.deleteLikeNotification(
+        issuerId,
+        recipientId,
+        entityId,
+        entityType,
+        version
+      );
       logger.info(
-        `Like notification deleted for user ${recipientId} by ${issuerId} on post ${postId}`
+        `Like notification deleted for user ${recipientId} by ${issuerId} on ${entityType} ${entityId}`
       );
     } catch (error: unknown) {
       logger.error("Error in notification service - deleteLikeNotification", {
         error: (error as Error).message,
         issuerId,
         recipientId,
-        postId,
+        entityId,
       });
       throw error;
     }
@@ -100,10 +119,18 @@ export class NotificationService implements INotificationService {
     recipientId: string,
     postId: string,
     commentId: string,
-    content: string
+    notificationType: "POST" | "COMMENT",
+    version: number
   ): Promise<void> {
     try {
-      //   await this._notificationRepository.createCommentNotification(issuerId, recipientId, postId, commentId, content);
+      await this._notificationRepository.createCommentNotification(
+        issuerId,
+        recipientId,
+        postId,
+        commentId,
+        notificationType,
+        version
+      );
       logger.info(
         `Comment notification created for user ${recipientId} by ${issuerId} on post ${postId}`
       );

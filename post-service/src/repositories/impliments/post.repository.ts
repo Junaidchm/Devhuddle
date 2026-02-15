@@ -6,7 +6,7 @@ import { BaseRepository } from "./base.repository";
 import { prisma } from "../../config/prisma.config";
 import logger from "../../utils/logger.util";
 import redisClient from "../../config/redis.config";
-import { posts, Prisma, Media } from ".prisma/client";
+import { posts, Prisma, Media } from "@prisma/client";
 
 import { userClient } from "../../config/grpc.client";
 import {
@@ -162,6 +162,25 @@ export class PostRepository
       return post;
     } catch (error: unknown) {
       logger.error("Error find entity", {
+        error: (error as Error).message,
+      });
+      throw new Error("Database error");
+    }
+  }
+
+  async findPostWithMedia(postId: string): Promise<any> {
+    try {
+      const post = await prisma.posts.findUnique({
+        where: {
+          id: postId,
+        },
+        include: {
+          Media: true,
+        },
+      });
+      return post;
+    } catch (error: unknown) {
+      logger.error("Error find entity with media", {
         error: (error as Error).message,
       });
       throw new Error("Database error");

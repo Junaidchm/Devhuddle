@@ -6,6 +6,7 @@ import { IOutboxService } from "../interfaces/IOutboxService";
 import { CustomError } from "../../utils/error.util";
 import logger from "../../utils/logger.util";
 import * as grpc from "@grpc/grpc-js";
+import { HttpStatus } from "../../constands/http.status";
 import { KAFKA_TOPICS } from "../../config/kafka.config";
 import {
   OutboxAggregateType,
@@ -41,7 +42,7 @@ export class ReportService implements IReportService {
       }
       if (reportCount > 5) {
         throw new CustomError(
-          grpc.status.RESOURCE_EXHAUSTED,
+          HttpStatus.BAD_REQUEST,
           "Daily report limit exceeded. Maximum 5 reports per day."
         );
       }
@@ -49,13 +50,21 @@ export class ReportService implements IReportService {
       // 2. Validate post exists
       const post = await this._postRepository.findPost(postId);
       if (!post) {
-        throw new CustomError(grpc.status.NOT_FOUND, "Post not found");
+        throw new CustomError(HttpStatus.NOT_FOUND, "Post not found");
+      }
+
+      // 3. Prevent self-reporting
+      if (post.userId === reporterId) {
+        throw new CustomError(
+          HttpStatus.FORBIDDEN,
+          "You cannot report your own post"
+        );
       }
 
       // 3. Validate reason
       if (!Object.values(ReportReason).includes(reason as ReportReason)) {
         throw new CustomError(
-          grpc.status.INVALID_ARGUMENT,
+          HttpStatus.BAD_REQUEST,
           "Invalid report reason"
         );
       }
@@ -68,7 +77,7 @@ export class ReportService implements IReportService {
       );
       if (existingReport) {
         throw new CustomError(
-          grpc.status.ALREADY_EXISTS,
+          HttpStatus.CONFLICT,
           "Post already reported by this user"
         );
       }
@@ -146,7 +155,7 @@ export class ReportService implements IReportService {
       });
       throw err instanceof CustomError
         ? err
-        : new CustomError(grpc.status.INTERNAL, "Failed to report post");
+        : new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to report post");
     }
   }
 
@@ -191,13 +200,31 @@ export class ReportService implements IReportService {
       // Validate comment exists
       const comment = await this._commentRepository.findComment(commentId);
       if (!comment) {
-        throw new CustomError(grpc.status.NOT_FOUND, "Comment not found");
+        throw new CustomError(HttpStatus.NOT_FOUND, "Comment not found");
+      }
+
+      // Prevent self-reporting
+      if (comment.userId === reporterId) {
+        throw new CustomError(
+          HttpStatus.FORBIDDEN,
+          "You cannot report your own comment"
+        );
+      }
+
+      // Rate limiting (max 5 reports per user per day)
+      const rateLimitKey = `report-limit:${reporterId}`;
+      const reportsToday = await redisClient.get(rateLimitKey);
+      if (reportsToday && parseInt(reportsToday) >= 5) {
+        throw new CustomError(
+          HttpStatus.BAD_REQUEST,
+          "Daily report limit exceeded"
+        );
       }
 
       // Validate reason
       if (!Object.values(ReportReason).includes(reason as ReportReason)) {
         throw new CustomError(
-          grpc.status.INVALID_ARGUMENT,
+          HttpStatus.BAD_REQUEST,
           "Invalid report reason"
         );
       }
@@ -210,21 +237,47 @@ export class ReportService implements IReportService {
       );
       if (existingReport) {
         throw new CustomError(
-          grpc.status.ALREADY_EXISTS,
+          HttpStatus.CONFLICT,
           "Comment already reported by this user"
         );
       }
+
+      // Update comment reports count
+      const currentReportCount = (comment.reportsCount || 0) + 1;
+      const severity = this.calculateSeverity(
+        reason as ReportReason,
+        currentReportCount
+      );
 
       // Create report
       const report = await this._reportRepository.createReport({
         reporterId,
         targetType: ReportTargetType.COMMENT,
         targetId: commentId,
-        postId: comment.postId, // Required for cascade
+        postId: comment.postId,
         commentId,
         reason: reason as ReportReason,
+        severity,
         metadata: metadata || {},
+        status: ReportStatus.PENDING,
       });
+
+      // Update comment in DB
+      await this._commentRepository.updateComment(commentId, {
+        reportsCount: currentReportCount,
+      });
+
+      // Auto-hide logic (e.g., if reports > 10, hide comment)
+      if (currentReportCount >= 10) {
+        await this._commentRepository.updateComment(commentId, {
+          isHidden: true,
+        });
+        logger.info(`Comment ${commentId} auto-hidden due to high reports`);
+      }
+
+      // Increment rate limit
+      await redisClient.incr(rateLimitKey);
+      await redisClient.expire(rateLimitKey, 86400); // 24 hours
 
       // Create outbox event
       await this._outboxService.createOutboxEvent({
@@ -259,7 +312,7 @@ export class ReportService implements IReportService {
       });
       throw err instanceof CustomError
         ? err
-        : new CustomError(grpc.status.INTERNAL, "Failed to report comment");
+        : new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to report comment");
     }
   }
 
@@ -279,7 +332,7 @@ export class ReportService implements IReportService {
         targetId,
       });
       throw new CustomError(
-        grpc.status.INTERNAL,
+        HttpStatus.INTERNAL_SERVER_ERROR,
         "Failed to get report count"
       );
     }

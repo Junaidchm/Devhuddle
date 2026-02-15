@@ -69,47 +69,54 @@ export class ChatRepository extends BaseRepository<
     async findOrCreateConversation(participantIds: string[]): Promise<Conversation & { participants: Participant[] }> {
         try {
             logger.info("👉 [DEBUG] findOrCreateConversation", { participantIds });
-            // ✅ FIXED: Use findMany to get ALL potential matches (where participants are a subset of provided IDs)
-            // Then filter in memory for EXACT match. This prevents "findFirst" returning a subset conversation (e.g. self-chat)
-            // and causing the code to skip the real group/pair chat and create a duplicate.
-            const candidates = await prisma.conversation.findMany({
+            
+            // Calculate hash for exact match
+            const participantHash = participantIds.sort().join(',');
+
+            // Attempt to find by hash (fast & unique)
+            const existingConversation = await prisma.conversation.findUnique({
                 where: {
-                    participants: {
-                        every: {
-                            userId: {
-                                in: participantIds
-                            }
-                        }
-                    }
+                    participantHash
                 },
                 include: {
                     participants: true
                 }
             });
 
-            // Find exact match
-            const possibleConversation = candidates.find(c => 
-                c.participants.length === participantIds.length && 
-                c.participants.every(p => participantIds.includes(p.userId))
-            );
-
-            if (possibleConversation) {
-                return possibleConversation;
+            if (existingConversation) {
+                logger.info("Found existing conversation by hash", { conversationId: existingConversation.id });
+                return existingConversation;
             }
 
-            const newConversation = await prisma.conversation.create({
-                data: {
-                    participants: {
-                        create: participantIds.map((userId) => ({
-                            userId
-                        }))
+            // If still not found, create new one
+            // Using upsert would be ideal but since we need to include participants creation 
+            // it's cleaner to handle race condition with catches
+            try {
+                const newConversation = await prisma.conversation.create({
+                    data: {
+                        participantHash,
+                        participants: {
+                            create: participantIds.map((userId) => ({
+                                userId
+                            }))
+                        }
+                    },
+                    include: {
+                        participants: true
                     }
-                },
-                include: {
-                    participants: true
+                });
+                return newConversation;
+            } catch (createError: any) {
+                // Handle race condition: if another request created it between findUnique and create
+                if (createError.code === 'P2002') { // Prisma unique constraint violation
+                    logger.info("Race condition: conversation created concurrently, refetching...");
+                    return await prisma.conversation.findUnique({
+                        where: { participantHash },
+                        include: { participants: true }
+                    }) as Conversation & { participants: Participant[] };
                 }
-            })
-            return newConversation;
+                throw createError;
+            }
 
         } catch (error) {
             logger.error("Error finding or creating conversation", { error: (error as Error).message });
@@ -240,28 +247,18 @@ export class ChatRepository extends BaseRepository<
      */
     async conversationExists(participantIds: string[]): Promise<Conversation | null> {
         try {
-            // Find potential conversation
-            const possibleConversation = await prisma.conversation.findFirst({
+            const participantHash = participantIds.sort().join(',');
+            
+            const possibleConversation = await prisma.conversation.findUnique({
                 where: {
-                    participants: {
-                        every: {
-                            userId: {
-                                in: participantIds
-                            }
-                        }
-                    }
+                    participantHash
                 },
                 include: {
                     participants: true
                 }
             });
 
-            // Ensure EXACT match (same logic as findOrCreateConversation)
-            if (
-                possibleConversation &&
-                possibleConversation.participants.length === participantIds.length &&
-                possibleConversation.participants.every(p => participantIds.includes(p.userId))
-            ) {
+            if (possibleConversation) {
                 logger.info("Conversation exists", {
                     conversationId: possibleConversation.id,
                     participantCount: participantIds.length
@@ -410,6 +407,9 @@ export class ChatRepository extends BaseRepository<
         onlyAdminsCanEditInfo: boolean = false,
         topics: string[] = []
     ): Promise<Conversation & { participants: Participant[] }> {
+        const allParticipants = [creatorId, ...participantIds.filter(id => id !== creatorId)];
+        const participantHash = allParticipants.sort().join(',');
+
         return await prisma.conversation.create({
             data: {
                 type: 'GROUP',
@@ -419,6 +419,7 @@ export class ChatRepository extends BaseRepository<
                 onlyAdminsCanPost,
                 onlyAdminsCanEditInfo,
                 topics,
+                participantHash, // Groups also get hash for easier debugging/consistency
                 participants: {
                     create: [
                         { userId: creatorId, role: 'ADMIN' },

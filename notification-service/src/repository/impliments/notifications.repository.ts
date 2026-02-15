@@ -42,7 +42,9 @@ export class NotificationsRepository
     recipientId: string,
     entityId: string,
     entityType: "POST" | "COMMENT",
-    version: number
+    version: number,
+    contextId?: string,
+    metadata?: any
   ): Promise<void> {
     await this._createOrUpdateNotification(
       NotificationType.LIKE,
@@ -51,7 +53,9 @@ export class NotificationsRepository
       issuerId,
       recipientId,
       version,
-      "liked"
+      "liked",
+      contextId,
+      metadata
     );
   }
 
@@ -135,7 +139,9 @@ export class NotificationsRepository
       version,
       notificationType === "POST"
         ? "commented on your post"
-        : "replied to your comment"
+        : "replied to your comment",
+      postId, // contextId is the postId
+      { postId, commentId } // metadata for redirection
     );
   }
 
@@ -155,11 +161,13 @@ export class NotificationsRepository
     await this._createOrUpdateNotification(
       NotificationType.MENTION,
       entityType === "POST" ? EntityType.POST : EntityType.COMMENT,
-      commentId || postId, // Use commentId if exists, otherwise postId
+      commentId || postId, 
       issuerId,
       recipientId,
       version,
-      "mentioned you in a comment"
+      "mentioned you in a comment",
+      postId,
+      { postId, commentId }
     );
   }
 
@@ -181,7 +189,9 @@ export class NotificationsRepository
       issuerId,
       recipientId,
       version,
-      "created a new post"
+      "created a new post",
+      undefined,
+      { postId }
     );
   }
 
@@ -199,7 +209,9 @@ export class NotificationsRepository
       senderId,
       recipientId,
       version,
-      message ? "sent you a post with a message" : "sent you a post"
+      message ? "sent you a post with a message" : "sent you a post",
+      undefined,
+      { postId, message }
     );
   }
 
@@ -293,7 +305,8 @@ export class NotificationsRepository
       }
 
       const authServiceUrl = process.env.AUTH_SERVICE_URL || "http://auth-service:3001";
-      const url = `${authServiceUrl}/users/internal/${userId}`;
+      const internalAuthUrl = process.env.INTERNAL_AUTH_URL || "http://auth-service:3001";
+      const url = `${internalAuthUrl}/users/internal/${userId}`;
       
       logger.debug(`Fetching user info from: ${url}`);
       
@@ -336,9 +349,31 @@ export class NotificationsRepository
         if (err.name === 'AbortError' || err.name === 'TimeoutError') {
           logger.warn(timeoutMsg);
         } else {
-          logger.error(`Error fetching user info request for ${userId}`, {
+          logger.error(`Error fetching user info request for ${userId} from ${url}`, {
             error: err.message,
+            url: url
           });
+          
+          // Fallback to localhost if auth-service hostname fails (common in local dev)
+          if (err.message.includes('ENOTFOUND') && !url.includes('localhost')) {
+            const fallbackUrl = `http://localhost:3001/users/internal/${userId}`;
+            logger.info(`Attempting fallback to ${fallbackUrl}`);
+            try {
+                const fbResponse = await fetch(fallbackUrl, {
+                    headers: {
+                      "Content-Type": "application/json",
+                      "x-internal-service": "notification-service",
+                    },
+                    signal: AbortSignal.timeout(2000)
+                });
+                if (fbResponse.ok) {
+                    const fbResult = await fbResponse.json();
+                    return fbResult?.data || fbResult || null;
+                }
+            } catch (fbErr) {
+                logger.error(`Fallback also failed for ${userId}`);
+            }
+          }
         }
         return null;
       }
@@ -401,6 +436,9 @@ export class NotificationsRepository
         });
       }
     });
+
+    // ✅ FIXED: Must await all promises before returning actorMap
+    await Promise.all(actorPromises);
 
     logger.info(`Successfully fetched user info for ${actorMap.size} actors`);
     return actorMap;
@@ -831,7 +869,9 @@ export class NotificationsRepository
     issuerId: string,
     recipientId: string,
     version: number,
-    actionVerb: string // e.g., "liked", "commented", "followed", "mentioned"
+    actionVerb: string,
+    contextId?: string,
+    metadata?: any
   ): Promise<void> {
     try {
       let notificationObject = null;
@@ -869,6 +909,8 @@ export class NotificationsRepository
             data: {
               aggregatedCount: updatedCount,
               version: versionBigInt,
+              contextId: contextId || existingObject.contextId,
+              metadata: metadata || existingObject.metadata,
               summary: {
                 json: {
                   actors: [...existingActors, issuerId].slice(0, 3), // Keep top 3 for summary
@@ -910,8 +952,16 @@ export class NotificationsRepository
             },
           });
         } else {
-          // Actor already exists, just update recipient
-          notificationObject = existingObject;
+          // Actor already exists, just update recipient and potentially metadata/context
+          notificationObject = await prisma.notificationObject.update({
+            where: { id: existingObject.id },
+            data: {
+              version: versionBigInt,
+              contextId: contextId || existingObject.contextId,
+              metadata: metadata || existingObject.metadata,
+            }
+          });
+
           await prisma.notificationRecipient.upsert({
             where: {
               recipientId_notificationObjectId: {
@@ -937,6 +987,8 @@ export class NotificationsRepository
             type: notificationType,
             entityType,
             entityId,
+            contextId,
+            metadata,
             aggregatedCount: 1,
             version: versionBigInt,
             summary: {

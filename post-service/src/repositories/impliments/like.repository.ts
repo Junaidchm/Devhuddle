@@ -1,7 +1,7 @@
 import { ILikeRepository, CreateLikeData } from "../interface/ILikeRepository";
 import { BaseRepository } from "./base.repository";
 import { prisma } from "../../config/prisma.config";
-import { Reaction, Prisma, ReactionTargetType } from ".prisma/client";
+import { Reaction, Prisma, ReactionTargetType } from "@prisma/client";
 import logger from "../../utils/logger.util";
 import { v4 as uuidv4 } from "uuid";
 

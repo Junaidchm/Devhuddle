@@ -157,8 +157,8 @@ message SubmitPostRequest {
   string content = 1;
   string userId = 2;
   repeated string mediaIds = 3;
-  string visibility = 4; // ✅ FIXED P0-2: Add visibility (PUBLIC, VISIBILITY_CONNECTIONS)
-  string commentControl = 5; // ✅ FIXED P0-2: Add commentControl (ANYONE, CONNECTIONS, NONE)
+  string visibility = 4; // ✅ FIXED P0-2: Add visibility (PUBLIC, CONNECTIONS)
+  string commentControl = 5; // ✅ FIXED P0-2: Add commentControl (ANYONE, CONNECTIONS, NOBODY)
 }
 
 message SubmitPostResponse {
@@ -262,6 +262,8 @@ message EditPostRequest {
   repeated string add_attachment_ids = 4;
   repeated string remove_attachment_ids = 5;
   string idempotency_key = 6;
+  optional string visibility = 7;
+  optional string comment_control = 8;
 }
 
 message EditPostResponse {

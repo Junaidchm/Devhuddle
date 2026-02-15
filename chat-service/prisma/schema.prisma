@@ -26,6 +26,7 @@ model Conversation {
   // Hubs feature
   topics        String[] @default([])
 
+  participantHash String? @unique
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   lastMessageAt DateTime @default(now())

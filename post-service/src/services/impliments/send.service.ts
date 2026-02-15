@@ -3,6 +3,7 @@ import { IPostRepository } from "../../repositories/interface/IPostRepository";
 import { IOutboxService } from "../interfaces/IOutboxService";
 import { CustomError } from "../../utils/error.util";
 import * as grpc from "@grpc/grpc-js";
+import { HttpStatus } from "../../constands/http.status";
 import logger from "../../utils/logger.util";
 import { KAFKA_TOPICS } from "../../config/kafka.config";
 import { OutboxAggregateType, OutboxEventType } from "@prisma/client";
@@ -32,13 +33,13 @@ export class SendService implements ISendService {
       // 1. Validate post exists
       const post = await this._postRepository.findPost(postId);
       if (!post) {
-        throw new CustomError(grpc.status.NOT_FOUND, "Post not found");
+        throw new CustomError(HttpStatus.NOT_FOUND, "Post not found");
       }
 
       // 2. Validate recipient IDs
       if (!recipientIds || recipientIds.length === 0) {
         throw new CustomError(
-          grpc.status.INVALID_ARGUMENT,
+          HttpStatus.BAD_REQUEST,
           "At least one recipient is required"
         );
       }
@@ -47,7 +48,7 @@ export class SendService implements ISendService {
       const validRecipients = recipientIds.filter((id) => id !== senderId);
       if (validRecipients.length === 0) {
         throw new CustomError(
-          grpc.status.INVALID_ARGUMENT,
+          HttpStatus.BAD_REQUEST,
           "Cannot send post to yourself"
         );
       }
@@ -113,7 +114,7 @@ export class SendService implements ISendService {
       });
       throw error instanceof CustomError
         ? error
-        : new CustomError(grpc.status.INTERNAL, "Failed to send post");
+        : new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to send post");
     }
   }
 }

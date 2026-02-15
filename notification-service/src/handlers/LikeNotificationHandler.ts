@@ -10,7 +10,13 @@ export class LikeNotificationHandler implements INotificationHandler {
   async handle(payload: any): Promise<void> {
     const { issuerId, recipientId, postId, version } = payload;
     try {
-      //   await this._notificationRepository.createLikeNotification(issuerId, recipientId, postId, version);
+      await this._notificationRepository.createLikeNotification(
+        issuerId,
+        recipientId,
+        postId,
+        "POST", // Default to POST if not specified in payload
+        version || Date.now()
+      );
       logger.info(
         `Like notification created for user ${recipientId} by ${issuerId} on post ${postId}`
       );
