@@ -59,6 +59,7 @@ export async function publishChatEvent(
     
     const eventWithMetadata = {
       ...event,
+      event: event.eventType || "MessageSent", // Added for compatibility
       dedupeId: dedupeId || generateDedupeId(),
       timestamp: new Date().toISOString(),
       source: "chat-service",

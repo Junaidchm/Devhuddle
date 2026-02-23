@@ -10,6 +10,9 @@ import { ChatController } from "./controllers/impliments/chat.controller";
 import { GroupController } from './controllers/impliments/group.controller';
 import { createChatRoutes } from "./routes/chat.routes";
 import { GroupService } from "./services/impliments/group.service";
+import { HubJoinRequestRepository } from "./repositories/impliments/hub-request.repository";
+import { HubRequestService } from "./services/impliments/hub.request.service";
+import { HubRequestController } from "./controllers/impliments/hub.request.controller";
 import { ReportService } from "./services/impliments/report.service";
 import { ReportController } from "./controllers/impliments/report.controller";
 import { AdminService } from "./services/impliments/admin.service";
@@ -18,6 +21,7 @@ import { setupAdminRoutes } from "./routes/admin.routes";
 import { connectRedis } from "./config/redis.config";
 import { getProducer } from "./utils/kafka.util";
 import { startAdminConsumer } from "./consumers/admin.consumer";
+import { startHubActivationConsumer } from "./consumers/hub.activation.consumer";
 import logger from "./utils/logger.util";
 import { startGrpcServer } from "./grpc/server";
 import { MessageSagaService } from "./services/impliments/message.service";
@@ -57,7 +61,7 @@ async function startServer() {
         await getProducer();
         logger.info("✅ Kafka producer initialized");
 
-        // 2b. Start admin enforcement consumer
+        // 2b. Start consumers
         await startAdminConsumer();
         logger.info("✅ Admin enforcement consumer started");
 
@@ -67,19 +71,26 @@ async function startServer() {
         const messageSagaService = new MessageSagaService(chatRepository);
         const chatActionService = new ChatActionService(chatRepository);
         const chatService = new ChatService(messageSagaService, chatRepository, chatActionService);
-        const groupService = new GroupService(chatRepository, messageSagaService);
         const reportService = new ReportService(chatRepository);
+        const hubJoinRequestRepository = new HubJoinRequestRepository();
+        const hubRequestService = new HubRequestService(hubJoinRequestRepository, chatRepository);
 
         const chatController = new ChatController(chatService);
+        const groupService = new GroupService(chatRepository, messageSagaService, hubJoinRequestRepository);
         const groupController = new GroupController(groupService);
         const reportController = new ReportController(reportService);
+        const hubRequestController = new HubRequestController(hubRequestService);
         const adminService = new AdminService(chatRepository);
         const adminController = new AdminController(adminService);
 
         logger.info("✅ Chat service initialized");
 
+        // 3b. Start domain specific consumers
+        await startHubActivationConsumer(chatRepository, messageSagaService);
+        logger.info("✅ Hub activation consumer started");
+
         // 4. Register REST API routes
-        const chatRoutes = createChatRoutes(chatController, groupController, reportController);
+        const chatRoutes = createChatRoutes(chatController, groupController, reportController, hubRequestController);
         app.use('/chat', chatRoutes);
 
         const adminRoutes = setupAdminRoutes(adminController);

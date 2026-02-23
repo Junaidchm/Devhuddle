@@ -36,7 +36,7 @@ export interface IGroupService {
     }
   ): Promise<Conversation>;
   leaveGroup(groupId: string, userId: string): Promise<void>;
-  joinGroup(groupId: string, userId: string): Promise<void>; // Self-join for public groups
+  joinGroup(groupId: string, userId: string): Promise<{ status: 'JOINED' | 'REQUEST_PENDING' }>; // Self-join for public groups
 
   getMyGroups(
     userId: string,

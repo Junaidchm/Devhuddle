@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ChatController } from '../controllers/impliments/chat.controller';
 import { GroupController } from '../controllers/impliments/group.controller';
 import { ReportController } from '../controllers/impliments/report.controller';
+import { HubRequestController } from '../controllers/impliments/hub.request.controller';
 import { validateDto, validateQuery } from '../middleware/validation.middleware';
 import { CreateConversationDto, GetMessagesDto, CheckConversationDto, CreateGroupDto, GetGroupsDto } from '../dtos/chat.dto';
 
@@ -9,7 +10,8 @@ import { CreateConversationDto, GetMessagesDto, CheckConversationDto, CreateGrou
 export function createChatRoutes(
   chatController: ChatController, 
   groupController: GroupController,
-  reportController: ReportController
+  reportController: ReportController,
+  hubRequestController: HubRequestController
 ): Router {
   const router = Router();
 
@@ -107,7 +109,13 @@ export function createChatRoutes(
   
   router.put('/groups/:id', groupController.updateGroupInfo.bind(groupController));
   router.post('/groups/:id/leave', groupController.leaveGroup.bind(groupController));
-  router.post('/groups/:id/join', groupController.joinGroup.bind(groupController)); // Self-join route
+  router.post('/groups/:id/join', groupController.joinGroup.bind(groupController)); // Refactored: creates JoinRequest
+  
+  // --- Hub Join Request Management ---
+  router.get('/hubs/:hubId/requests', hubRequestController.getPendingRequestsForHub.bind(hubRequestController));
+  router.post('/hubs/requests/:requestId/approve', hubRequestController.approveRequest.bind(hubRequestController));
+  router.post('/hubs/requests/:requestId/reject', hubRequestController.rejectRequest.bind(hubRequestController));
+  router.post('/hubs/requests/:requestId/cancel', hubRequestController.cancelRequest.bind(hubRequestController));
   
   // ✅ NEW: Delete Group Route (mapped to chatController as it handles conversation deletion)
   router.delete('/groups/:id', chatController.deleteGroup.bind(chatController));

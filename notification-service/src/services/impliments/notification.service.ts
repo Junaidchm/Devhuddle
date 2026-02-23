@@ -283,4 +283,67 @@ export class NotificationService implements INotificationService {
       throw error;
     }
   }
+
+  async createHubJoinRequestNotification(
+    requesterId: string,
+    recipientId: string,
+    hubId: string,
+    requestId: string,
+    version: number
+  ): Promise<void> {
+    try {
+      await this._notificationRepository.createHubJoinRequestNotification(
+        requesterId,
+        recipientId,
+        hubId,
+        requestId,
+        version
+      );
+    } catch (error: any) {
+      logger.error("Error creating HubJoinRequest notification", { error: error.message });
+      throw error;
+    }
+  }
+
+  async createHubJoinApprovedNotification(
+    adminId: string,
+    recipientId: string,
+    hubId: string,
+    requestId: string,
+    version: number
+  ): Promise<void> {
+    try {
+      await this._notificationRepository.createHubJoinApprovedNotification(
+        adminId,
+        recipientId,
+        hubId,
+        requestId,
+        version
+      );
+    } catch (error: any) {
+      logger.error("Error creating HubJoinApproved notification", { error: error.message });
+      throw error;
+    }
+  }
+
+  async createHubJoinRejectedNotification(
+    adminId: string,
+    recipientId: string,
+    hubId: string,
+    requestId: string,
+    version: number
+  ): Promise<void> {
+    try {
+      await this._notificationRepository.createHubJoinRejectedNotification(
+        adminId,
+        recipientId,
+        hubId,
+        requestId,
+        version
+      );
+    } catch (error: any) {
+      logger.error("Error creating HubJoinRejected notification", { error: error.message });
+      throw error;
+    }
+  }
 }

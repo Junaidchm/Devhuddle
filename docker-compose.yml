@@ -119,7 +119,7 @@ services:
       - shared
     # command: sh -c "npx ts-node src/generate.ts && npx prisma migrate deploy && npm run dev"
     # command: sh -c "npx ts-node src/generate.ts && npx prisma db push && npm run dev"
-    command: "npm run dev"
+    command: sh -c "npx prisma generate && npm run dev"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4001/health"]
       interval: 10s

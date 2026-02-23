@@ -1482,10 +1482,79 @@ export class NotificationsRepository
         
       case NotificationType.ROOM_REMINDER:
         return "reminder";
+
+      case NotificationType.HUB_JOIN_REQUEST:
+        return "requested to join your hub";
+
+      case NotificationType.HUB_JOIN_APPROVED:
+        return "approved your request to join the hub";
+
+      case NotificationType.HUB_JOIN_REJECTED:
+        return "rejected your request to join the hub";
         
       default:
         return "interacted with your content";
     }
+  }
+
+  async createHubJoinRequestNotification(
+    requesterId: string,
+    recipientId: string,
+    hubId: string,
+    requestId: string,
+    version: number
+  ): Promise<void> {
+    await this._createOrUpdateNotification(
+      NotificationType.HUB_JOIN_REQUEST,
+      EntityType.HUB,
+      hubId,
+      requesterId,
+      recipientId,
+      version,
+      "requested to join your hub",
+      requestId,
+      { hubId, requestId }
+    );
+  }
+
+  async createHubJoinApprovedNotification(
+    adminId: string,
+    recipientId: string,
+    hubId: string,
+    requestId: string,
+    version: number
+  ): Promise<void> {
+    await this._createOrUpdateNotification(
+      NotificationType.HUB_JOIN_APPROVED,
+      EntityType.HUB,
+      hubId,
+      adminId,
+      recipientId,
+      version,
+      "approved your request to join the hub",
+      requestId,
+      { hubId, requestId }
+    );
+  }
+
+  async createHubJoinRejectedNotification(
+    adminId: string,
+    recipientId: string,
+    hubId: string,
+    requestId: string,
+    version: number
+  ): Promise<void> {
+    await this._createOrUpdateNotification(
+      NotificationType.HUB_JOIN_REJECTED,
+      EntityType.HUB,
+      hubId,
+      adminId,
+      recipientId,
+      version,
+      "rejected your request to join the hub",
+      requestId,
+      { hubId, requestId }
+    );
   }
 
   async deleteUserNotifications(userId: string): Promise<void> {

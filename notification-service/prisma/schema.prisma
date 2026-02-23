@@ -18,6 +18,9 @@ enum NotificationType {
   SHARE     // ✅ NEW: For post sharing notifications
   REPORT    // ✅ NEW: For post/comment report notifications
   CHAT_MESSAGE // ✅ NEW: For direct chat messages
+  HUB_JOIN_REQUEST
+  HUB_JOIN_APPROVED
+  HUB_JOIN_REJECTED
 }
 
 enum EntityType {
@@ -27,6 +30,7 @@ enum EntityType {
   EVENT
   USER
   PROJECT
+  HUB
 }
 
 enum DlqStatus {

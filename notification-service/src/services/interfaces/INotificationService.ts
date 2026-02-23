@@ -15,4 +15,7 @@ export interface INotificationService {
     markAllAsRead(recipientId: string): Promise<void>;
     restoreNotification(notificationId: string, recipientId: string): Promise<void>;
     createChatNotification(senderId: string, recipientId: string, conversationId: string, messageId: string, content: string, version: number): Promise<void>;
+    createHubJoinRequestNotification(requesterId: string, recipientId: string, hubId: string, requestId: string, version: number): Promise<void>;
+    createHubJoinApprovedNotification(adminId: string, recipientId: string, hubId: string, requestId: string, version: number): Promise<void>;
+    createHubJoinRejectedNotification(adminId: string, recipientId: string, hubId: string, requestId: string, version: number): Promise<void>;
 }

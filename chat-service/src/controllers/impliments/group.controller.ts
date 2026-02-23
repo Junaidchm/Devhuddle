@@ -191,8 +191,13 @@ export class GroupController {
             const userId = JSON.parse(req.headers["x-user-data"] as string).id;
             const id = req.params.id as string;
 
-            await this._groupService.joinGroup(id, userId);
-            res.status(200).json({ message: "Joined group successfully" });
+            const result = await this._groupService.joinGroup(id, userId);
+            const message = result.status === 'JOINED' ? "Joined group successfully" : "Join request sent successfully";
+            res.status(200).json({ 
+                success: true, 
+                message, 
+                status: result.status 
+            });
         } catch (error) {
             res.status(400).json({ error: (error as Error).message });
         }

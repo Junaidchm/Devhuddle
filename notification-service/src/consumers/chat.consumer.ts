@@ -25,6 +25,27 @@ interface MessageReportedPayload {
   timestamp: string;
 }
 
+interface HubJoinRequestedPayload {
+  requestId: string;
+  hubId: string;
+  requesterId: string;
+  ownerId: string;
+}
+
+interface HubJoinApprovedPayload {
+  requestId: string;
+  hubId: string;
+  requesterId: string;
+  resolvedBy: string;
+}
+
+interface HubJoinRejectedPayload {
+  requestId: string;
+  hubId: string;
+  requesterId: string;
+  resolvedBy: string;
+}
+
 export const startChatConsumer = async (wsService: WebSocketService) => {
   try {
     const consumer = await getConsumer('notification-service-chat-group');
@@ -38,7 +59,8 @@ export const startChatConsumer = async (wsService: WebSocketService) => {
           if (!value) return;
 
           const eventData = JSON.parse(value);
-          const { event, ...payload } = eventData;
+          const event = eventData.event || eventData.eventType;
+          const payload = eventData;
 
           logger.info(`Received chat event: ${event}`, { payload });
 
@@ -52,6 +74,15 @@ export const startChatConsumer = async (wsService: WebSocketService) => {
               break;
             case 'MessageReported':
               await handleMessageReported(payload as MessageReportedPayload, notificationService, wsService);
+              break;
+            case 'HubJoinRequested':
+              await handleHubJoinRequested(payload as HubJoinRequestedPayload, notificationService);
+              break;
+            case 'HubJoinApproved':
+              await handleHubJoinApproved(payload as HubJoinApprovedPayload, notificationService);
+              break;
+            case 'HubJoinRejected':
+              await handleHubJoinRejected(payload as HubJoinRejectedPayload, notificationService);
               break;
             default:
               logger.warn(`Unhandled chat event: ${event}`);
@@ -132,4 +163,58 @@ async function handleMessageReported(
     wsService: WebSocketService
 ) {
     logger.warn(`🚨 Message REPORTED: ${payload.messageId} by ${payload.reporterId} reason: ${payload.reason}`);
+}
+
+async function handleHubJoinRequested(
+  payload: HubJoinRequestedPayload,
+  notificationService: NotificationService
+) {
+  const { requestId, hubId, requesterId, ownerId } = payload;
+  try {
+    await notificationService.createHubJoinRequestNotification(
+      requesterId,
+      ownerId,
+      hubId,
+      requestId,
+      1 // version
+    );
+  } catch (err) {
+    logger.error(`Failed to create HubJoinRequested notification for owner ${ownerId}`, { error: err });
+  }
+}
+
+async function handleHubJoinApproved(
+  payload: HubJoinApprovedPayload,
+  notificationService: NotificationService
+) {
+  const { requestId, hubId, requesterId, resolvedBy } = payload;
+  try {
+    await notificationService.createHubJoinApprovedNotification(
+      resolvedBy,
+      requesterId,
+      hubId,
+      requestId,
+      1 // version
+    );
+  } catch (err) {
+    logger.error(`Failed to create HubJoinApproved notification for user ${requesterId}`, { error: err });
+  }
+}
+
+async function handleHubJoinRejected(
+  payload: HubJoinRejectedPayload,
+  notificationService: NotificationService
+) {
+  const { requestId, hubId, requesterId, resolvedBy } = payload;
+  try {
+    await notificationService.createHubJoinRejectedNotification(
+      resolvedBy,
+      requesterId,
+      hubId,
+      requestId,
+      1 // version
+    );
+  } catch (err) {
+    logger.error(`Failed to create HubJoinRejected notification for user ${requesterId}`, { error: err });
+  }
 }

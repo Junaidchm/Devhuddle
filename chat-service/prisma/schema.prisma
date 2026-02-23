@@ -1,6 +1,5 @@
 generator client {
   provider   = "prisma-client-js"
-  engineType = "client"
 }
 
 datasource db {
@@ -30,6 +29,7 @@ model Conversation {
   participants          Participant[]
   reports               Report[]
   calls                 Call[]
+  hubJoinRequests       HubJoinRequest[]
 }
 
 model Participant {
@@ -239,6 +239,32 @@ enum MessageType {
   FILE
   STICKER
   SYSTEM
+}
+
+model HubJoinRequest {
+  id          String            @id @default(cuid())
+  hubId       String
+  requesterId String
+  ownerId     String
+  status      JoinRequestStatus @default(PENDING)
+  requestedAt DateTime          @default(now())
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  version     Int               @default(1)
+
+  conversation Conversation @relation(fields: [hubId], references: [id], onDelete: Cascade)
+
+  @@unique([hubId, requesterId, status])
+  @@index([hubId])
+  @@index([requesterId])
+  @@index([status])
+}
+
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
 }
 
 // ==================== Call Domain ====================

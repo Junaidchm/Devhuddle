@@ -10,11 +10,14 @@ import logger from "../../utils/logger.util";
 
 import { MessageSagaService } from "./message.service";
 import { RedisCacheService } from "../../utils/redis-cache.util";
+import { IHubJoinRequestRepository } from "../../repositories/interfaces/IHubJoinRequestRepository";
+import { publishChatEvent } from "../../utils/kafka.util";
 
 export class GroupService implements IGroupService {
   constructor(
     private _chatRepository: IChatRepository,
-    private _messageSagaService: MessageSagaService
+    private _messageSagaService: MessageSagaService,
+    private _hubJoinRequestRepository: IHubJoinRequestRepository
   ) {
     // 🔥 Trigger initialization of member counts for existing groups
     this._chatRepository.syncAllMemberCounts().catch(err => {
@@ -150,9 +153,10 @@ export class GroupService implements IGroupService {
       name: group.name,
       description: group.description,
       icon: group.icon,
-      memberCount: group.participants.length,
+      memberCount: (group as any).memberCount || group.participants.length,
       topics: group.topics,
       isMember: true, // Always true for my groups
+      isRequestPending: false, // User is already a member
       createdAt: group.createdAt
     }));
   }
@@ -165,14 +169,21 @@ export class GroupService implements IGroupService {
     offset: number = 0
   ): Promise<GroupListDto[]> {
     const groups = await this._chatRepository.findDiscoverGroups(userId, query, topics, limit, offset);
+    
+    // Efficiently batch check for pending requests
+    const groupIds = groups.map(g => g.id);
+    const pendingRequests = await this._hubJoinRequestRepository.findPendingRequestsByUser(userId, groupIds);
+    const pendingHubIds = new Set(pendingRequests.map(r => r.hubId));
+
     return groups.map(group => ({
       conversationId: group.id,
       name: group.name,
       description: group.description,
       icon: group.icon,
-      memberCount: group.participants.length,
+      memberCount: (group as any).memberCount || group.participants.length,
       topics: group.topics,
       isMember: false, // Always false for discover groups
+      isRequestPending: pendingHubIds.has(group.id),
       createdAt: group.createdAt
     }));
   }
@@ -489,52 +500,43 @@ export class GroupService implements IGroupService {
    * Join a public group (self-join without admin approval)
    * Regular users can add themselves to public groups
    */
-  async joinGroup(groupId: string, userId: string): Promise<void> {
-    // Verify group exists
+   async joinGroup(groupId: string, userId: string): Promise<{ status: 'JOINED' | 'REQUEST_PENDING' }> {
+    // 1. Verify hub exists
     const group = await this._chatRepository.findConversationById(groupId);
     if (!group || group.type !== 'GROUP') {
-      throw new AppError("Group not found", 404);
+      throw new AppError("Hub not found", 404);
     }
 
-    // Check if user is already a participant
-    const existing = await this._chatRepository.findParticipantInConversation(userId, groupId);
-    if (existing) {
-      return; // Already a member, silently succeed
+    // 2. Check if already a member
+    const existingMember = await this._chatRepository.findParticipantInConversation(userId, groupId);
+    if (existingMember) {
+      throw new AppError("You are already a member of this hub", 400);
     }
 
-    // Add user as a participant with MEMBER role
-    await this._chatRepository.addParticipantToGroup(groupId, userId);
-
-    // ✅ Invalidate caches
-    await RedisCacheService.invalidateConversationCache(groupId);
-
-    // Enrich user profile and publish event
-    const userProfilesMap = await authServiceClient.getUserProfiles([userId]);
-    const userProfile = userProfilesMap.get(userId);
-    const snapshotName = userProfile?.name || userProfile?.username || 'Unknown User';
-
-    // ✅ Inject SYSTEM message for self-join via Saga
-    await this._messageSagaService.sendSystemMessage(
-        groupId,
-        `joined_group:${JSON.stringify({ id: userId, name: snapshotName })}`,
-        userId
-    );
-
-    // Update member count atomically
-    const newMemberCount = await this._chatRepository.updateMemberCount(groupId, 1);
-
-    this.publishEvent(groupId, 'participant_joined', {
-      conversationId: groupId,
-      memberCount: newMemberCount,
-      userId,
-      profile: {
-        userId,
-        username: userProfile?.username || 'unknown',
-        name: userProfile?.name || 'Unknown User',
-        profilePhoto: userProfile?.profilePhoto || null,
-        role: 'MEMBER'
-      }
-    });
-    logger.info(`User ${userId} joined group ${groupId}`);
-  }
+     // 3. Check for existing pending request to avoid duplicates
+     const existingRequest = await this._hubJoinRequestRepository.findPendingRequest(groupId, userId);
+     if (existingRequest) {
+       logger.info("Join request already exists and is pending", { groupId, userId });
+       return { status: 'REQUEST_PENDING' };
+     }
+ 
+     // 4. Create PENDING request
+     const request = await this._hubJoinRequestRepository.create({
+       hubId: groupId,
+       requesterId: userId,
+       ownerId: group.ownerId || "",
+     });
+ 
+     // 5. Emit event for Notifications/Owners
+     await publishChatEvent({
+       eventType: "HubJoinRequested",
+       hubId: groupId,
+       requesterId: userId,
+       ownerId: group.ownerId,
+       requestId: request.id,
+     });
+ 
+     logger.info("Hub join request created via joinGroup", { hubId: groupId, userId, requestId: request.id });
+     return { status: 'REQUEST_PENDING' };
+   }
 }

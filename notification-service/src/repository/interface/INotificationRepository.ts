@@ -131,4 +131,29 @@ export interface INotificationRepository {
 
   // Cleanup
   deleteUserNotifications(userId: string): Promise<void>;
+
+  // Hub Join Requests
+  createHubJoinRequestNotification(
+    requesterId: string,
+    recipientId: string,
+    hubId: string,
+    requestId: string,
+    version: number
+  ): Promise<void>;
+
+  createHubJoinApprovedNotification(
+    adminId: string,
+    recipientId: string,
+    hubId: string,
+    requestId: string,
+    version: number
+  ): Promise<void>;
+
+  createHubJoinRejectedNotification(
+    adminId: string,
+    recipientId: string,
+    hubId: string,
+    requestId: string,
+    version: number
+  ): Promise<void>;
 }
