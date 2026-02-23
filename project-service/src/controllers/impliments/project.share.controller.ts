@@ -17,7 +17,7 @@ export class ProjectShareController {
       const { caption, shareType } = req.body;
 
       const result = await this._shareService.shareProject({
-        projectId,
+        projectId: projectId as string,
         userId,
         caption,
         shareType: shareType || "SHARE",

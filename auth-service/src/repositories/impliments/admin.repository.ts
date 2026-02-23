@@ -1,7 +1,7 @@
 import prisma from "../../config/prisma.config";
 import logger from "../../utils/logger.util";
 import { BaseRepository } from "./base.repository";
-import { Prisma, User } from "@prisma/client";
+import { Prisma, User, Report, AuditLog, ReportStatus, ReportTargetType, ReportSeverity } from "@prisma/client";
 
 import { IAdminRepository } from "../interfaces/IAdminRepository";
 
@@ -149,5 +149,234 @@ export class AdminRepository extends BaseRepository<
       });
       throw new Error("Database error");
     }
+  }
+
+  // Reporting implementation
+  async createReport(data: Prisma.ReportCreateInput): Promise<Report> {
+    return prisma.report.create({ data });
+  }
+
+  async findReports(params: {
+    page: number;
+    limit: number;
+    status?: ReportStatus;
+    targetType?: ReportTargetType;
+    severity?: ReportSeverity;
+  }): Promise<{ reports: Report[]; total: number }> {
+    const { page, limit, status, targetType, severity } = params;
+    const skip = (page - 1) * limit;
+    const where: Prisma.ReportWhereInput = {};
+
+    if (status && (status as string) !== "all") where.status = status;
+    if (targetType && (targetType as string) !== "all") where.targetType = targetType;
+    if (severity && (severity as string) !== "all") where.severity = severity;
+
+    const [reports, total] = await Promise.all([
+      prisma.report.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          reporter: {
+            select: { id: true, name: true, username: true }
+          },
+          reviewer: {
+            select: { id: true, name: true, username: true }
+          }
+        }
+      }),
+      prisma.report.count({ where })
+    ]);
+
+    return { reports, total };
+  }
+
+  async findReportById(id: string): Promise<Report | null> {
+    return prisma.report.findUnique({
+      where: { id },
+      include: {
+        reporter: {
+          select: { id: true, name: true, username: true }
+        },
+        reviewer: {
+          select: { id: true, name: true, username: true }
+        }
+      }
+    });
+  }
+
+  async updateReport(id: string, data: Prisma.ReportUpdateInput): Promise<Report> {
+    return prisma.report.update({
+      where: { id },
+      data
+    });
+  }
+
+  // Auditing implementation
+  async createAuditLog(data: Prisma.AuditLogCreateInput): Promise<AuditLog> {
+    return prisma.auditLog.create({ data });
+  }
+
+  async findAuditLogs(params: {
+    page: number;
+    limit: number;
+    adminId?: string;
+    targetType?: string;
+  }): Promise<{ logs: AuditLog[]; total: number }> {
+    const { page, limit, adminId, targetType } = params;
+    const skip = (page - 1) * limit;
+    const where: Prisma.AuditLogWhereInput = {};
+
+    if (adminId) where.adminId = adminId;
+    if (targetType) where.targetType = targetType;
+
+    const [logs, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          admin: {
+            select: { id: true, name: true, username: true }
+          }
+        }
+      }),
+      prisma.auditLog.count({ where })
+    ]);
+
+    return { logs, total };
+  }
+
+  // Outbox implementation
+  async createOutboxEvent(data: Prisma.OutboxEventCreateInput, tx?: Prisma.TransactionClient): Promise<any> {
+    const client = tx || prisma;
+    return (client as any).outboxEvent.create({ data });
+  }
+
+  // Phase 3: Analytics
+  async getDashboardStats(): Promise<any> {
+    const now = new Date();
+    const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+    const weekStart = new Date(now); weekStart.setDate(now.getDate() - 7);
+    const monthStart = new Date(now); monthStart.setDate(now.getDate() - 30);
+
+    const [
+      totalUsers,
+      activeUsers,
+      blockedUsers,
+      newUsersToday,
+      newUsersWeek,
+      newUsersMonth,
+      totalReports,
+      pendingReports,
+      investigatingReports,
+      resolvedReports,
+      criticalReports,
+      highReports,
+      reportsToday,
+      reportsWeek,
+      auditLogCount,
+      systemStats,
+    ] = await Promise.all([
+      prisma.user.count({ where: { NOT: { role: "superAdmin" } } }),
+      prisma.user.count({ where: { NOT: { role: "superAdmin" }, isBlocked: false } }),
+      prisma.user.count({ where: { isBlocked: true } }),
+      prisma.user.count({ where: { createdAt: { gte: todayStart } } }),
+      prisma.user.count({ where: { createdAt: { gte: weekStart } } }),
+      prisma.user.count({ where: { createdAt: { gte: monthStart } } }),
+      prisma.report.count(),
+      prisma.report.count({ where: { status: "PENDING" } }),
+      prisma.report.count({ where: { status: "INVESTIGATING" } }),
+      prisma.report.count({ where: { status: { in: ["RESOLVED_APPROVED", "RESOLVED_REMOVED", "RESOLVED_IGNORED"] } } }),
+      prisma.report.count({ where: { severity: "CRITICAL" } }),
+      prisma.report.count({ where: { severity: "HIGH" } }),
+      prisma.report.count({ where: { createdAt: { gte: todayStart } } }),
+      prisma.report.count({ where: { createdAt: { gte: weekStart } } }),
+      prisma.auditLog.count(),
+      prisma.systemStats.findUnique({ where: { id: "global-stats" } }),
+    ]);
+
+    const stats = systemStats || {
+      totalPosts: 0,
+      totalComments: 0,
+      totalLikes: 0,
+      totalShares: 0
+    };
+
+    return {
+      users: {
+        total: totalUsers,
+        active: activeUsers,
+        blocked: blockedUsers,
+        newToday: newUsersToday,
+        newThisWeek: newUsersWeek,
+        newThisMonth: newUsersMonth,
+      },
+      reports: {
+        total: totalReports,
+        pending: pendingReports,
+        open: 0,
+        investigating: investigatingReports,
+        resolved: resolvedReports,
+        critical: criticalReports,
+        high: highReports,
+        createdToday: reportsToday,
+        createdThisWeek: reportsWeek,
+      },
+      auditLogs: {
+        total: auditLogCount,
+      },
+      posts: { 
+        total: stats.totalPosts, 
+        reported: 0, 
+        hidden: 0, 
+        deleted: 0, 
+        createdToday: 0, 
+        createdThisWeek: 0, 
+        createdThisMonth: 0 
+      },
+      comments: { 
+        total: stats.totalComments, 
+        reported: 0, 
+        deleted: 0, 
+        createdToday: 0 
+      },
+      projects: {
+        total: (stats as any).totalProjects || 0,
+        reported: 0,
+        hidden: 0,
+        deleted: 0
+      },
+      hubs: {
+        total: (stats as any).totalHubs || 0,
+        reported: 0,
+        suspended: 0,
+        deleted: 0
+      },
+      engagement: { 
+        totalLikes: stats.totalLikes, 
+        totalComments: stats.totalComments, 
+        totalShares: stats.totalShares 
+      },
+    };
+  }
+
+  async getReportsByReason(): Promise<any[]> {
+    const reports = await prisma.report.groupBy({
+      by: ["reason"],
+      _count: { id: true },
+      orderBy: { _count: { id: "desc" } },
+    });
+    return reports.map(r => ({ reason: r.reason, count: r._count.id }));
+  }
+
+  async getReportsBySeverity(): Promise<any[]> {
+    const reports = await prisma.report.groupBy({
+      by: ["severity"],
+      _count: { id: true },
+    });
+    return reports.map(r => ({ severity: r.severity, count: r._count.id }));
   }
 }

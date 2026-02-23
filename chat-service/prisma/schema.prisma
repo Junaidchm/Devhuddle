@@ -8,31 +8,176 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model Conversation {
-  id            String           @id @default(cuid())
-  type          ConversationType @default(DIRECT)
-  
-  // Group/Hub specific fields
-  name          String?
-  description   String?
-  icon          String?
-  ownerId       String?
-  
-  // Group permissions (WhatsApp-style)
-  onlyAdminsCanPost     Boolean @default(false)
-  onlyAdminsCanEditInfo Boolean @default(false)
+  id                    String           @id @default(cuid())
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  lastMessageAt         DateTime         @default(now())
+  description           String?
+  icon                  String?
+  name                  String?
+  onlyAdminsCanEditInfo Boolean          @default(false)
+  onlyAdminsCanPost     Boolean          @default(false)
+  ownerId               String?
+  topics                String[]         @default([])
+  type                  ConversationType @default(DIRECT)
+  memberCount           Int              @default(2)
+  participantHash       String?          @unique
+  deletedAt             DateTime?
+  isSuspended           Boolean          @default(false)
+  suspendedAt           DateTime?
+  messages              Message[]
+  participants          Participant[]
+  reports               Report[]
+  calls                 Call[]
+}
 
-  // Hubs feature
-  topics        String[] @default([])
+model Participant {
+  id             String       @id @default(cuid())
+  userId         String
+  conversationId String
+  joinedAt       DateTime     @default(now())
+  lastReadAt     DateTime     @default(now())
+  role           GroupRole    @default(MEMBER)
+  deletedAt      DateTime?
+  lastClearedAt  DateTime?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
-  participantHash String? @unique
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  lastMessageAt DateTime @default(now())
+  @@unique([userId, conversationId])
+  @@index([userId])
+}
 
-  messages     Message[]
-  participants Participant[]
+model Message {
+  id                     String            @id @default(cuid())
+  conversationId         String
+  senderId               String
+  content                String
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  status                 MessageStatus     @default(SENT)
+  deliveredAt            DateTime?
+  readAt                 DateTime?
+  type                   MessageType       @default(TEXT)
+  mediaUrl               String?
+  mediaId                String?
+  mediaMimeType          String?
+  mediaSize              Int?
+  mediaName              String?
+  mediaDuration          Int?
+  isForwarded            Boolean           @default(false)
+  forwardedFrom          String?
+  replyToId              String?
+  formattedContent       String?
+  isStarred              Boolean           @default(false)
+  deletedForAll          Boolean           @default(false)
+  deletedFor             String[]          @default([])
+  dedupeId               String?           @unique
+  isPinned               Boolean           @default(false)
+  pinnedAt               DateTime?
+  pinnedBy               String?
+  originalMessageId      String?
+  expectedRecipientCount Int               @default(1)
+  conversation           Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  replyTo                Message?          @relation("MessageToMessage", fields: [replyToId], references: [id])
+  replies                Message[]         @relation("MessageToMessage")
+  links                  MessageLink[]
+  reactions              MessageReaction[]
+  receipts               MessageReceipt[]
+
+  @@index([conversationId, createdAt])
+  @@index([conversationId, status])
+}
+
+model MessageReceipt {
+  id          String    @id @default(cuid())
+  messageId   String
+  userId      String
+  deliveredAt DateTime?
+  seenAt      DateTime?
+  message     Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
+}
+
+model MessageLink {
+  id        String   @id @default(cuid())
+  messageId String
+  url       String
+  title     String?
+  thumbnail String?
+  createdAt DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+model BlockedUser {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+}
+
+model Report {
+  id             String           @id @default(cuid())
+  conversationId String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  reporterId     String
+  targetId       String
+  targetType     ReportTargetType
+  reason         ReportReason
+  description    String?
+  status         ReportStatus     @default(PENDING)
+  severity       ReportSeverity   @default(LOW)
+  resolvedAt     DateTime?
+  resolution     String?
+  reviewedAt     DateTime?
+  reviewedById   String?
+  metadata       Json?
+  conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([reporterId])
+  @@index([status])
+  @@index([targetType, targetId])
+}
+
+model ChatInteraction {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @map("user_id") @db.VarChar(255)
+  partnerId        String   @map("partner_id") @db.VarChar(255)
+  lastMessageAt    DateTime @default(now()) @map("last_message_at") @db.Timestamp(6)
+  messageCount     Int      @default(1) @map("message_count")
+  userSentCount    Int      @default(0) @map("user_sent_count")
+  partnerSentCount Int      @default(0) @map("partner_sent_count")
+  responseRate     Decimal  @default(0.00) @map("response_rate") @db.Decimal(3, 2)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@unique([userId, partnerId], map: "chat_interactions_user_partner_unique")
+  @@index([userId], map: "idx_chat_interactions_user_id")
+  @@index([partnerId], map: "idx_chat_interactions_partner_id")
+  @@index([userId, lastMessageAt(sort: Desc)], map: "idx_chat_interactions_last_message")
+  @@map("chat_interactions")
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
 }
 
 enum ConversationType {
@@ -40,76 +185,50 @@ enum ConversationType {
   GROUP
 }
 
-model Participant {
-  id             String       @id @default(cuid())
-  userId         String
-  conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  // Role management for groups
-  role           GroupRole    @default(MEMBER)
-
-  joinedAt   DateTime @default(now())
-  lastReadAt DateTime @default(now())
-
-  @@unique([userId, conversationId])
-  @@index([userId])
-}
-
 enum GroupRole {
   ADMIN
   MEMBER
 }
 
-model Message {
-  id             String        @id @default(cuid())
-  conversationId String
-  senderId       String
-  content        String
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  
-  // Idempotency key for deduplication
-  dedupeId       String?       @unique
-  
-  // Message status tracking for delivery acknowledgments
-  status         MessageStatus @default(SENT)
-  deliveredAt    DateTime?
-  readAt         DateTime?
-  
-  // Media support
-  type           MessageType   @default(TEXT)
-  mediaUrl       String?       // URL from Cloudflare R2
-  mediaId        String?       // Reference to media-service ID
-  mediaMimeType  String?
-  mediaSize      Int?          // Size in bytes
-  mediaName      String?       // Original filename
-  mediaDuration  Int?          // Duration in seconds (audio/video)
+enum ReportTargetType {
+  USER
+  CONVERSATION
+}
 
-  // Refactored fields
-  isForwarded      Boolean  @default(false)
-  forwardedFrom    String?
-  replyToId        String?
-  formattedContent String?
-  isStarred        Boolean  @default(false)
-  deletedForAll    Boolean  @default(false)
-  deletedFor       String[]
+enum ReportReason {
+  SPAM
+  INAPPROPRIATE
+  HARASSMENT
+  HATE_SPEECH
+  VIOLENCE
+  SELF_HARM
+  FALSE_INFORMATION
+  COPYRIGHT_VIOLATION
+  OTHER
+}
 
-  replyTo      Message?     @relation("MessageToMessage", fields: [replyToId], references: [id])
-  replies      Message[]    @relation("MessageToMessage")
-  reactions    MessageReaction[]
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+enum ReportStatus {
+  PENDING
+  INVESTIGATING
+  RESOLVED_APPROVED
+  RESOLVED_REMOVED
+  RESOLVED_IGNORED
+  CLOSED
+}
 
-  @@index([conversationId, createdAt])
-  @@index([conversationId, status])
+enum ReportSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
 }
 
 enum MessageStatus {
-  SENDING   // Client-side only (optimistic)
-  SENT      // Persisted in DB
-  DELIVERED // Recipient acknowledged
-  READ      // Recipient marked as read
-  FAILED    // Send failed
+  SENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
 }
 
 enum MessageType {
@@ -119,38 +238,66 @@ enum MessageType {
   AUDIO
   FILE
   STICKER
+  SYSTEM
 }
 
-model ChatInteraction {
-  id                String   @id @default(uuid()) @db.Uuid
-  userId            String   @map("user_id") @db.VarChar(255)
-  partnerId         String   @map("partner_id") @db.VarChar(255)
-  lastMessageAt     DateTime @default(now()) @map("last_message_at") @db.Timestamp()
-  messageCount      Int      @default(1) @map("message_count")
-  userSentCount     Int      @default(0) @map("user_sent_count")
-  partnerSentCount  Int      @default(0) @map("partner_sent_count")
-  responseRate      Decimal  @default(0.00) @map("response_rate") @db.Decimal(3, 2)
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamp()
-  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
-  @@unique([userId, partnerId], map: "chat_interactions_user_partner_unique")
-  @@index([userId], map: "idx_chat_interactions_user_id")
-  @@index([partnerId], map: "idx_chat_interactions_partner_id")
-  @@index([userId, lastMessageAt(sort: Desc)], map: "idx_chat_interactions_last_message")
-  @@map("chat_interactions")
+// ==================== Call Domain ====================
+
+model Call {
+  id        String        @id @default(cuid())
+  type      CallType      @default(DIRECT)
+  callType  CallMediaType @default(VIDEO)
+  status    CallStatus    @default(RINGING)
+  createdAt DateTime      @default(now())
+  endedAt   DateTime?
+
+  // Relations
+  conversationId String
+  callerId       String
+
+  conversation Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  participants CallParticipant[]
+
+  @@index([conversationId])
+  @@index([callerId])
+  @@index([status])
 }
 
+model CallParticipant {
+  id       String                @id @default(cuid())
+  callId   String
+  userId   String
+  status   CallParticipantStatus @default(INVITED)
+  joinedAt DateTime?
+  leftAt   DateTime?
 
-model MessageReaction {
-  id        String   @id @default(cuid())
-  messageId String
-  userId    String
-  emoji     String
-  createdAt DateTime @default(now())
+  call Call @relation(fields: [callId], references: [id], onDelete: Cascade)
 
-  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
-
-  @@unique([messageId, userId, emoji])
-  @@index([messageId])
+  @@unique([callId, userId])
+  @@index([callId])
+  @@index([userId])
 }
 
+enum CallType {
+  DIRECT
+  GROUP
+}
 
+enum CallMediaType {
+  AUDIO
+  VIDEO
+}
+
+enum CallStatus {
+  RINGING
+  ACTIVE
+  ENDED
+}
+
+enum CallParticipantStatus {
+  INVITED
+  RINGING
+  JOINED
+  DECLINED
+  LEFT
+}

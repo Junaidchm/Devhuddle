@@ -1,11 +1,16 @@
 import { Router } from 'express';
 import { ChatController } from '../controllers/impliments/chat.controller';
 import { GroupController } from '../controllers/impliments/group.controller';
+import { ReportController } from '../controllers/impliments/report.controller';
 import { validateDto, validateQuery } from '../middleware/validation.middleware';
 import { CreateConversationDto, GetMessagesDto, CheckConversationDto, CreateGroupDto, GetGroupsDto } from '../dtos/chat.dto';
 
 
-export function createChatRoutes(chatController: ChatController, groupController: GroupController): Router {
+export function createChatRoutes(
+  chatController: ChatController, 
+  groupController: GroupController,
+  reportController: ReportController
+): Router {
   const router = Router();
 
   // --- Chat Routes ---
@@ -26,6 +31,14 @@ export function createChatRoutes(chatController: ChatController, groupController
     validateQuery(GetMessagesDto),
     chatController.getConversationMessages.bind(chatController)
   );
+  
+  router.get('/conversations/:conversationId/media',
+    chatController.getSharedMedia.bind(chatController)
+  );
+
+  router.get('/conversations/:conversationId/links',
+    chatController.getConversationLinks.bind(chatController)
+  );
 
   /**
    * POST /conversations
@@ -43,6 +56,18 @@ export function createChatRoutes(chatController: ChatController, groupController
    */
   router.get('/conversations/:conversationId',
     chatController.getConversationById.bind(chatController)
+  );
+
+  router.get('/conversations/:conversationId/profile',
+    chatController.getConversationProfile.bind(chatController)
+  );
+
+  router.delete('/conversations/:conversationId',
+    chatController.softDeleteConversation.bind(chatController)
+  );
+
+  router.post('/conversations/:conversationId/clear',
+    chatController.clearChatHistory.bind(chatController)
   );
 
   /**
@@ -63,6 +88,10 @@ export function createChatRoutes(chatController: ChatController, groupController
     validateQuery(GetGroupsDto),
     groupController.getAllGroups.bind(groupController)
   );
+
+  router.get('/groups/my-hubs', groupController.getMyGroups.bind(groupController));
+  router.get('/groups/discover', groupController.getDiscoverGroups.bind(groupController));
+  router.get('/groups/topics', groupController.getGroupTopics.bind(groupController));
   
   router.post('/groups', 
     validateDto(CreateGroupDto),
@@ -82,6 +111,39 @@ export function createChatRoutes(chatController: ChatController, groupController
   
   // ✅ NEW: Delete Group Route (mapped to chatController as it handles conversation deletion)
   router.delete('/groups/:id', chatController.deleteGroup.bind(chatController));
+
+  // --- Message Actions ---
+  router.put('/messages/:messageId', chatController.editMessage.bind(chatController));
+  router.delete('/messages/:messageId', chatController.deleteMessage.bind(chatController));
+  router.delete('/messages/:messageId/me', chatController.deleteMessage.bind(chatController));
+  
+  // Standard Send Message
+  router.post('/conversations/:conversationId/messages', chatController.sendMessage.bind(chatController));
+  
+  // Reply Message
+  router.post('/conversations/:conversationId/messages/reply', chatController.replyToMessage.bind(chatController));
+  
+  router.post('/messages/:messageId/reactions', chatController.addReaction.bind(chatController));
+  router.delete('/messages/:messageId/reactions', chatController.removeReaction.bind(chatController));
+  
+  router.post('/messages/:messageId/pin', chatController.pinMessage.bind(chatController));
+  router.delete('/messages/:messageId/pin', chatController.unpinMessage.bind(chatController));
+  router.get('/conversations/:conversationId/pins', chatController.getPinnedMessages.bind(chatController));
+  
+  router.post('/messages/forward', chatController.forwardMessage.bind(chatController));
+  
+  // --- User Blocking ---
+  router.post('/users/:userId/block', chatController.blockUser.bind(chatController));
+  router.delete('/users/:userId/block', chatController.unblockUser.bind(chatController));
+  router.get('/users/blocked', chatController.getBlockedUsers.bind(chatController));
+  router.get('/users/:targetUserId/common-groups', chatController.getCommonGroups.bind(chatController));
+  
+  // --- Search ---
+  router.get('/conversations/:conversationId/search', chatController.searchMessages.bind(chatController));
+
+  // --- Reporting ---
+  router.post('/reports', reportController.createReport.bind(reportController));
+  router.get('/conversations/:conversationId/reports', reportController.getReportsByConversation.bind(reportController));
 
   return router;
 }

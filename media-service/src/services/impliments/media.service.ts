@@ -392,7 +392,7 @@ export class MediaService implements IMediaService {
 
     const normalizedType = fileType.toLowerCase();
 
-    if (mediaType === "POST_IMAGE" || mediaType === "PROFILE_IMAGE" || mediaType === "CHAT_IMAGE") {
+    if (mediaType === "POST_IMAGE" || mediaType === "PROFILE_IMAGE" || mediaType === "CHAT_IMAGE" || mediaType === "COVER_IMAGE") {
       if (!allowedImageTypes.includes(normalizedType)) {
         throw new CustomError(400, `Invalid image type. Allowed: ${allowedImageTypes.join(", ")}`);
       }
@@ -417,6 +417,7 @@ export class MediaService implements IMediaService {
 
     switch (mediaType) {
       case "PROFILE_IMAGE":
+      case "COVER_IMAGE":
         maxSize = MAX_FILE_SIZE.PROFILE_IMAGE;
         break;
       case "POST_IMAGE":

@@ -30,4 +30,6 @@ export interface IUserRepository {
   deleteExperience(id: string): Promise<void>;
   addEducation(userId: string, data: any): Promise<any>;
   deleteEducation(id: string): Promise<void>;
+  deleteUser(id: string, tx?: any): Promise<void>;
+  createOutboxEvent(data: any, tx?: any): Promise<any>;
 }

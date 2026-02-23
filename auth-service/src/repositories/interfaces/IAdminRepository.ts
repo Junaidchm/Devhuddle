@@ -1,6 +1,7 @@
-import { User } from "@prisma/client";
+import { User, Report, AuditLog, ReportStatus, ReportTargetType, ReportReason, ReportSeverity, Prisma } from "@prisma/client";
 
 export interface IAdminRepository {
+  // User Management
   findManyPaginated(
     page: number,
     limit: number,
@@ -14,4 +15,37 @@ export interface IAdminRepository {
   toogleUserBlock(userId: string): Promise<{ id: string; isBlocked: boolean }>;
 
   findById(id: string): Promise<User | null>;
+
+  // Reporting System
+  createReport(data: Prisma.ReportCreateInput): Promise<Report>;
+  
+  findReports(params: {
+    page: number;
+    limit: number;
+    status?: ReportStatus;
+    targetType?: ReportTargetType;
+    severity?: ReportSeverity;
+  }): Promise<{ reports: Report[]; total: number }>;
+
+  findReportById(id: string): Promise<Report | null>;
+
+  updateReport(id: string, data: Prisma.ReportUpdateInput): Promise<Report>;
+
+  // Audit System
+  createAuditLog(data: Prisma.AuditLogCreateInput): Promise<AuditLog>;
+  
+  findAuditLogs(params: {
+    page: number;
+    limit: number;
+    adminId?: string;
+    targetType?: string;
+  }): Promise<{ logs: AuditLog[]; total: number }>;
+
+  // Outbox System
+  createOutboxEvent(data: Prisma.OutboxEventCreateInput, tx?: Prisma.TransactionClient): Promise<any>;
+
+  // Analytics
+  getDashboardStats(): Promise<any>;
+  getReportsByReason(): Promise<any[]>;
+  getReportsBySeverity(): Promise<any[]>;
 }

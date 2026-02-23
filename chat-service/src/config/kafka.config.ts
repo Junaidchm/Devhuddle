@@ -1,5 +1,3 @@
-
-
 // Kafka Configuration
 export const KAFKA_CONFIG = {
   clientId: "chat-service",
@@ -15,5 +13,8 @@ export const KAFKA_CONFIG = {
 
 // Kafka Topics for Chat Service
 export const KAFKA_TOPICS = {
-  CHAT_EVENTS: "chat-events", // For all chat-related events (MessageSent, etc.)
+  CHAT_EVENTS: "chat-events",
+  ADMIN_ACTION_ENFORCED: "admin-action-enforced",
+  USER_STATE_TOGGLED: "user-state-toggled",
+  USER_DELETED: "user-events",
 } as const;

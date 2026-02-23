@@ -4,6 +4,7 @@ import { ProjectLikeController } from "../controllers/impliments/project.like.co
 import { ProjectShareController } from "../controllers/impliments/project.share.controller";
 import { ProjectReportController } from "../controllers/impliments/project.report.controller";
 import { ProjectMediaController } from "../controllers/impliments/project.media.controller";
+import { ProjectCommentController } from "../controllers/impliments/project.comment.controller";
 import { idempotencyMiddleware } from "../middlewares/idempotency.middleware";
 import { IIdempotencyRepository } from "../repositories/interface/IIdempotencyRepository";
 import { validateDto } from "../middlewares/validation.middleware";
@@ -14,6 +15,7 @@ const router = Router();
 export const setupProjectRoutes = (
   projectController: ProjectController,
   likeController: ProjectLikeController,
+  commentController: ProjectCommentController,
   shareController: ProjectShareController,
   reportController: ProjectReportController,
   mediaController: ProjectMediaController,
@@ -101,6 +103,35 @@ export const setupProjectRoutes = (
     idempotencyMiddleware(idempotencyRepository),
     validateDto(ReportProjectDto),
     reportController.reportProject.bind(reportController)
+  );
+
+  // Comment routes
+  router.post(
+    "/projects/:projectId/comments",
+    idempotencyMiddleware(idempotencyRepository),
+    commentController.createComment.bind(commentController)
+  );
+
+  router.get(
+    "/projects/:projectId/comments",
+    commentController.getComments.bind(commentController)
+  );
+
+  router.put(
+    "/comments/:commentId",
+    idempotencyMiddleware(idempotencyRepository),
+    commentController.updateComment.bind(commentController)
+  );
+
+  router.delete(
+    "/comments/:commentId",
+    idempotencyMiddleware(idempotencyRepository),
+    commentController.deleteComment.bind(commentController)
+  );
+
+  router.get(
+    "/comments/:commentId/replies",
+    commentController.getReplies.bind(commentController)
   );
 
   // Media upload route

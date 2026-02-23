@@ -25,6 +25,9 @@ interface GrpcUserProfile {
   username: string;
   name: string;
   profilePhoto: string;
+  bio: string;
+  isOnline: boolean;
+  lastSeen: string;
 }
 
 interface GrpcGetUserProfilesResponse {
@@ -37,6 +40,9 @@ export interface UserProfile {
   username: string;
   name: string;
   profilePhoto: string;
+  bio: string;
+  isOnline: boolean;
+  lastSeen: string;
 }
 
 export class AuthServiceClient {
@@ -81,6 +87,9 @@ export class AuthServiceClient {
                 username: profile.username,
                 name: profile.name,
                 profilePhoto: profile.profilePhoto,
+                bio: profile.bio,
+                isOnline: profile.isOnline,
+                lastSeen: profile.lastSeen,
               });
             });
 

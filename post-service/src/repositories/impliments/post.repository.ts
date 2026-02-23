@@ -624,4 +624,65 @@ export class PostRepository
       throw new Error("Database error");
     }
   }
+
+  async hideAllPostsByUser(userId: string, reason: string): Promise<void> {
+    try {
+      await prisma.posts.updateMany({
+        where: { userId, deletedAt: null },
+        data: { isHidden: true, hiddenAt: new Date(), hiddenReason: reason },
+      });
+    } catch (error: unknown) {
+      logger.error("Error hiding all posts by user", {
+        error: (error as Error).message,
+        userId,
+      });
+      throw new Error("Database error");
+    }
+  }
+
+  async unhideAllPostsByUser(userId: string): Promise<void> {
+    try {
+      await prisma.posts.updateMany({
+        where: { userId, deletedAt: null },
+        data: { isHidden: false, hiddenAt: null, hiddenReason: null },
+      });
+    } catch (error: unknown) {
+      logger.error("Error unhiding all posts by user", {
+        error: (error as Error).message,
+        userId,
+      });
+      throw new Error("Database error");
+    }
+  }
+
+  async hidePost(postId: string, reason: string): Promise<void> {
+    try {
+      await prisma.posts.update({
+        where: { id: postId },
+        data: { isHidden: true, hiddenAt: new Date(), hiddenReason: reason },
+      });
+    } catch (error: unknown) {
+      logger.error("Error hiding post", {
+        error: (error as Error).message,
+        postId,
+      });
+      throw new Error("Database error");
+    }
+  }
+
+  async deleteAllPostsByUser(userId: string): Promise<void> {
+    try {
+      // Hard delete all posts by user (cascading deletes for Media and PostVersions should be handled by DB or manually)
+      // Check schema for cascade rules.
+      await prisma.posts.deleteMany({
+        where: { userId },
+      });
+    } catch (error: unknown) {
+      logger.error("Error deleting all posts by user", {
+        error: (error as Error).message,
+        userId,
+      });
+      throw new Error("Database error");
+    }
+  }
 }

@@ -58,9 +58,14 @@ export class ProjectLikeService implements IProjectLikeService {
           topic: KAFKA_TOPICS.PROJECT_LIKE_CREATED,
           key: `${req.projectId}:${req.userId}`,
           payload: {
+            dedupeId: `like-${req.projectId}-${req.userId}-${Date.now()}`,
             projectId: req.projectId,
             userId: req.userId,
+            projectAuthorId: project.userId,
             likesCount,
+            action: "LIKE",
+            version: Date.now(),
+            eventTimestamp: new Date().toISOString(),
           },
         });
       }
@@ -110,9 +115,14 @@ export class ProjectLikeService implements IProjectLikeService {
           topic: KAFKA_TOPICS.PROJECT_LIKE_REMOVED,
           key: `${req.projectId}:${req.userId}`,
           payload: {
+            dedupeId: `unlike-${req.projectId}-${req.userId}-${Date.now()}`,
             projectId: req.projectId,
             userId: req.userId,
+            projectAuthorId: project.userId,
             likesCount,
+            action: "UNLIKE",
+            version: Date.now(),
+            eventTimestamp: new Date().toISOString(),
           },
         });
       }

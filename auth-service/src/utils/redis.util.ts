@@ -92,6 +92,9 @@ export class RedisCacheService {
         await redisClient.del(pattern);
       }
 
+      // Also invalidate chat suggestions specifically
+      await invalidateChatSuggestionsCache(userId);
+
       logger.info(`Invalidated caches for user ${userId}`);
     } catch (error) {
       logger.error("Error invalidating user caches", { error, userId });

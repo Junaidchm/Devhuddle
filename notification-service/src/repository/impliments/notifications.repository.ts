@@ -41,14 +41,14 @@ export class NotificationsRepository
     issuerId: string,
     recipientId: string,
     entityId: string,
-    entityType: "POST" | "COMMENT",
+    entityType: "POST" | "COMMENT" | "PROJECT",
     version: number,
     contextId?: string,
     metadata?: any
   ): Promise<void> {
     await this._createOrUpdateNotification(
       NotificationType.LIKE,
-      entityType === "POST" ? EntityType.POST : EntityType.COMMENT,
+      entityType === "POST" ? EntityType.POST : entityType === "PROJECT" ? EntityType.PROJECT : EntityType.COMMENT,
       entityId,
       issuerId,
       recipientId,
@@ -104,17 +104,17 @@ export class NotificationsRepository
     issuerId: string,
     recipientId: string,
     entityId: string,
-    entityType: "POST" | "COMMENT",
+    entityType: "POST" | "COMMENT" | "PROJECT",
     version: number
   ): Promise<void> {
     await this._removeNotificationActor(
       NotificationType.LIKE,
-      entityType === "POST" ? EntityType.POST : EntityType.COMMENT,
+      entityType === "POST" ? EntityType.POST : entityType === "PROJECT" ? EntityType.PROJECT : EntityType.COMMENT,
       entityId,
       issuerId,
       recipientId,
       version,
-      "liked"
+      this._getActionVerbFromNotification(NotificationType.LIKE, entityType === "POST" ? EntityType.POST : entityType === "PROJECT" ? EntityType.PROJECT : EntityType.COMMENT)
     );
   }
 
@@ -127,21 +127,19 @@ export class NotificationsRepository
     recipientId: string,
     postId: string,
     commentId: string,
-    notificationType: "POST" | "COMMENT",
+    notificationType: "POST" | "COMMENT" | "PROJECT",
     version: number
   ): Promise<void> {
     await this._createOrUpdateNotification(
       NotificationType.COMMENT,
-      notificationType === "POST" ? EntityType.POST : EntityType.COMMENT,
+      notificationType === "POST" ? EntityType.POST : notificationType === "PROJECT" ? EntityType.PROJECT : EntityType.COMMENT,
       commentId, // Entity ID is the commentId
       issuerId,
       recipientId,
       version,
-      notificationType === "POST"
-        ? "commented on your post"
-        : "replied to your comment",
-      postId, // contextId is the postId
-      { postId, commentId } // metadata for redirection
+      this._getActionVerbFromNotification(NotificationType.COMMENT, notificationType === "POST" ? EntityType.POST : notificationType === "PROJECT" ? EntityType.PROJECT : EntityType.COMMENT),
+      postId, // contextId is the postId/projectId
+      { [notificationType === "PROJECT" ? "projectId" : "postId"]: postId, commentId } // metadata for redirection
     );
   }
 
@@ -212,6 +210,79 @@ export class NotificationsRepository
       message ? "sent you a post with a message" : "sent you a post",
       undefined,
       { postId, message }
+    );
+  }
+
+  /**
+   * Create chat notification
+   * Uses NEW_MESSAGE type and MESSAGE entity type
+   */
+  async createChatNotification(
+    senderId: string,
+    recipientId: string,
+    conversationId: string,
+    messageId: string,
+    content: string,
+    version: number
+  ): Promise<void> {
+    await this._createOrUpdateNotification(
+      NotificationType.CHAT_MESSAGE,
+      EntityType.MESSAGE,
+      messageId,
+      senderId,
+      recipientId,
+      version,
+      "sent you a message",
+      conversationId,
+      { conversationId, content }
+    );
+  }
+
+  /**
+   * Create share notification
+   */
+  async createShareNotification(
+    issuerId: string,
+    recipientId: string,
+    postId: string,
+    version: number,
+    entityType: "POST" | "PROJECT" = "POST"
+  ): Promise<void> {
+    await this._createOrUpdateNotification(
+      NotificationType.SHARE,
+      entityType === "PROJECT" ? EntityType.PROJECT : EntityType.POST,
+      postId,
+      issuerId,
+      recipientId,
+      version,
+      entityType === "PROJECT" ? "shared your project" : "shared your post",
+      undefined,
+      { [entityType === "PROJECT" ? "projectId" : "postId"]: postId }
+    );
+  }
+
+  /**
+   * Create report notification (for content owner)
+   */
+  async createReportNotification(
+    issuerId: string, // reporterId or "system"
+    recipientId: string, // contentAuthorId
+    entityId: string,
+    entityType: "POST" | "COMMENT" | "PROJECT",
+    reason: string,
+    version: number,
+    metadata?: any
+  ): Promise<void> {
+    await this._createOrUpdateNotification(
+      NotificationType.REPORT,
+      entityType === "POST" ? EntityType.POST : entityType === "PROJECT" ? EntityType.PROJECT : EntityType.COMMENT,
+      entityId,
+      issuerId,
+      recipientId,
+      version,
+      this._getActionVerbFromNotification(NotificationType.REPORT, entityType === "POST" ? EntityType.POST : entityType === "PROJECT" ? EntityType.PROJECT : EntityType.COMMENT),
+      undefined,
+      { ...metadata, reason }
     );
   }
 
@@ -673,6 +744,45 @@ export class NotificationsRepository
   }
 
   /**
+   * Restore soft-deleted notification
+   */
+  async restoreNotification(
+    notificationId: string,
+    recipientId: string
+  ): Promise<void> {
+    try {
+      await prisma.notificationRecipient.updateMany({
+        where: {
+          id: notificationId,
+          recipientId,
+        },
+        data: { deletedAt: null },
+      });
+
+      // Invalidate cache (non-blocking)
+      this._invalidateNotificationCache(recipientId).catch((error) => {
+        logger.error("Error invalidating cache (non-blocking)", {
+          error: error.message,
+          recipientId,
+        });
+      });
+
+      await this._updateAndBroadcastUnreadCount(recipientId);
+
+      logger.info(
+        `Notification ${notificationId} restored for user ${recipientId}`
+      );
+    } catch (error: unknown) {
+      logger.error("Error restoring notification", {
+        error: (error as Error).message,
+        notificationId,
+        recipientId,
+      });
+      throw new Error("Database error");
+    }
+  }
+
+  /**
    * Get unread count with caching
    */
   async getUnreadCount(recipientId: string): Promise<number> {
@@ -727,14 +837,16 @@ export class NotificationsRepository
       });
 
       // ✅ FIXED: Make cache invalidation non-blocking to avoid timeout
-      this._invalidateNotificationCache(recipientId).catch((error) => {
-        logger.error("Error invalidating cache (non-blocking)", {
+      // Perform both invalidation and broadcast in background
+      Promise.all([
+        this._invalidateNotificationCache(recipientId),
+        this._updateAndBroadcastUnreadCount(recipientId)
+      ]).catch((error) => {
+        logger.error("Error in background tasks for markAllAsRead", {
           error: error.message,
           recipientId,
         });
       });
-
-      await this._updateAndBroadcastUnreadCount(recipientId);
 
       logger.info(`All notifications marked as read for user ${recipientId}`);
     } catch (error: unknown) {
@@ -747,21 +859,50 @@ export class NotificationsRepository
   }
 
   /**
-   * Invalidate all notification caches for a user
+   * Invalidates notification cache for a user
+   * ✅ FIXED: Used SCAN instead of KEYS to avoid blocking Redis
    */
   private async _invalidateNotificationCache(recipientId: string): Promise<void> {
     try {
-      // Delete all cache keys for this user's notifications
       const pattern = `notifications:${recipientId}:*`;
-      const keys = await redisClient.keys(pattern);
-      if (keys.length > 0) {
-        // ✅ FIXED: Delete keys one by one or use array spread with proper typing
-        // Redis v5 del() accepts multiple keys, but TypeScript needs proper typing
-        for (const key of keys) {
-          await redisClient.del(key);
+      
+      // Use scanIterator for non-blocking iteration
+      // Note: check your redis client version for syntax. 
+      // If scanIterator is not available, we implement manual scan loop.
+      // Assuming node-redis v4+
+      
+      const keysToDelete: string[] = [];
+      for await (const result of redisClient.scanIterator({
+        MATCH: pattern,
+        COUNT: 100
+      })) {
+        // Handle potential array yield from scanIterator (based on ts error)
+        if (Array.isArray(result)) {
+           keysToDelete.push(...result);
+        } else {
+           keysToDelete.push(result);
         }
-        logger.info(`Invalidated ${keys.length} notification cache keys for user ${recipientId}`);
       }
+
+      if (keysToDelete.length > 0) {
+        // Delete in batches to avoid large payloads
+        const batchSize = 1000;
+        for (let i = 0; i < keysToDelete.length; i += batchSize) {
+          const batch = keysToDelete.slice(i, i + batchSize);
+          // Loop through keys to avoid spread/type issues
+          if (batch.length > 0) {
+            for (const key of batch) {
+              await redisClient.del(key);
+            }
+          }
+        }
+        logger.info(`Invalidated ${keysToDelete.length} notification list cache keys for user ${recipientId}`);
+      }
+
+      // 2. Delete unread count cache key to force refetch
+      const unreadCacheKey = `notifications:unread:${recipientId}`;
+      await redisClient.del(unreadCacheKey);
+      logger.info(`Invalidated unread count cache for user ${recipientId}`);
     } catch (error: unknown) {
       logger.error("Error invalidating notification cache", {
         error: (error as Error).message,
@@ -887,6 +1028,14 @@ export class NotificationsRepository
       });
 
       // Version check: ignore out-of-order events
+      if (version === undefined || version === null || isNaN(Number(version))) {
+        logger.warn(`Missing or invalid version in ${notificationType} event, defaulting to current timestamp`, {
+          entityId,
+          version,
+        });
+        version = Date.now();
+      }
+
       const versionBigInt = BigInt(version);
       if (existingObject && versionBigInt <= existingObject.version) {
         logger.info(`Ignoring out-of-order ${notificationType} event`, {
@@ -1295,6 +1444,8 @@ export class NotificationsRepository
           return "liked your post";
         } else if (entityType === EntityType.COMMENT) {
           return "liked your comment";
+        } else if (entityType === EntityType.PROJECT) {
+          return "liked your project";
         }
         return "liked";
         
@@ -1316,6 +1467,18 @@ export class NotificationsRepository
         
       case NotificationType.NEW_MESSAGE:
         return "sent you a post";
+
+      case NotificationType.CHAT_MESSAGE:
+        return "sent you a message";
+        
+      case NotificationType.SHARE:
+        if (entityType === EntityType.PROJECT) {
+          return "shared your project";
+        }
+        return "shared your post";
+        
+      case NotificationType.REPORT:
+        return "reported your content";
         
       case NotificationType.ROOM_REMINDER:
         return "reminder";
@@ -1324,4 +1487,33 @@ export class NotificationsRepository
         return "interacted with your content";
     }
   }
+
+  async deleteUserNotifications(userId: string): Promise<void> {
+    try {
+      logger.info(`🗑️ Purging notification records for user: ${userId}`);
+      
+      await prisma.$transaction([
+        // 1. Delete user from being a recipient (most common)
+        prisma.notificationRecipient.deleteMany({
+          where: { recipientId: userId },
+        }),
+        
+        // 2. Delete user from being an actor
+        prisma.notificationActor.deleteMany({
+          where: { actorId: userId },
+        }),
+      ]);
+
+      // 3. Clear the user info cache for this user
+      this.userInfoCache.delete(userId);
+
+      logger.info(`✅ Successfully purged notification data for user: ${userId}`);
+    } catch (error: any) {
+      logger.error(`❌ Failed to purge notification data for user: ${userId}`, {
+        error: error.message,
+      });
+      throw new Error("Database error during notification cleanup");
+    }
+  }
 }
+

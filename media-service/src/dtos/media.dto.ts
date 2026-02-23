@@ -8,6 +8,7 @@ export enum MediaType {
   CHAT_VIDEO = 'CHAT_VIDEO',
   CHAT_AUDIO = 'CHAT_AUDIO',
   CHAT_FILE = 'CHAT_FILE',
+  COVER_IMAGE = 'COVER_IMAGE',
 }
 
 export class CreateUploadSessionDto {
@@ -23,7 +24,7 @@ export class CreateUploadSessionDto {
   @Min(1, { message: "FileSize must be greater than 0" })
   fileSize!: number;
 
-  @IsEnum(MediaType, { message: "Valid MediaType is required (IMAGE or VIDEO)" })
+  @IsEnum(MediaType, { message: "Valid MediaType is required" })
   mediaType!: MediaType;
 }
 

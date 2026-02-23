@@ -112,6 +112,7 @@ message GetProfileResponse {
   string company = 11;
   string yearsOfExperience = 12;
   bool emailVerified = 13;
+  string coverImage = 14;
 }
 
 message UpdateProfileRequest {
@@ -125,6 +126,7 @@ message UpdateProfileRequest {
   string jobTitle = 8;
   string company = 9;
   string yearsOfExperience = 10;
+  string coverImage = 11;
 }
 
 message UpdateProfileResponse {
@@ -141,6 +143,7 @@ message UpdateProfileResponse {
   string company = 11;
   string yearsOfExperience = 12;
   bool emailVerified = 13;
+  string coverImage = 14;
 }
 
 message VerifyRefreshTokenRequest {

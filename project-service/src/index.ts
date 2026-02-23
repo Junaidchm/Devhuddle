@@ -14,6 +14,7 @@ import { ProjectLikeRepository } from "./repositories/impliments/project.like.re
 import { ProjectShareRepository } from "./repositories/impliments/project.share.repository";
 import { ProjectReportRepository } from "./repositories/impliments/project.report.repository";
 import { ProjectMediaRepository } from "./repositories/impliments/project.media.repository";
+import { ProjectCommentRepository } from "./repositories/impliments/project.comment.repository";
 import { OutboxRepository } from "./repositories/impliments/outbox.repository";
 import { IdempotencyRepository } from "./repositories/impliments/idempotency.repository";
 
@@ -23,6 +24,7 @@ import { ProjectLikeService } from "./services/impliments/project.like.service";
 import { ProjectShareService } from "./services/impliments/project.share.service";
 import { ProjectReportService } from "./services/impliments/project.report.service";
 import { ProjectMediaService } from "./services/impliments/project.media.service";
+import { ProjectCommentService } from "./services/impliments/project.comment.service";
 import { OutboxService } from "./services/impliments/outbox.service";
 
 // Import controllers
@@ -31,10 +33,15 @@ import { ProjectLikeController } from "./controllers/impliments/project.like.con
 import { ProjectShareController } from "./controllers/impliments/project.share.controller";
 import { ProjectReportController } from "./controllers/impliments/project.report.controller";
 import { ProjectMediaController } from "./controllers/impliments/project.media.controller";
+import { ProjectCommentController } from "./controllers/impliments/project.comment.controller";
 
 // Import routes
 import { setupProjectRoutes } from "./routes/project.routes";
+import { setupAdminRoutes } from "./routes/admin.routes";
 import { disconnectProducer, disconnectAdmin } from "./utils/kafka.util";
+import { startAdminConsumer } from "./consumers/admin.consumer";
+import { AdminService } from "./services/impliments/admin.service";
+import { AdminController } from "./controllers/impliments/admin.controller";
 
 dotenv.config();
 
@@ -63,6 +70,7 @@ const likeRepository = new ProjectLikeRepository();
 const shareRepository = new ProjectShareRepository();
 const reportRepository = new ProjectReportRepository();
 const mediaRepository = new ProjectMediaRepository();
+const commentRepository = new ProjectCommentRepository();
 const outboxRepository = new OutboxRepository();
 const idempotencyRepository = new IdempotencyRepository();
 
@@ -91,6 +99,15 @@ const reportService = new ProjectReportService(
   outboxService
 );
 const mediaService = new ProjectMediaService(mediaRepository);
+const commentService = new ProjectCommentService(
+  commentRepository,
+  projectRepository,
+  outboxService
+);
+const adminService = new AdminService(
+  projectRepository,
+  reportRepository
+);
 
 // Initialize controllers
 const projectController = new ProjectController(projectService);
@@ -98,18 +115,24 @@ const likeController = new ProjectLikeController(likeService);
 const shareController = new ProjectShareController(shareService);
 const reportController = new ProjectReportController(reportService);
 const mediaController = new ProjectMediaController(mediaService);
+const commentController = new ProjectCommentController(commentService);
+const adminController = new AdminController(adminService);
 
 // Setup routes
 const projectRouter = setupProjectRoutes(
   projectController,
   likeController,
+  commentController,
   shareController,
   reportController,
   mediaController,
   idempotencyRepository
 );
 
-app.use("/api/v1", projectRouter);
+const adminRouter = setupAdminRoutes(adminController);
+
+app.use("/", projectRouter);
+app.use("/admin", adminRouter);
 
 app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({ status: "Project service is running" });
@@ -233,8 +256,10 @@ const startOutboxProcessor = () => {
   logger.info("Outbox processor started");
 };
 
-startServer().then(() => {
+startServer().then(async () => {
   startOutboxProcessor();
+  await startAdminConsumer();
+  logger.info("Admin enforcement consumer started");
 });
 
 // Graceful shutdown

@@ -108,7 +108,7 @@ async function optionalJwtMiddleware(
     next();
   } catch (err) {
     // If validation fails, just continue without user data
-    logger.info(`[ConditionalJWT] Optional JWT validation failed, continuing without auth: ${err}`);
+    // logger.info(`[ConditionalJWT] Optional JWT validation failed, continuing without auth: ${err}`);
     next();
   }
 }
@@ -125,19 +125,19 @@ export default function conditionalJwtMiddleware(
   // Debug logging (can be removed in production)
   const isPublic = isPublicRoute(fullPath);
   if (isPublic) {
-    logger.info(`[ConditionalJWT] Public route detected: ${fullPath}, skipping JWT validation`);
+    // logger.info(`[ConditionalJWT] Public route detected: ${fullPath}, skipping JWT validation`);
     return next();
   }
   
   // Check if route works with optional JWT
   const isOptional = isOptionalJwtRoute(fullPath);
   if (isOptional) {
-    logger.info(`[ConditionalJWT] Optional JWT route: ${fullPath}, validating JWT if present`);
+    // logger.info(`[ConditionalJWT] Optional JWT route: ${fullPath}, validating JWT if present`);
     return optionalJwtMiddleware(req, res, next);
   }
   
   // For protected routes, apply JWT validation
-  logger.info(`[ConditionalJWT] Protected route: ${fullPath}, applying JWT validation`);
+  // logger.info(`[ConditionalJWT] Protected route: ${fullPath}, applying JWT validation`);
   return jwtMiddleware(req, res, next);
 }
 

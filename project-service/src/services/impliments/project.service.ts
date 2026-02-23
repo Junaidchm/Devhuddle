@@ -175,7 +175,7 @@ export class ProjectService implements IProjectService {
       }
 
       // Track view (async, don't wait)
-      this._projectRepository.incrementViews(req.projectId).catch((err) => {
+      this._projectRepository.trackView(req.projectId, req.userId).catch((err) => {
         logger.error("Error tracking view", { error: err.message });
       });
 
@@ -219,6 +219,32 @@ export class ProjectService implements IProjectService {
         where.tags = { hasSome: req.tags };
       }
 
+      if (req.filter === "my-projects") {
+        if (!req.userId) {
+          throw new CustomError(grpc.status.UNAUTHENTICATED, "User ID required for My Projects filter");
+        }
+        where.userId = req.userId;
+      }
+
+      // Time period filter
+      if (req.period && req.period !== "all-time") {
+        const now = new Date();
+        if (req.period === "this-week") {
+          const weekAgo = new Date();
+          weekAgo.setDate(now.getDate() - 7);
+          where.createdAt = { gte: weekAgo };
+        } else if (req.period === "this-month") {
+          const monthAgo = new Date();
+          monthAgo.setMonth(now.getMonth() - 1);
+          where.createdAt = { gte: monthAgo };
+        }
+      }
+
+      // Author filter (for profile page)
+      if (req.authorId) {
+        where.userId = req.authorId;
+      }
+
       const projects = await this._projectRepository.listProjects(options);
       const hasMore = projects.length > PAGE_SIZE;
       const items = projects.slice(0, PAGE_SIZE);
@@ -243,7 +269,7 @@ export class ProjectService implements IProjectService {
             likesCount: proto.engagement?.likesCount ?? 0,
             commentsCount: proto.engagement?.commentsCount ?? 0,
             sharesCount: proto.engagement?.sharesCount ?? 0,
-            viewsCount: proto.engagement?.viewsCount ?? 0,
+            viewsCount: req.userId === project.userId ? (proto.engagement?.viewsCount ?? 0) : 0,
             isLiked: userLikesMap[project.id] || false,
             isShared: userSharesMap[project.id] || false,
           },
@@ -346,6 +372,19 @@ export class ProjectService implements IProjectService {
         where: {},
       };
 
+      if (req.period && req.period !== "all-time") {
+        const now = new Date();
+        if (req.period === "this-week") {
+          const weekAgo = new Date();
+          weekAgo.setDate(now.getDate() - 7);
+          options.where = { ...options.where, createdAt: { gte: weekAgo } };
+        } else if (req.period === "this-month") {
+          const monthAgo = new Date();
+          monthAgo.setMonth(now.getMonth() - 1);
+          options.where = { ...options.where, createdAt: { gte: monthAgo } };
+        }
+      }
+
       const projects = await this._projectRepository.getTrendingProjects(options);
       const hasMore = projects.length > PAGE_SIZE;
       const items = projects.slice(0, PAGE_SIZE);
@@ -370,7 +409,7 @@ export class ProjectService implements IProjectService {
             likesCount: proto.engagement?.likesCount ?? 0,
             commentsCount: proto.engagement?.commentsCount ?? 0,
             sharesCount: proto.engagement?.sharesCount ?? 0,
-            viewsCount: proto.engagement?.viewsCount ?? 0,
+            viewsCount: req.userId === project.userId ? (proto.engagement?.viewsCount ?? 0) : 0,
             isLiked: userLikesMap[project.id] || false,
             isShared: userSharesMap[project.id] || false,
           },
@@ -392,12 +431,31 @@ export class ProjectService implements IProjectService {
   async getTopProjects(req: GetTopProjectsRequest): Promise<GetTopProjectsResponse> {
     try {
       const PAGE_SIZE = req.limit || 10;
+      const where: Prisma.ProjectWhereInput = {};
       const options: ProjectSelectOptions = {
         take: PAGE_SIZE + 1,
         skip: req.pageParam ? 1 : 0,
         cursor: req.pageParam ? { id: req.pageParam } : undefined,
-        where: {},
+        orderBy: [
+          { likesCount: "desc" },
+          { commentsCount: "desc" },
+          { sharesCount: "desc" },
+        ],
+        where,
       };
+
+      if (req.period && req.period !== "all-time") {
+        const now = new Date();
+        if (req.period === "this-week") {
+          const weekAgo = new Date();
+          weekAgo.setDate(now.getDate() - 7);
+          where.createdAt = { gte: weekAgo };
+        } else if (req.period === "this-month") {
+          const monthAgo = new Date();
+          monthAgo.setMonth(now.getMonth() - 1);
+          where.createdAt = { gte: monthAgo };
+        }
+      }
 
       const projects = await this._projectRepository.getTopProjects(options);
       const hasMore = projects.length > PAGE_SIZE;
@@ -423,7 +481,7 @@ export class ProjectService implements IProjectService {
             likesCount: proto.engagement?.likesCount ?? 0,
             commentsCount: proto.engagement?.commentsCount ?? 0,
             sharesCount: proto.engagement?.sharesCount ?? 0,
-            viewsCount: proto.engagement?.viewsCount ?? 0,
+            viewsCount: req.userId === project.userId ? (proto.engagement?.viewsCount ?? 0) : 0,
             isLiked: userLikesMap[project.id] || false,
             isShared: userSharesMap[project.id] || false,
           },
@@ -470,7 +528,7 @@ export class ProjectService implements IProjectService {
             likesCount: proto.engagement?.likesCount ?? 0,
             commentsCount: proto.engagement?.commentsCount ?? 0,
             sharesCount: proto.engagement?.sharesCount ?? 0,
-            viewsCount: proto.engagement?.viewsCount ?? 0,
+            viewsCount: req.userId === project.userId ? (proto.engagement?.viewsCount ?? 0) : 0,
             isLiked: userLikesMap[project.id] || false,
             isShared: userSharesMap[project.id] || false,
           },
@@ -489,7 +547,7 @@ export class ProjectService implements IProjectService {
 
   async trackProjectView(req: TrackProjectViewRequest): Promise<TrackProjectViewResponse> {
     try {
-      await this._projectRepository.incrementViews(req.projectId);
+      await this._projectRepository.trackView(req.projectId, req.userId);
       const project = await this._projectRepository.findProject(req.projectId);
       
       return {

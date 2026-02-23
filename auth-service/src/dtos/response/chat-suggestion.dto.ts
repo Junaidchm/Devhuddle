@@ -8,6 +8,7 @@ export interface ChatSuggestionDto {
   fullName: string;
   profilePhoto?: string;
   bio?: string;
+  jobTitle?: string;
   skills?: string[];
 }
 

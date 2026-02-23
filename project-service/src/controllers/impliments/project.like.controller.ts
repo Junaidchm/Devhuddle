@@ -17,7 +17,7 @@ export class ProjectLikeController {
       const userId = getUserIdFromRequest(req);
 
       const result = await this._likeService.likeProject({
-        projectId,
+        projectId: projectId as string,
         userId,
       });
 
@@ -41,7 +41,7 @@ export class ProjectLikeController {
       const userId = getUserIdFromRequest(req);
 
       const result = await this._likeService.unlikeProject({
-        projectId,
+        projectId: projectId as string,
         userId,
       });
 

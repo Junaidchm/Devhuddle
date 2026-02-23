@@ -11,23 +11,32 @@ import { CustomError } from "../../utils/error.util";
 import logger from "../../utils/logger.util";
 import { KAFKA_TOPICS } from "../../config/kafka.config";
 import { OutboxAggregateType, OutboxEventType, ReportReason } from "@prisma/client";
+import { adminServiceClient } from "../../clients/admin.client";
+import { createCircuitBreaker } from "../../utils/circuit.breaker.util";
 
 export class ProjectReportService implements IProjectReportService {
+  private _submitReportBreaker;
+
   constructor(
     private _reportRepository: IProjectReportRepository,
     private _projectRepository: IProjectRepository,
     private outboxService?: IOutboxService
-  ) {}
+  ) {
+    this._submitReportBreaker = createCircuitBreaker(
+      adminServiceClient.submitReport.bind(adminServiceClient),
+      "AdminHub.SubmitReport"
+    );
+  }
 
   async reportProject(req: ReportProjectRequest): Promise<ReportProjectResponse> {
     try {
-      // Validate project exists
+      // 1. Local Validation: Validate project exists
       const project = await this._projectRepository.findProject(req.projectId);
       if (!project) {
         throw new CustomError(grpc.status.NOT_FOUND, "Project not found");
       }
 
-      // Validate reason
+      // 2. Local Validation: Validate reason
       const validReasons = Object.values(ReportReason);
       if (!validReasons.includes(req.reason as ReportReason)) {
         throw new CustomError(
@@ -36,37 +45,35 @@ export class ProjectReportService implements IProjectReportService {
         );
       }
 
-      // Check if already reported
-      const existingReport = await this._reportRepository.findReport(
-        req.reporterId,
-        req.projectId
-      );
-      if (existingReport) {
-        throw new CustomError(
-          grpc.status.ALREADY_EXISTS,
-          "Project already reported by this user"
-        );
+      // 3. Centralized Ingestion: Forward to Admin Hub via gRPC (Circuit Breaker protected)
+      logger.info("Forwarding project report to Admin Hub", { 
+        reporterId: req.reporterId, 
+        projectId: req.projectId 
+      });
+
+      const adminHubResponse = await this._submitReportBreaker.fire({
+        reporterId: req.reporterId,
+        targetId: req.projectId,
+        targetType: "PROJECT",
+        reason: req.reason,
+        description: "", // Description could be from metadata if needed
+        metadata: req.metadata || "{}",
+      });
+
+      if (!adminHubResponse.success) {
+        throw new CustomError(grpc.status.UNAVAILABLE, adminHubResponse.message);
       }
 
-      // Parse metadata if provided
-      let metadata = null;
-      if (req.metadata) {
-        try {
-          metadata = JSON.parse(req.metadata);
-        } catch (e) {
-          logger.warn("Invalid metadata JSON", { metadata: req.metadata });
-        }
-      }
-
-      // Create report
+      // 4. Local Side-effects: Still save to local DB for local counters/analytics if required
+      // The schema has `reportsCount` in Project model which might be updated via triggers or outbox
       const report = await this._reportRepository.createReport({
         reporterId: req.reporterId,
         projectId: req.projectId,
         reason: req.reason as ReportReason,
-        metadata,
+        metadata: req.metadata ? JSON.parse(req.metadata) : null,
       });
 
-      // Publish event
+      // 5. Publish local event for counters/analytics fan-out
       if (this.outboxService) {
         await this.outboxService.createOutboxEvent({
           aggregateType: OutboxAggregateType.PROJECT_REPORT,
@@ -75,16 +82,21 @@ export class ProjectReportService implements IProjectReportService {
           topic: KAFKA_TOPICS.PROJECT_REPORT_CREATED,
           key: report.id,
           payload: {
+            dedupeId: `report-${report.id}-${Date.now()}`,
             reportId: report.id,
+            adminHubReportId: adminHubResponse.reportId,
             projectId: req.projectId,
             reporterId: req.reporterId,
+            projectAuthorId: project.userId,
             reason: req.reason,
+            version: Date.now(),
+            eventTimestamp: new Date().toISOString(),
           },
         });
       }
 
       return {
-        reportId: report.id,
+        reportId: adminHubResponse.reportId,
         success: true,
       };
     } catch (err: unknown) {

@@ -4,6 +4,7 @@ export interface User {
     username: string;
     role: string;
     profilePicture: string | null;
+    coverImage?: string | null;
     name: string;
     password: string;
     location: string | null;
@@ -28,7 +29,8 @@ export interface ProfileUpdatePayload {
   yearsOfExperience?: string;
   jobTitle?: string;
   company?: string;
-  profilePicture?: string
+  profilePicture?: string;
+  coverImage?: string;
 }
 
 

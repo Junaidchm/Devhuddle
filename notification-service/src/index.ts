@@ -9,6 +9,8 @@ import dlqRoutes from "./routes/dlq.routes";
 import { WebSocketService } from "./utils/websocket.util";
 import { startDLQConsumer } from "./consumers/dlq.consumers";
 import { startEngagementConsumer } from "./consumers/engagement.consumer";
+import { startChatConsumer } from "./consumers/chat.consumer";
+import { startUserConsumer } from "./consumers/user.consumer";
 
 const app: Express = express();
 const server = createServer(app);
@@ -55,9 +57,8 @@ app.get("/health", (req: Request, res: Response) => {
 // So service receives: /api/v1/notifications/*
 
 // Notification routes: receives /api/v1/notifications/* from gateway
-const API_PREFIX = '/api/v1';
-app.use(`${API_PREFIX}/notifications`, notificationRoutes);
-app.use(`${API_PREFIX}/admin/dlq`, dlqRoutes);
+app.use(`/notifications`, notificationRoutes);
+app.use(`/admin/dlq`, dlqRoutes);
 
 // Error handling middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
@@ -81,6 +82,8 @@ const startServer = async () => {
     // Start Kafka consumers and pass WebSocket service instance
     await startFollowConsumer(wsService);
     await startEngagementConsumer(wsService);
+    await startChatConsumer(wsService);
+    await startUserConsumer(wsService);
     logger.info("All Kafka consumers started");
 
     // Start HTTP server

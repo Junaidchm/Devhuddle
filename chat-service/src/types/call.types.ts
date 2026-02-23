@@ -25,16 +25,20 @@ export interface CallStartPayload {
   type: 'call:start';
   conversationId: string;
   isVideoCall: boolean; // true for video, false for audio-only
+  targetUserIds?: string[]; // The selected participants (for groups)
+  callId?: string; // Will be returned to clients once initiated
 }
 
 export interface CallJoinPayload {
   type: 'call:join';
   conversationId: string;
+  callId?: string;
 }
 
 export interface CallSignalPayload {
   type: 'call:signal';
   conversationId: string;
+  callId?: string;
   targetUserId: string; // Who should receive this signal
   signalType: 'offer' | 'answer' | 'ice-candidate';
   signalData: RTCSessionDescriptionInit | RTCIceCandidateInit;
@@ -43,17 +47,20 @@ export interface CallSignalPayload {
 export interface CallLeavePayload {
   type: 'call:leave';
   conversationId: string;
+  callId?: string;
 }
 
 export interface CallEndPayload {
   type: 'call:end';
   conversationId: string;
+  callId?: string;
   reason?: string;
 }
 
 export interface CallToggleMediaPayload {
   type: 'call:toggle_media';
   conversationId: string;
+  callId?: string;
   mediaType: 'audio' | 'video' | 'screen';
   isEnabled: boolean;
 }
@@ -71,8 +78,10 @@ export type CallMessage =
 export interface CallIncomingEvent {
   type: 'call:incoming';
   conversationId: string;
+  callId?: string;
   callerId: string;
   callerName: string;
+  callerProfileImage?: string;
   isVideoCall: boolean;
   participants: string[]; // All userIds currently in call
 }
@@ -80,24 +89,28 @@ export interface CallIncomingEvent {
 export interface CallParticipantJoinedEvent {
   type: 'call:participant_joined';
   conversationId: string;
+  callId?: string;
   userId: string;
 }
 
 export interface CallParticipantLeftEvent {
   type: 'call:participant_left';
   conversationId: string;
+  callId?: string;
   userId: string;
 }
 
 export interface CallEndedEvent {
   type: 'call:ended';
   conversationId: string;
+  callId?: string;
   reason?: string;
 }
 
 export interface CallMediaToggledEvent {
   type: 'call:media_toggled';
   conversationId: string;
+  callId?: string;
   userId: string;
   mediaType: 'audio' | 'video' | 'screen';
   isEnabled: boolean;

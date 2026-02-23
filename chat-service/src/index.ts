@@ -3,7 +3,6 @@ import express from "express";
 import { createServer } from "http";
 import helmet from "helmet";
 import compression from "compression";
-import cors from "cors";
 import { WebSocketService } from "./utils/websocket.util";
 import { ChatRepository } from "./repositories/impliments/chat.repository";
 import { ChatService } from "./services/impliments/chat.service";
@@ -11,10 +10,19 @@ import { ChatController } from "./controllers/impliments/chat.controller";
 import { GroupController } from './controllers/impliments/group.controller';
 import { createChatRoutes } from "./routes/chat.routes";
 import { GroupService } from "./services/impliments/group.service";
+import { ReportService } from "./services/impliments/report.service";
+import { ReportController } from "./controllers/impliments/report.controller";
+import { AdminService } from "./services/impliments/admin.service";
+import { AdminController } from "./controllers/impliments/admin.controller";
+import { setupAdminRoutes } from "./routes/admin.routes";
 import { connectRedis } from "./config/redis.config";
 import { getProducer } from "./utils/kafka.util";
+import { startAdminConsumer } from "./consumers/admin.consumer";
 import logger from "./utils/logger.util";
 import { startGrpcServer } from "./grpc/server";
+import { MessageSagaService } from "./services/impliments/message.service";
+import { ChatActionService } from "./services/impliments/chat-action.service";
+import { CallRepository } from "./repositories/impliments/call.repository";
 
 const PORT = process.env.PORT || 4004;
 
@@ -24,7 +32,6 @@ const server = createServer(app);
 // Middleware
 app.use(helmet());
 app.use(compression());
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -50,39 +57,54 @@ async function startServer() {
         await getProducer();
         logger.info("✅ Kafka producer initialized");
 
+        // 2b. Start admin enforcement consumer
+        await startAdminConsumer();
+        logger.info("✅ Admin enforcement consumer started");
+
         // 3. Initialize services
         const chatRepository = new ChatRepository();
         
-        const chatService = new ChatService(chatRepository);
-        const groupService = new GroupService(chatRepository);
+        const messageSagaService = new MessageSagaService(chatRepository);
+        const chatActionService = new ChatActionService(chatRepository);
+        const chatService = new ChatService(messageSagaService, chatRepository, chatActionService);
+        const groupService = new GroupService(chatRepository, messageSagaService);
+        const reportService = new ReportService(chatRepository);
 
         const chatController = new ChatController(chatService);
         const groupController = new GroupController(groupService);
+        const reportController = new ReportController(reportService);
+        const adminService = new AdminService(chatRepository);
+        const adminController = new AdminController(adminService);
 
         logger.info("✅ Chat service initialized");
 
         // 4. Register REST API routes
-        const chatRoutes = createChatRoutes(chatController, groupController);
-        app.use('/api/v1/chat', chatRoutes);
+        const chatRoutes = createChatRoutes(chatController, groupController, reportController);
+        app.use('/chat', chatRoutes);
+
+        const adminRoutes = setupAdminRoutes(adminController);
+        app.use('/admin', adminRoutes);
+        
         logger.info("✅ REST API routes registered");
 
         // 5. Initialize WebSocket server
+        const callRepository = new CallRepository();
         logger.info("Initializing WebSocket server...");
-        new WebSocketService(server, chatService);
+        new WebSocketService(server, chatService, callRepository);
         logger.info("✅ WebSocket server initialized");
 
         // 7. Start HTTP server
-        server.listen(PORT, () => {
-            logger.info(`✅ Chat service HTTP running on port ${PORT}`);
+        server.listen(Number(PORT), "0.0.0.0", () => {
+            logger.info(`✅ Chat service HTTP running on 0.0.0.0:${PORT}`);
             
             // 8. Start gRPC server
             const GRPC_PORT = parseInt(process.env.GRPC_PORT || '50051');
             logger.info(`Starting gRPC server on port ${GRPC_PORT}...`);
             startGrpcServer(GRPC_PORT);
 
-            logger.info(`📡 WebSocket endpoint: ws://localhost:${PORT}/api/v1/chat`);
+            logger.info(`📡 WebSocket endpoint: ws://localhost:${PORT}/chat`);
             logger.info(`💚 Health check: http://localhost:${PORT}/health`);
-            logger.info(`🔌 REST API: http://localhost:${PORT}/api/v1/chat`);
+            logger.info(`🔌 REST API: http://localhost:${PORT}/chat`);
         });
 
     } catch (error) {
@@ -99,8 +121,9 @@ process.on("uncaughtException", (error) => {
     process.exit(1);
 });
 
-process.on("unhandledRejection", (reason) => {
-    logger.error("❌ Unhandled rejection", { reason });
+process.on("unhandledRejection", (reason: any) => {
+    const errorDetails = reason instanceof Error ? reason.stack || reason.message : reason;
+    logger.error("❌ Unhandled rejection", { reason: errorDetails });
     process.exit(1);
 });
 

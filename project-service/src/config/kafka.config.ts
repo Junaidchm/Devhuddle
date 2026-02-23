@@ -48,5 +48,10 @@ export const KAFKA_TOPICS = {
   PROJECT_MEDIA_PROCESSED: "project.media.processed.v1",
   PROJECT_MEDIA_UPLOADED_DLQ: "project.media.uploaded.v1-dlq",
   PROJECT_MEDIA_PROCESSED_DLQ: "project.media.processed.v1-dlq",
+
+  // Moderation events (Phase 2 Consolidation)
+  ADMIN_ACTION_ENFORCED: "admin-action-enforced",
+  USER_STATE_TOGGLED: "user-state-toggled",
+  USER_DELETED: "user-events",
 } as const;
 

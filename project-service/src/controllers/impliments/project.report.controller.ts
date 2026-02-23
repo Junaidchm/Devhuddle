@@ -19,10 +19,10 @@ export class ProjectReportController {
       // Validation handled by DTO
 
       const result = await this._reportService.reportProject({
-        projectId,
-        reporterId,
+        projectId: projectId as string,
+        reporterId: reporterId,
         reason,
-        metadata: metadata ? JSON.stringify(metadata) : undefined,
+        metadata,
       });
 
       res.status(HttpStatus.OK).json({

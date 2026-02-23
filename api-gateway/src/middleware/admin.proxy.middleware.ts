@@ -6,43 +6,42 @@ import { Request, Response, NextFunction } from "express";
 /**
  * Admin Service Proxy
  * 
- * Proxies admin routes to Post Service:
+ * Proxies admin routes to Auth Service (Centralized Admin Hub):
  * - /api/v1/admin/reports -> /api/v1/admin/reports
- * - /api/v1/admin/posts -> /api/v1/admin/posts
- * - /api/v1/admin/comments -> /api/v1/admin/comments
- * - /api/v1/admin/analytics -> /api/v1/admin/analytics
+ * - /api/v1/admin/users -> /api/v1/admin/users
+ * - /api/v1/admin/audit-logs -> /api/v1/admin/audit-logs
  * 
- * Pattern: Forwards directly to post-service (no path rewrite needed)
+ * Pattern: Forwards directly to auth-service (no path rewrite needed)
  */
 
-// Validate that POST_SERVICE_URL is set
-if (!app_config.postServiceUrl) {
+// Validate that AUTH_SERVICE_URL is set
+if (!app_config.authServiceUrl) {
   logger.warn(
-    "[Admin Proxy] POST_SERVICE_URL is not set. Admin service proxy will not be available."
+    "[Admin Proxy] AUTH_SERVICE_URL is not set. Admin service proxy will not be available."
   );
 }
 
 // Fallback middleware that returns 503 if service is not configured
 const fallbackMiddleware = (req: Request, res: Response, next: NextFunction) => {
   logger.warn(
-    `[Admin Proxy] Request to ${req.url} but POST_SERVICE_URL is not configured`
+    `[Admin Proxy] Request to ${req.url} but AUTH_SERVICE_URL is not configured`
   );
   res.status(503).json({
     error: "Service Unavailable",
-    message: "Admin service is not configured. Please set POST_SERVICE_URL environment variable.",
+    message: "Admin service is not configured. Please set AUTH_SERVICE_URL environment variable.",
   });
 };
 
 // Only create proxy if URL is configured, otherwise use fallback
-export const adminServiceProxy = app_config.postServiceUrl
+export const adminServiceProxy = app_config.authServiceUrl
   ? createProxyMiddleware({
-      target: app_config.postServiceUrl,
+      target: app_config.authServiceUrl,
       changeOrigin: true,
-      // No path rewrite - forward as-is
-      // /api/v1/admin/reports -> /api/v1/admin/reports
+      // Remove /api/v1 prefix, forward the rest (/admin/...)
+      pathRewrite: { "^/api/v1": "" },
       onProxyReq: (proxyReq, req: any, res) => {
         logger.info(
-          `[Admin Proxy] Forwarding ${req.method} ${req.originalUrl} to ${app_config.postServiceUrl}${req.url}`
+          `[Admin Proxy] Forwarding ${req.method} ${req.originalUrl} to ${app_config.authServiceUrl}${req.url}`
         );
 
         // Forward user data from JWT middleware if available
@@ -53,7 +52,7 @@ export const adminServiceProxy = app_config.postServiceUrl
         }
 
         // CRITICAL: Handle request body for POST/PUT/PATCH requests
-        if (req.method !== "GET" && req.method !== "HEAD" && req.body && Object.keys(req.body).length > 0) {
+        if (req.method !== "GET" && req.method !== "HEAD" && req.body) {
           const bodyData = JSON.stringify(req.body);
           const bodyLength = Buffer.byteLength(bodyData);
           

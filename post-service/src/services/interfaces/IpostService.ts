@@ -22,7 +22,8 @@ export interface IpostService {
     pageParam?: string,
     userId?: string,
     authorId?: string,
-    sortBy?: string // 'RECENT' | 'TOP'
+    sortBy?: string, // 'RECENT' | 'TOP'
+    limit?: number // Add limit parameter
   ): Promise<ListPostsResponse>;
   getPostById(postId: string, userId?: string): Promise<any>;
   submitPost(req: SubmitPostRequest): Promise<SubmitPostResponse>;

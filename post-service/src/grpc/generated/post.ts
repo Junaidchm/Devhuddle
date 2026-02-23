@@ -185,6 +185,7 @@ export interface CreatePostResponse {
 export interface ListPostsRequest {
   pageParam?: string | undefined;
   userId?: string | undefined;
+  limit: number;
 }
 
 export interface ListPostsResponse {
@@ -2181,7 +2182,7 @@ export const CreatePostResponse: MessageFns<CreatePostResponse> = {
 };
 
 function createBaseListPostsRequest(): ListPostsRequest {
-  return { pageParam: undefined, userId: undefined };
+  return { pageParam: undefined, userId: undefined, limit: 0 };
 }
 
 export const ListPostsRequest: MessageFns<ListPostsRequest> = {
@@ -2191,6 +2192,9 @@ export const ListPostsRequest: MessageFns<ListPostsRequest> = {
     }
     if (message.userId !== undefined) {
       writer.uint32(18).string(message.userId);
+    }
+    if (message.limit !== 0) {
+      writer.uint32(24).int32(message.limit);
     }
     return writer;
   },
@@ -2218,6 +2222,14 @@ export const ListPostsRequest: MessageFns<ListPostsRequest> = {
           message.userId = reader.string();
           continue;
         }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.limit = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2231,6 +2243,7 @@ export const ListPostsRequest: MessageFns<ListPostsRequest> = {
     return {
       pageParam: isSet(object.pageParam) ? globalThis.String(object.pageParam) : undefined,
       userId: isSet(object.userId) ? globalThis.String(object.userId) : undefined,
+      limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
     };
   },
 
@@ -2242,6 +2255,9 @@ export const ListPostsRequest: MessageFns<ListPostsRequest> = {
     if (message.userId !== undefined) {
       obj.userId = message.userId;
     }
+    if (message.limit !== 0) {
+      obj.limit = Math.round(message.limit);
+    }
     return obj;
   },
 
@@ -2252,6 +2268,7 @@ export const ListPostsRequest: MessageFns<ListPostsRequest> = {
     const message = createBaseListPostsRequest();
     message.pageParam = object.pageParam ?? undefined;
     message.userId = object.userId ?? undefined;
+    message.limit = object.limit ?? 0;
     return message;
   },
 };

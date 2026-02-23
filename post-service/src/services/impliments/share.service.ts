@@ -128,6 +128,11 @@ export class ShareService implements IShareService {
           visibility: effectiveVisibility,
           sharedToUserId: finalTargetId,
           caption: sanitizedCaption,
+          // Notifications consistency
+          senderId: userId,
+          recipientId: post.userId, // Notify original author
+          action: "POST_SHARED",
+          version: Date.now(),
         },
       });
 

@@ -2,7 +2,7 @@ import { IChatRepository, ConversationWithMetadata } from "../interfaces/IChatRe
 import { BaseRepository } from "./base.repository";
 import prisma from "../../config/db";
 import logger from "../../utils/logger.util";
-import { Message, Conversation, Prisma, Participant } from "@prisma/client";
+import { Message, Conversation, Prisma, Participant, Report as PrismaReport } from "@prisma/client";
 
 export class ChatRepository extends BaseRepository<
     typeof prisma.message,
@@ -19,7 +19,14 @@ export class ChatRepository extends BaseRepository<
     async createMessage(data: Prisma.MessageCreateInput): Promise<Message> {
         try {
             logger.info("👉 [DEBUG] ChatRepository.createMessage called", { data: JSON.stringify(data) });
-            return await super.create(data);
+            // Override base create to include relations
+            return await this.model.create({
+                data,
+                include: {
+                    replyTo: true,
+                    reactions: true
+                }
+            });
         } catch (error) {
             logger.error("Error creating message", { error: (error as Error).message });
             throw new Error("Database error");
@@ -28,24 +35,75 @@ export class ChatRepository extends BaseRepository<
 
     async getMessagesByConversationId(
         conversationId: string,
+        userId: string,
         limit: number,
         offset: number,
         before?: Date
     ): Promise<Message[]> {
         try {
+            // Find user's participant record to check lastClearedAt
+            const participant = await prisma.participant.findUnique({
+                where: { userId_conversationId: { userId, conversationId } }
+            });
+
             return await this.model.findMany({
                 where: {
                     conversationId,
-                    ...(before ? { createdAt: { lt: before } } : {})
+                    ...(before ? { createdAt: { lt: before } } : {}),
+                    ...(participant?.lastClearedAt ? { createdAt: { gt: participant.lastClearedAt } } : {}),
+                    NOT: {
+                        deletedFor: {
+                            has: userId
+                        }
+                    }
                 },
                 take: limit,
                 skip: before ? 0 : offset,
                 orderBy: {
                     createdAt: 'desc'
+                },
+                include: {
+                    replyTo: true,
+                    reactions: true
                 }
             });
         } catch (error) {
             logger.error("Error getting messages by conversation id", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async getMessagesByType(
+        conversationId: string,
+        userId: string,
+        types: string[],
+        limit: number,
+        offset: number
+    ): Promise<Message[]> {
+        try {
+            const participant = await prisma.participant.findUnique({
+                where: { userId_conversationId: { userId, conversationId } }
+            });
+
+            return await this.model.findMany({
+                where: {
+                    conversationId,
+                    type: { in: types as any },
+                    ...(participant?.lastClearedAt ? { createdAt: { gt: participant.lastClearedAt } } : {}),
+                    NOT: {
+                        deletedFor: {
+                            has: userId
+                        }
+                    }
+                },
+                take: limit,
+                skip: offset,
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            });
+        } catch (error) {
+            logger.error("Error getting messages by type", { error: (error as Error).message });
             throw new Error("Database error");
         }
     }
@@ -95,11 +153,13 @@ export class ChatRepository extends BaseRepository<
                 const newConversation = await prisma.conversation.create({
                     data: {
                         participantHash,
+                        lastMessageAt: new Date(), // Initialize timestamp for sorting
                         participants: {
                             create: participantIds.map((userId) => ({
                                 userId
                             }))
-                        }
+                        },
+                        memberCount: participantIds.length
                     },
                     include: {
                         participants: true
@@ -146,7 +206,8 @@ export class ChatRepository extends BaseRepository<
                 where: {
                     participants: {
                         some: {
-                            userId
+                            userId,
+                            deletedAt: null
                         }
                     }
                 },
@@ -177,7 +238,8 @@ export class ChatRepository extends BaseRepository<
                 where: {
                     participants: {
                         some: {
-                            userId
+                            userId,
+                            deletedAt: null
                         }
                     }
                 },
@@ -197,41 +259,57 @@ export class ChatRepository extends BaseRepository<
                 skip: offset
             });
 
-            // Calculate unread count for each conversation
-            const conversationsWithMetadata = await Promise.all(
-                conversations.map(async (conv) => {
-                    // Find current user's participant record
-                    const userParticipant = conv.participants.find(p => p.userId === userId);
+            // NEW: Get all unread counts in a single query to avoid N+1
+            const conversationIds = conversations.map(c => c.id);
+            const [unreadCounts, blockOps] = await Promise.all([
+                conversationIds.length > 0 
+                  ? prisma.$queryRaw<any[]>`
+                    SELECT m."conversationId", COUNT(m.id)::int as count
+                    FROM "Message" m
+                    JOIN "Participant" p ON m."conversationId" = p."conversationId"
+                    WHERE p."userId" = ${userId}
+                      AND m."senderId" != ${userId}
+                      AND m."createdAt" > p."lastReadAt"
+                      AND m."conversationId" IN (${Prisma.join(conversationIds)})
+                    GROUP BY m."conversationId"
+                `
+                : Promise.resolve([]),
+                this.getBlockRelationships(userId)
+            ]);
 
-                    // Count unread messages (messages after user's lastReadAt)
-                    const unreadCount = await prisma.message.count({
-                        where: {
-                            conversationId: conv.id,
-                            createdAt: {
-                                gt: userParticipant?.lastReadAt ?? new Date(0)
-                            },
-                            senderId: {
-                                not: userId // Don't count own messages
-                            }
-                        }
-                    });
+            const unreadCountMap = new Map(unreadCounts.map((uc: any) => [uc.conversationId, uc.count]));
 
-                    return {
-                        ...conv,
-                        lastMessage: conv.messages[0] || null,
-                        unreadCount
-                    };
-                })
-            );
+            const conversationsWithMetadata = conversations.map(conv => {
+                return {
+                    ...conv,
+                    lastMessage: conv.messages[0] || null,
+                    unreadCount: unreadCountMap.get(conv.id) || 0
+                };
+            });
 
-            logger.info("Retrieved conversations with metadata", {
+            const blockedByMe = new Set(blockOps.blockedByMe);
+            const blockedMe = new Set(blockOps.blockedMe);
+
+            const enrichedConversations = conversationsWithMetadata.map(conv => {
+                const otherParticipant = conv.type === 'DIRECT' 
+                    ? conv.participants.find(p => p.userId !== userId)
+                    : null;
+                
+                return {
+                    ...conv,
+                    isBlockedByMe: otherParticipant ? blockedByMe.has(otherParticipant.userId) : false,
+                    isBlockedByThem: otherParticipant ? blockedMe.has(otherParticipant.userId) : false
+                };
+            });
+
+            logger.info("Retrieved conversations with metadata and block status", {
                 userId,
-                count: conversationsWithMetadata.length,
+                count: enrichedConversations.length,
                 limit,
                 offset
             });
 
-            return conversationsWithMetadata;
+            return enrichedConversations as any;
         } catch (error) {
             logger.error("Error getting conversations with metadata", {
                 error: (error as Error).message,
@@ -338,6 +416,19 @@ export class ChatRepository extends BaseRepository<
         }
     }
 
+    async findMessageWithContext(messageId: string): Promise<(Message & { conversation: Conversation & { participants: Participant[] } }) | null> {
+        return await prisma.message.findUnique({
+            where: { id: messageId },
+            include: {
+                conversation: {
+                    include: {
+                        participants: true
+                    }
+                }
+            }
+        });
+    }
+
     /**
      * Mark all messages before a timestamp as READ (excluding sender's own messages)
      */
@@ -397,6 +488,119 @@ export class ChatRepository extends BaseRepository<
         }
     }
 
+    /**
+     * Create MessageReceipt records for all given users
+     */
+    async createMessageReceipts(messageId: string, userIds: string[]): Promise<void> {
+        try {
+            if (userIds.length === 0) return;
+            
+            await prisma.messageReceipt.createMany({
+                data: userIds.map(userId => ({
+                    messageId,
+                    userId
+                })),
+                skipDuplicates: true
+            });
+            logger.info("Created message receipts", { messageId, count: userIds.length });
+        } catch (error) {
+            logger.error("Error creating message receipts", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    /**
+     * Update a user's MessageReceipt status and trigger aggregation
+     */
+    async updateMessageReceipt(messageId: string, userId: string, status: 'DELIVERED' | 'READ'): Promise<void> {
+        try {
+            const updateData = status === 'DELIVERED' 
+                ? { deliveredAt: new Date() } 
+                : { seenAt: new Date() };
+
+            await prisma.messageReceipt.upsert({
+                where: {
+                    messageId_userId: { messageId, userId }
+                },
+                update: updateData,
+                create: {
+                    messageId,
+                    userId,
+                    ...updateData
+                }
+            });
+        } catch (error) {
+            logger.error("Error updating message receipt", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    /**
+     * Aggregate MessageReceipt statuses to dynamically update the root Message status
+     * Returns the updated Message
+     */
+    async aggregateMessageStatus(messageId: string): Promise<Message> {
+        try {
+            // Fetch message and its receipts separately to avoid type conflicts
+            const message = await prisma.message.findUnique({
+                where: { id: messageId }
+            });
+
+            if (!message) throw new Error("Message not found");
+
+            const statusStr = message.status as string;
+            // Avoid reverting already READ messages
+            if (statusStr === 'READ') return message;
+
+            let expectedCount = (message as any).expectedRecipientCount as number;
+            
+            // Fallback for direct chats if expectedRecipientCount is missing or 0
+            if ((expectedCount === 0 || expectedCount === undefined) && message.type !== 'SYSTEM') {
+                const conversation = await prisma.conversation.findUnique({
+                    where: { id: message.conversationId },
+                    select: { type: true }
+                });
+                if (conversation?.type === 'DIRECT') {
+                    expectedCount = 1;
+                }
+            }
+
+            if (expectedCount === 0 || expectedCount === undefined) return message;
+
+            const receipts = await prisma.messageReceipt.findMany({
+                where: { messageId }
+            });
+
+            const deliveredCount = receipts.filter((r: any) => r.deliveredAt !== null || r.seenAt !== null).length;
+            const seenCount = receipts.filter((r: any) => r.seenAt !== null).length;
+
+            let newStatusStr: string = statusStr;
+
+            if (seenCount >= expectedCount) {
+                newStatusStr = 'READ';
+            } else if (deliveredCount >= expectedCount && statusStr !== 'READ') {
+                newStatusStr = 'DELIVERED';
+            }
+
+            if (newStatusStr !== statusStr) {
+                const updateData: Prisma.MessageUpdateInput = { status: newStatusStr as any };
+                if (newStatusStr === 'DELIVERED') updateData.deliveredAt = new Date();
+                if (newStatusStr === 'READ') updateData.readAt = new Date();
+
+                return await prisma.message.update({
+                    where: { id: messageId },
+                    data: updateData,
+                    include: { replyTo: true, reactions: true }
+                });
+            }
+
+            return message;
+        } catch (error) {
+            logger.error("Error aggregating message status", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
 
     async createGroupConversation(
         creatorId: string, 
@@ -419,6 +623,7 @@ export class ChatRepository extends BaseRepository<
                 onlyAdminsCanPost,
                 onlyAdminsCanEditInfo,
                 topics,
+                memberCount: allParticipants.length,
                 participantHash, // Groups also get hash for easier debugging/consistency
                 participants: {
                     create: [
@@ -466,6 +671,94 @@ export class ChatRepository extends BaseRepository<
             }
         });
     }
+
+    async findMyGroups(
+        userId: string,
+        query?: string,
+        limit: number = 20,
+        offset: number = 0
+    ): Promise<(Conversation & { participants: Participant[] })[]> {
+        const whereClause: Prisma.ConversationWhereInput = {
+            type: 'GROUP',
+            participants: {
+                some: { userId }
+            },
+            ...(query ? {
+                OR: [
+                    { name: { contains: query, mode: 'insensitive' } },
+                    { description: { contains: query, mode: 'insensitive' } }
+                ]
+            } : {})
+        };
+
+        return await prisma.conversation.findMany({
+            where: whereClause,
+            include: {
+                participants: true
+            },
+            take: limit,
+            skip: offset,
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+    }
+
+    async findDiscoverGroups(
+        userId: string,
+        query?: string,
+        topics?: string[],
+        limit: number = 20,
+        offset: number = 0
+    ): Promise<(Conversation & { participants: Participant[] })[]> {
+        const whereClause: Prisma.ConversationWhereInput = {
+            type: 'GROUP',
+            participants: {
+                none: { userId }
+            },
+            ...(query ? {
+                OR: [
+                    { name: { contains: query, mode: 'insensitive' } },
+                    { description: { contains: query, mode: 'insensitive' } }
+                ]
+            } : {}),
+             ...(topics && topics.length > 0 ? {
+                topics: {
+                    hasSome: topics
+                }
+            } : {})
+        };
+
+        return await prisma.conversation.findMany({
+            where: whereClause,
+            include: {
+                participants: true
+            },
+            take: limit,
+            skip: offset,
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+    }
+
+    async getPopularTopics(limit: number = 10): Promise<{ topic: string, count: number }[]> {
+        try {
+            const result = await prisma.$queryRaw<{topic: string, count: number}[]>`
+                SELECT unnest(topics) as topic, count(*)::int as count 
+                FROM "Conversation" 
+                WHERE type = 'GROUP' 
+                GROUP BY topic 
+                ORDER BY count DESC 
+                LIMIT ${limit}
+            `;
+            return result;
+        } catch (error) {
+            logger.error("Error fetching popular topics", { error: (error as Error).message });
+            return [];
+        }
+    }
+
 
     async addParticipantToGroup(groupId: string, userId: string, role: 'ADMIN' | 'MEMBER' = 'MEMBER'): Promise<void> {
         await prisma.participant.create({
@@ -541,6 +834,434 @@ export class ChatRepository extends BaseRepository<
             }
         }) as (Participant & { role: 'ADMIN' | 'MEMBER' }) | null;
     }
+
+    async searchMessages(conversationId: string, userId: string, query: string): Promise<Message[]> {
+        try {
+            return await prisma.message.findMany({
+                where: {
+                    conversationId,
+                    content: {
+                        contains: query,
+                        mode: 'insensitive'
+                    },
+                    NOT: {
+                        deletedFor: {
+                            has: userId
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
+                },
+                take: 50
+            });
+        } catch (error) {
+            logger.error("Error searching messages", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+    async editMessage(messageId: string, content: string): Promise<Message> {
+        try {
+            return await prisma.message.update({
+                where: { id: messageId },
+                data: { content, updatedAt: new Date() }
+            });
+        } catch (error) {
+            logger.error("Error editing message", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async deleteMessage(messageId: string): Promise<void> {
+        try {
+            await prisma.message.update({
+                where: { id: messageId },
+                data: { 
+                    deletedForAll: true,
+                    content: "This message was deleted"
+                }
+            });
+        } catch (error) {
+            logger.error("Error deleting message", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async deleteMessageForMe(messageId: string, userId: string): Promise<void> {
+        try {
+            await prisma.message.update({
+                where: { id: messageId },
+                data: {
+                    deletedFor: { push: userId }
+                }
+            });
+        } catch (error) {
+            logger.error("Error deleting message for user", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async addReaction(messageId: string, userId: string, emoji: string): Promise<void> {
+        try {
+             // Check if already reacted
+            const existing = await prisma.messageReaction.findFirst({
+                where: { messageId, userId, emoji }
+            });
+
+            if (existing) return;
+
+            await prisma.messageReaction.create({
+                data: { messageId, userId, emoji }
+            });
+        } catch (error) {
+            logger.error("Error adding reaction", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async removeReaction(messageId: string, userId: string, emoji: string): Promise<void> {
+        try {
+            await prisma.messageReaction.deleteMany({
+                where: { messageId, userId, emoji }
+            });
+        } catch (error) {
+            logger.error("Error removing reaction", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async getReactions(messageId: string): Promise<any[]> {
+        try {
+            return await prisma.messageReaction.findMany({
+                where: { messageId }
+            });
+        } catch (error) {
+            logger.error("Error getting reactions", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async getUserReactionOnMessage(messageId: string, userId: string): Promise<any | null> {
+        try {
+            return await prisma.messageReaction.findFirst({
+                where: { messageId, userId }
+            });
+        } catch (error) {
+            logger.error("Error getting user reaction", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async pinMessage(messageId: string, userId: string): Promise<Message> {
+        try {
+            return await prisma.message.update({
+                where: { id: messageId },
+                data: { isPinned: true, pinnedAt: new Date(), pinnedBy: userId }
+            });
+        } catch (error) {
+            logger.error("Error pinning message", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async unpinMessage(messageId: string): Promise<Message> {
+        try {
+            return await prisma.message.update({
+                where: { id: messageId },
+                data: { isPinned: false, pinnedAt: null, pinnedBy: null }
+            });
+        } catch (error) {
+            logger.error("Error unpinning message", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async getPinnedMessages(conversationId: string, userId: string): Promise<Message[]> {
+        try {
+            return await prisma.message.findMany({
+                where: { 
+                    conversationId, 
+                    isPinned: true,
+                    NOT: {
+                        deletedFor: {
+                            has: userId
+                        }
+                    }
+                },
+                orderBy: { pinnedAt: 'desc' }
+            });
+        } catch (error) {
+            logger.error("Error getting pinned messages", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async blockUser(blockerId: string, blockedId: string): Promise<void> {
+        try {
+            await prisma.blockedUser.upsert({
+                where: { blockerId_blockedId: { blockerId, blockedId }},
+                update: {},
+                create: { blockerId, blockedId }
+            });
+        } catch (error) {
+            logger.error("Error blocking user", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async unblockUser(blockerId: string, blockedId: string): Promise<void> {
+        try {
+            await prisma.blockedUser.delete({
+                where: { blockerId_blockedId: { blockerId, blockedId }}
+            });
+        } catch (error) {
+            // Check if error is "Record to delete does not exist"
+             if ((error as any).code === 'P2025') {
+                return; // Already unblocked
+            }
+            logger.error("Error unblocking user", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async getBlockedUsers(userId: string): Promise<any[]> {
+        try {
+            return await prisma.blockedUser.findMany({
+                where: { blockerId: userId }
+            });
+        } catch (error) {
+             logger.error("Error getting blocked users", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async isUserBlocked(blockerId: string, blockedId: string): Promise<boolean> {
+        try {
+            const count = await prisma.blockedUser.count({
+                where: { 
+                    OR: [
+                        { blockerId, blockedId },
+                        { blockerId: blockedId, blockedId: blockerId }
+                    ]
+                }
+            });
+            return count > 0;
+        } catch (error) {
+             logger.error("Error checking check blocked status", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async getBlockRelationships(userId: string): Promise<{ blockedByMe: string[], blockedMe: string[] }> {
+        try {
+            const relationships = await prisma.blockedUser.findMany({
+                where: { OR: [{ blockerId: userId }, { blockedId: userId }] }
+            });
+            return {
+                blockedByMe: relationships.filter(r => r.blockerId === userId).map(r => r.blockedId),
+                blockedMe: relationships.filter(r => r.blockedId === userId).map(r => r.blockerId),
+            };
+        } catch (error) {
+             logger.error("Error getting block relationships", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async softDeleteConversation(conversationId: string, userId: string): Promise<void> {
+        try {
+            await prisma.participant.update({
+                where: { userId_conversationId: { userId, conversationId } },
+                data: { deletedAt: new Date(), lastClearedAt: new Date() }
+            });
+        } catch (error) {
+            logger.error("Error soft deleting conversation", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async clearChatHistory(conversationId: string, userId: string): Promise<void> {
+        try {
+            await prisma.participant.update({
+                where: { userId_conversationId: { userId, conversationId } },
+                data: { lastClearedAt: new Date() }
+            });
+        } catch (error) {
+            logger.error("Error clearing chat history", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async getCommonGroups(userId1: string, userId2: string): Promise<Conversation[]> {
+        try {
+            return await prisma.conversation.findMany({
+                where: {
+                    type: 'GROUP',
+                    AND: [
+                        { participants: { some: { userId: userId1 } } },
+                        { participants: { some: { userId: userId2 } } }
+                    ]
+                },
+                include: {
+                    participants: true
+                }
+            });
+        } catch (error) {
+            logger.error("Error getting common groups", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async saveMessageLinks(messageId: string, urls: string[]): Promise<void> {
+        try {
+            await prisma.messageLink.createMany({
+                data: urls.map(url => ({
+                    messageId,
+                    url,
+                    // Title and thumbnail extraction could be added here in the future
+                }))
+            });
+        } catch (error) {
+            logger.error("Error saving message links", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async getConversationLinks(conversationId: string, limit: number, offset: number): Promise<any[]> {
+        try {
+            return await prisma.messageLink.findMany({
+                where: {
+                    message: {
+                        conversationId
+                    }
+                },
+                take: limit,
+                skip: offset,
+                orderBy: {
+                    createdAt: 'desc'
+                },
+                include: {
+                    message: true
+                }
+            });
+        } catch (error) {
+            logger.error("Error getting conversation links", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    /**
+     * Delete ALL SYSTEM messages for a direct conversation.
+     * Called before creating a new block/unblock system message so that
+     * only 1 pill exists at a time, regardless of old content format.
+     */
+    async deleteBlockSystemMessages(conversationId: string): Promise<void> {
+        try {
+            await prisma.message.deleteMany({
+                where: {
+                    conversationId,
+                    type: 'SYSTEM'
+                }
+            });
+            logger.debug("Cleared all SYSTEM messages for conversation", { conversationId });
+        } catch (error) {
+            logger.error("Error deleting block system messages", { error: (error as Error).message, conversationId });
+            // Non-fatal — continue with new message creation
+        }
+    }
+
+    // Reporting
+    async createReport(data: Prisma.ReportCreateInput): Promise<PrismaReport> {
+        try {
+            return await prisma.report.create({ data });
+        } catch (error) {
+            logger.error("Error creating report", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async getReportsByConversationId(conversationId: string): Promise<PrismaReport[]> {
+        try {
+            return await prisma.report.findMany({
+                where: { conversationId },
+                orderBy: { createdAt: "desc" }
+            });
+        } catch (error) {
+            logger.error("Error getting reports", { error: (error as Error).message, conversationId });
+            throw new Error("Database error");
+        }
+    }
+
+    async findReportById(reportId: string): Promise<PrismaReport | null> {
+        try {
+            return await prisma.report.findUnique({
+                where: { id: reportId }
+            });
+        } catch (error) {
+            logger.error("Error finding report", { error: (error as Error).message, reportId });
+            throw new Error("Database error");
+        }
+    }
+
+    async getConversationCount(where?: Prisma.ConversationWhereInput): Promise<number> {
+        try {
+            return await prisma.conversation.count({ where });
+        } catch (error) {
+            logger.error("Error getting conversation count", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async updateConversation(conversationId: string, data: Prisma.ConversationUpdateInput): Promise<Conversation> {
+        try {
+            return await prisma.conversation.update({
+                where: { id: conversationId },
+                data,
+            });
+        } catch (error) {
+            logger.error("Error updating conversation", { error: (error as Error).message, conversationId });
+            throw new Error("Database error");
+        }
+    }
+
+    async updateMemberCount(conversationId: string, delta: number): Promise<number> {
+        try {
+            const updated = await prisma.conversation.update({
+                where: { id: conversationId },
+                data: {
+                    memberCount: {
+                        increment: delta
+                    }
+                }
+            });
+            logger.info("Updated member count", { conversationId, delta, newCount: updated.memberCount });
+            return updated.memberCount;
+        } catch (error) {
+            logger.error("Error updating member count", { conversationId, delta, error: (error as Error).message });
+            throw error;
+        }
+    }
+
+    async syncAllMemberCounts(): Promise<void> {
+        try {
+            logger.info("🔄 Starting global member count synchronization...");
+            const conversations = await prisma.conversation.findMany({
+                include: {
+                    _count: {
+                        select: { participants: true }
+                    }
+                }
+            });
+
+            for (const conv of conversations) {
+                await prisma.conversation.update({
+                    where: { id: conv.id },
+                    data: { memberCount: conv._count.participants }
+                });
+            }
+            logger.info("✅ Global member count synchronization complete", { count: conversations.length });
+        } catch (error) {
+            logger.error("❌ Failed to sync member counts", { error: (error as Error).message });
+            throw error;
+        }
+    }
 }
-
-

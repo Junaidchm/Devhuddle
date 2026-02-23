@@ -16,6 +16,7 @@ model User {
   role              String       @default("user")
   emailVerified     Boolean      @default(false)
   profilePicture    String?
+  coverImage        String?
   location          String?
   bio               String?
   skills            String[]     @default([])
@@ -25,10 +26,17 @@ model User {
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
   isBlocked         Boolean      @default(false)
+  
+  // Relations
   education         Education[]
   experience        Experience[]
   following         Follow[]     @relation("Followers")
   followers         Follow[]     @relation("Following")
+  
+  // Admin relations
+  reportsCreated    Report[]     @relation("Reporter")
+  reportsReviewed   Report[]     @relation("Reviewer")
+  auditLogs         AuditLog[]
 }
 
 model Experience {
@@ -70,4 +78,123 @@ model Follow {
   @@index([followerId])
   @@index([followingId])
   @@map("follows")
+}
+
+model Report {
+  id           String           @id @default(cuid())
+  reporterId   String
+  targetId     String           // Entity ID being reported
+  targetType   ReportTargetType
+  reason       ReportReason
+  description  String?
+  severity     ReportSeverity   @default(LOW)
+  status       ReportStatus     @default(PENDING)
+  
+  // Contextual data (snapshot of the item reported)
+  metadata     Json?
+  
+  // Resolution
+  resolution   String?
+  resolvedAt   DateTime?
+  reviewedById String?
+  
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  reporter     User             @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reviewer     User?            @relation("Reviewer", fields: [reviewedById], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  adminId     String
+  action      String   // e.g., "USER_SUSPENDED", "POST_HIDDEN"
+  targetType  String
+  targetId    String
+  reason      String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  admin       User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+}
+
+model OutboxEvent {
+  id              String       @id @default(uuid())
+  aggregateType   String       // e.g., "USER", "REPORT"
+  aggregateId     String
+  eventType       String       // e.g., "USER_BANNED"
+  payload         Json
+  topic           String
+  status          OutboxStatus @default(PENDING)
+  attempts        Int          @default(0)
+  lastAttemptedAt DateTime?
+  createdAt       DateTime     @default(now())
+  processedAt     DateTime?
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model SystemStats {
+  id            String   @id @default("global-stats")
+  totalPosts    Int      @default(0)
+  totalComments Int      @default(0)
+  totalProjects Int      @default(0)
+  totalHubs     Int      @default(0)
+  totalLikes    Int      @default(0)
+  totalShares   Int      @default(0)
+  updatedAt     DateTime @updatedAt
+}
+
+enum ReportTargetType {
+  USER
+  POST
+  PROJECT
+  HUB
+  MESSAGE
+  COMMENT
+  CONVERSATION
+}
+
+enum ReportReason {
+  SPAM
+  INAPPROPRIATE
+  HARASSMENT
+  HATE_SPEECH
+  VIOLENCE
+  SELF_HARM
+  FALSE_INFORMATION
+  COPYRIGHT_VIOLATION
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  INVESTIGATING
+  RESOLVED_APPROVED
+  RESOLVED_REMOVED
+  RESOLVED_IGNORED
+  CLOSED
+}
+
+enum ReportSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }

@@ -9,15 +9,20 @@ import { logger } from "../utils/logger";
  * - REST API: /api/v1/chat/* -> http://chat-service:4004/api/v1/chat/*
  * - WebSockets: /api/v1/chat -> ws://chat-service:4004/api/v1/chat
  */
+const CHAT_TARGET = app_config.chatServiceUrl || "http://chat-service:4004";
+
 export const chatServiceProxy = createProxyMiddleware({
-  target: app_config.chatServiceUrl || "http://chat-service:4004",
+  target: CHAT_TARGET,
   changeOrigin: true,
   ws: false,
+  pathRewrite: {
+    "^/api/v1": "",
+  },
   
   onProxyReq: (proxyReq, req: any, res) => {
-    logger.info(
-      `[Chat Proxy] Forwarding ${req.method} ${req.originalUrl} to ${app_config.chatServiceUrl}`
-    );
+    // logger.info(
+    //   `[Chat Proxy] Forwarding ${req.method} ${req.originalUrl} to ${CHAT_TARGET}`
+    // );
 
     // Forward user data from JWT middleware if available
     const userData = req.user || (req.headers["x-user-data"] ? JSON.parse(req.headers["x-user-data"] as string) : null);
@@ -32,7 +37,7 @@ export const chatServiceProxy = createProxyMiddleware({
     }
     
     // CRITICAL: Handle request body for POST/PUT/PATCH requests
-    if (req.method !== "GET" && req.method !== "HEAD" && req.body && Object.keys(req.body).length > 0) {
+    if (req.method !== "GET" && req.method !== "HEAD" && req.body) {
       const bodyData = JSON.stringify(req.body);
       const bodyLength = Buffer.byteLength(bodyData);
       
@@ -47,10 +52,10 @@ export const chatServiceProxy = createProxyMiddleware({
       proxyReq.write(bodyData);
       proxyReq.end();
       
-      logger.info(`[Chat Proxy] Writing body to proxy request`, {
-        bodyLength: bodyLength,
-        bodyKeys: Object.keys(req.body),
-      });
+      // logger.info(`[Chat Proxy] Writing body to proxy request`, {
+      //   bodyLength: bodyLength,
+      //   bodyKeys: Object.keys(req.body),
+      // });
     }
   },
 
@@ -58,14 +63,8 @@ export const chatServiceProxy = createProxyMiddleware({
 
 
   onProxyRes: (proxyRes, req, res) => {
-    // Log response for debugging
-    logger.info(`[Chat Proxy] Response ${proxyRes.statusCode} for ${req.method} ${req.originalUrl}`);
-    
-    // Explicitly set CORS headers for all responses to avoid network errors
-    proxyRes.headers["access-control-allow-origin"] = process.env.frontend_URL || "http://localhost:3000";
-    proxyRes.headers["access-control-allow-methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-    proxyRes.headers["access-control-allow-headers"] = "Content-Type, Authorization, x-user-data";
-    proxyRes.headers["access-control-allow-credentials"] = "true";
+    // logger.info(`[Chat Proxy] Response ${proxyRes.statusCode} for ${req.method} ${req.originalUrl}`);
+    // CORS is handled by global middleware in index.ts
   },
 
   onError: (err, req, res) => {

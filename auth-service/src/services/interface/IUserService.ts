@@ -16,4 +16,5 @@ export interface IUserService {
   addEducation(userId: string, data: any): Promise<any>;
   deleteEducation(userId: string, educationId: string): Promise<void>;
   updateSkills(userId: string, skills: string[]): Promise<void>;
+  deleteAccount(userId: string): Promise<void>;
 }

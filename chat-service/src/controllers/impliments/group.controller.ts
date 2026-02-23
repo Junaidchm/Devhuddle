@@ -44,6 +44,61 @@ export class GroupController {
         }
     }
 
+    getMyGroups = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const userId = JSON.parse(req.headers["x-user-data"] as string).id;
+            const { query, limit, offset } = req.query;
+            
+            const parsedLimit = limit ? parseInt(limit as string) : 20;
+            const parsedOffset = offset ? parseInt(offset as string) : 0;
+
+            const groups = await this._groupService.getMyGroups(
+                userId,
+                query as string,
+                parsedLimit,
+                parsedOffset
+            );
+            res.status(200).json(groups);
+        } catch (error) {
+            res.status(400).json({ error: (error as Error).message });
+        }
+    }
+
+    getDiscoverGroups = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const userId = JSON.parse(req.headers["x-user-data"] as string).id;
+            const { query, topics, limit, offset } = req.query;
+            
+            const parsedLimit = limit ? parseInt(limit as string) : 20;
+            const parsedOffset = offset ? parseInt(offset as string) : 0;
+            const parsedTopics = topics ? (Array.isArray(topics) ? topics as string[] : [topics as string]) : undefined;
+
+            const groups = await this._groupService.getDiscoverGroups(
+                userId,
+                query as string,
+                parsedTopics,
+                parsedLimit,
+                parsedOffset
+            );
+            res.status(200).json(groups);
+        } catch (error) {
+            res.status(400).json({ error: (error as Error).message });
+        }
+    }
+
+    getGroupTopics = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { limit } = req.query;
+            const parsedLimit = limit ? parseInt(limit as string) : 10;
+            
+            const topics = await this._groupService.getGroupTopics(parsedLimit);
+            res.status(200).json(topics);
+        } catch (error) {
+            res.status(400).json({ error: (error as Error).message });
+        }
+    }
+
+
     getGroupDetails = async (req: Request, res: Response): Promise<void> => {
         try {
             const id = req.params.id as string;

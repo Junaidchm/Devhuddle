@@ -304,5 +304,31 @@ export class UserController {
       );
     }
   }
+
+  async deleteAccount(req: Request, res: Response): Promise<void> {
+    try {
+      const userData = req.headers["x-user-data"];
+      if (!userData || typeof userData !== "string") {
+        throw new CustomError(HttpStatus.UNAUTHORIZED, "Authentication required");
+      }
+      
+      const { id: userId } = JSON.parse(userData);
+      if (!userId) {
+        throw new CustomError(HttpStatus.UNAUTHORIZED, "Invalid user data");
+      }
+
+      await this._userService.deleteAccount(userId);
+      res.status(HttpStatus.OK).json({ 
+        success: true,
+        message: "Account details deleted successfully. We're sorry to see you go." 
+      });
+    } catch (err: unknown) {
+      logger.error("Delete account error", { error: (err as Error).message });
+      sendErrorResponse(
+        res,
+        err instanceof CustomError ? err : { status: 500, message: "Server error" }
+      );
+    }
+  }
 }
 

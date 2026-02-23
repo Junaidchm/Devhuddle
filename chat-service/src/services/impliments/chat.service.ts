@@ -1,9 +1,14 @@
+import { MessageResponseDto } from "../../dtos/response/message.dto";
 import { IChatService } from "../interfaces/IChatService";
 import { IChatRepository } from "../../repositories/interfaces/IChatRepository";
+import { MessageSagaService } from "./message.service";
 import { Message, Conversation, Prisma, Participant, GroupRole } from "@prisma/client";
 import logger from "../../utils/logger.util";
 import { RedisCacheService } from "../../utils/redis-cache.util";
 import { authServiceClient } from "../../clients/auth-service.client";
+import { ChatActionService } from "./chat-action.service";
+import prisma from "../../config/db";
+import { redisPublisher } from "../../config/redis.config";
 import {
     SendMessageCommand,
     CreateConversationCommand,
@@ -13,10 +18,15 @@ import {
     CheckConversationExistsQuery,
     ConversationWithMetadataDto
 } from "../../dtos/chat-service.dto";
+import { MessageMapper } from "../../mappers/chat.mapper";
 
 export class ChatService implements IChatService {
 
-    constructor(private _chatRepository: IChatRepository) { }
+    constructor(
+        private _messageSagaService: MessageSagaService, 
+        private _chatRepository: IChatRepository,
+        private _chatActionService: ChatActionService
+    ) {}
 
     /**
      * Send a message (uses Command pattern with business validation)
@@ -27,7 +37,7 @@ export class ChatService implements IChatService {
         recipientIds: string[], 
         content: string,
         // Optional media params
-        messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'FILE' | 'STICKER' = 'TEXT',
+        messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'FILE' | 'STICKER' | 'SYSTEM' = 'TEXT',
         mediaUrl?: string,
         mediaId?: string,
         mediaMimeType?: string,
@@ -35,7 +45,11 @@ export class ChatService implements IChatService {
         mediaName?: string,
         mediaDuration?: number,
         conversationId?: string,
-        dedupeId?: string
+        dedupeId?: string,
+        replyToId?: string,
+        isForwarded?: boolean,
+        forwardedFrom?: string,
+        originalMessageId?: string
     ): Promise<Message> {
         try {
             // Create and validate command (business rules validated here)
@@ -51,87 +65,15 @@ export class ChatService implements IChatService {
                 mediaName,
                 mediaDuration,
                 conversationId,
-                dedupeId
+                dedupeId,
+                replyToId,
+                isForwarded,
+                forwardedFrom,
+                originalMessageId
             );
 
-            let conversation;
-
-            // 1. Try to find by conversationId first (Primary strategy)
-            if (command.conversationId) {
-                conversation = await this._chatRepository.findConversationById(command.conversationId);
-                
-                if (!conversation) {
-                    logger.warn(`Conversation ID ${command.conversationId} not found, falling back to participant lookup`);
-                } else {
-                    // Check if sender is participant
-                    const isParticipant = conversation.participants.some(p => p.userId === command.senderId);
-                    if (!isParticipant) {
-                        throw new Error("Sender is not a participant in this conversation");
-                    }
-                }
-            }
-
-            // 2. Fallback: Find or create by participants
-            if (!conversation) {
-                if (!command.recipientIds || command.recipientIds.length === 0) {
-                     logger.error("Missing recipients and invalid conversation ID", { senderId: command.senderId });
-                     throw new Error("Cannot send message: Recipient IDs required if conversation ID is missing/invalid");
-                }
-                const participantIds = [command.senderId, ...command.recipientIds];
-                conversation = await this._chatRepository.findOrCreateConversation(participantIds);
-            }
-
-            // 3. Check group permissions: onlyAdminsCanPost
-            if (conversation.type === 'GROUP' && conversation.onlyAdminsCanPost) {
-                const senderParticipant = conversation.participants.find(p => p.userId === command.senderId);
-                if (!senderParticipant || (senderParticipant.role !== GroupRole.ADMIN && conversation.ownerId !== command.senderId)) {
-                    throw new Error("Only admins can send messages in this group");
-                }
-            }
-
-            // Create message data
-            const messageData: Prisma.MessageCreateInput = {
-                senderId: command.senderId,
-                content: command.content,
-                // Media fields
-                type: command.messageType,
-                mediaUrl: command.mediaUrl,
-                mediaId: command.mediaId,
-                mediaMimeType: command.mediaMimeType,
-                mediaSize: command.mediaSize,
-                mediaName: command.mediaName,
-                mediaDuration: command.mediaDuration,
-                dedupeId: command.dedupeId,
-                conversation: {
-                    connect: {
-                        id: conversation.id
-                    }
-                }
-            };
-
-            // Create the message
-            const message = await this._chatRepository.createMessage(messageData);
-
-            // Update conversation's last message timestamp
-            await this._chatRepository.updateLastMessageAt(conversation.id, new Date());
-
-            // Invalidate cache for this conversation and all participants
-            await RedisCacheService.invalidateConversationCache(conversation.id);
-            
-            const participantIds = conversation.participants.map(p => p.userId);
-            for (const participantId of participantIds) {
-                await RedisCacheService.invalidateUserConversationsCache(participantId);
-                // Also invalidate the enriched metadata cache
-                await RedisCacheService.invalidateUserConversationsMetadataCache(participantId);
-            }
-
-            logger.info("Message sent successfully", {
-                messageId: message.id,
-                conversationId: conversation.id,
-                senderId: command.senderId
-            });
-
-            return message;
+            // Delegate entire saga to MessageSagaService
+            return await this._messageSagaService.sendMessage(command);
         } catch (error) {
             logger.error("Error in sendMessage service", { error: (error as Error).message });
             throw error; // Re-throw to preserve business validation errors
@@ -159,23 +101,22 @@ export class ChatService implements IChatService {
             // Verify user is a participant (could be cached)
             // For now, let's just get messages - repository will return empty if not found? 
             // Actually verification is good.
-            const conversation = await this._chatRepository.findConversationById(conversationId);
+            // Verify user is a participant using a targeted check
+            const participant = await this._chatRepository.findParticipantInConversation(userId, conversationId);
 
-            if (!conversation) {
-                throw new Error("Conversation not found");
-            }
-
-            const isParticipant = conversation.participants.some(
-                (p: Participant) => p.userId === userId
-            );
-
-            if (!isParticipant) {
+            if (!participant) {
+                // Check if conversation exists at all to provide better error message
+                const conversationExists = await this._chatRepository.findConversationById(conversationId);
+                if (!conversationExists) {
+                    throw new Error("Conversation not found");
+                }
                 throw new Error("Unauthorized: User is not a participant in this conversation");
             }
 
             // Get messages from database using offset-based pagination
             const messages = await this._chatRepository.getMessagesByConversationId(
                 conversationId,
+                userId,
                 safeLimit,
                 offset,
                 before
@@ -194,9 +135,14 @@ export class ChatService implements IChatService {
             }
 
             const enrichedMessages = messages.map(message => {
+                // Use Mapper to get standard DTO (handles replyTo, reactions, etc.)
+                // We need to import MessageMapper first
+                const dto = MessageMapper.toResponseDto(message);
+                
                 const profile = userProfilesMap.get(message.senderId);
+                
                 return {
-                    ...message,
+                    ...dto, // Spread DTO fields (includes formatted replyTo)
                     sender: profile ? {
                         id: message.senderId,
                         username: profile.username,
@@ -276,6 +222,14 @@ export class ChatService implements IChatService {
 
             const conversation = await this._chatRepository.findOrCreateConversation(allParticipants);
 
+            // Always bump lastMessageAt to now so the conversation sorts to the top of the
+            // user's conversation list (ORDER BY lastMessageAt DESC).
+            // For brand-new conversations the create already sets it to now(), so this is a fast no-op.
+            // For existing conversations re-opened from the suggestions modal this guarantees
+            // the conversation is not buried behind older conversations after a page refresh.
+            await this._chatRepository.updateLastMessageAt(conversation.id, new Date());
+            conversation.lastMessageAt = new Date(); // keep in-memory object consistent
+
             // Invalidate user conversations cache for all participants
             for (const participantId of allParticipants) {
                 await RedisCacheService.invalidateUserConversationsCache(participantId);
@@ -311,8 +265,9 @@ export class ChatService implements IChatService {
                     };
                 }),
                 lastMessage: null,
-                lastMessageAt: conversation.createdAt,
-                unreadCount: 0
+                lastMessageAt: conversation.lastMessageAt, // use the bumped timestamp so frontend sorts correctly
+                unreadCount: 0,
+                createdAt: conversation.createdAt
             };
 
             return enrichedConversation;
@@ -438,26 +393,37 @@ export class ChatService implements IChatService {
                     profilesFetched: userProfilesMap.size
                 });
 
-                // If gRPC failed and returned empty profiles, log warning but continue
+                // If gRPC failed and returned empty profiles, log warning but continue instead of dropping the conversation list
                 if (allParticipantIds.size > 0 && userProfilesMap.size === 0) {
                     logger.error("gRPC returned no profiles despite having participant IDs", {
                         expectedProfiles: allParticipantIds.size,
                         conversationCount: conversationsWithMetadata.length
                     });
-                    // Return empty array and don't cache - indicates a system issue
-                    return [];
+                    // We will NOT return [] here because we don't want to drop the conversation if gRPC is flaky.
+                    // Instead, the fallback logic below will handle it by showing "User ID".
                 }
             } catch (error) {
                 logger.error("Failed to fetch user profiles from gRPC", {
                     error: (error as Error).message,
                     participantCount: allParticipantIds.size
                 });
-                // Return empty array and don't cache - indicates a system issue
-                return [];
+                // Create an empty map to ensure fallback mapping works
+                userProfilesMap = new Map();
             }
+
+            // Fetch block relationships for the current user
+            const blockOps = await this._chatRepository.getBlockRelationships(userId);
+            const blockedByMe = new Set(blockOps.blockedByMe);
+            const blockedMe = new Set(blockOps.blockedMe);
 
             // Map to enriched DTOs with user profile data
             const enrichedConversations: ConversationWithMetadataDto[] = conversationsWithMetadata.map((conv) => {
+                const otherParticipant = conv.type === 'DIRECT' 
+                    ? conv.participants.find(p => p.userId !== userId)
+                    : null;
+                const isBlockedByMe = otherParticipant ? blockedByMe.has(otherParticipant.userId) : false;
+                const isBlockedByThem = otherParticipant ? blockedMe.has(otherParticipant.userId) : false;
+
                 return {
                     conversationId: conv.id,
                     type: conv.type as 'DIRECT' | 'GROUP',
@@ -501,7 +467,10 @@ export class ChatService implements IChatService {
                         createdAt: conv.lastMessage.createdAt
                     } : null,
                     lastMessageAt: conv.lastMessageAt,
-                    unreadCount: conv.unreadCount
+                    unreadCount: conv.unreadCount,
+                    isBlockedByMe,
+                    isBlockedByThem,
+                    createdAt: conv.createdAt
                 };
             });
 
@@ -571,28 +540,29 @@ export class ChatService implements IChatService {
     }
 
     /**
-     * Update message status to DELIVERED or READ
-     * Used by WebSocket handlers for delivery acknowledgments
+     * Update message status using per-user receipt tracking + aggregation.
+     * This replaces the old direct status mutation pattern.
+     * Works for both 1-1 and group chats.
      */
     async updateMessageStatus(
         messageId: string,
+        userId: string,
         status: 'DELIVERED' | 'READ'
     ): Promise<Message> {
         try {
-            const updateData: Prisma.MessageUpdateInput = {
-                status,
-                ...(status === 'DELIVERED' && { deliveredAt: new Date() }),
-                ...(status === 'READ' && { readAt: new Date() }),
-            };
+            // 1. Write per-user receipt
+            await this._chatRepository.updateMessageReceipt(messageId, userId, status);
 
-            const updatedMessage = await this._chatRepository.updateMessage(messageId, updateData);
+            // 2. Aggregate: recompute root Message.status from receipt counts
+            const updatedMessage = await this._chatRepository.aggregateMessageStatus(messageId);
 
-            logger.info('Message status updated', { messageId, status });
+            logger.info('Message receipt updated and status aggregated', { messageId, userId, status });
             return updatedMessage;
         } catch (error) {
-            logger.error('Error updating message status', {
+            logger.error('Error updating message receipt', {
                 error: (error as Error).message,
                 messageId,
+                userId,
                 status,
             });
             throw new Error('Failed to update message status');
@@ -600,8 +570,9 @@ export class ChatService implements IChatService {
     }
 
     /**
-     * Mark all messages in a conversation as READ up to a certain message
-     * Used for read receipts (WhatsApp-style)
+     * Mark all messages in a conversation as READ up to a certain message.
+     * Per-user receipt model: records seenAt for userId on each relevant message,
+     * then aggregates status on each message.
      */
     async markMessagesAsRead(
         conversationId: string,
@@ -616,24 +587,60 @@ export class ChatService implements IChatService {
                 throw new Error('Invalid lastReadMessageId for this conversation');
             }
 
-            // Mark all messages before this timestamp as READ (excluding sender's own messages)
-            await this._chatRepository.markMessagesAsReadBefore(
-                conversationId,
-                userId,
-                lastReadMessage.createdAt
-            );
-
-            // Update participant's lastReadAt timestamp
+            // Update participant's lastReadAt timestamp (still used for unread count)
             await this._chatRepository.updateParticipantLastReadAt(
                 conversationId,
                 userId,
                 new Date()
             );
 
-            logger.info('Messages marked as read', {
+            // Fetch all unread messages sent by others up to lastReadMessageId's timestamp
+            const conversation = await this._chatRepository.findConversationById(conversationId);
+            if (!conversation) throw new Error('Conversation not found');
+
+            // Process messages up to lastReadMessageId's timestamp that haven't been read by this user.
+            // This unifies 1-1 and Group chats to use the per-message receipt system,
+            // which ensures real-time broadcasts and consistent aggregated states.
+            const messagesToMark = await prisma.message.findMany({
+                where: {
+                    conversationId,
+                    senderId: { not: userId },
+                    createdAt: { lte: lastReadMessage.createdAt },
+                    status: { notIn: ['READ'] as any }
+                },
+                select: { id: true }
+            });
+
+            // Process receipts in parallel (fire-and-forget per message)
+            for (const msg of messagesToMark) {
+                // Update the receipt and aggregate, then broadcast the new status via Redis
+                this._chatRepository.updateMessageReceipt(msg.id, userId, 'READ')
+                    .then(() => this._chatRepository.aggregateMessageStatus(msg.id))
+                    .then((updatedMessage) => {
+                        // Only broadcast if status actually changed to avoid noise
+                        return redisPublisher.publish(
+                            `chat:${conversationId}`,
+                            JSON.stringify({
+                                type: 'message_status_updated',
+                                data: {
+                                    messageId: updatedMessage.id,
+                                    conversationId,
+                                    status: updatedMessage.status,
+                                    updatedBy: userId
+                                }
+                            })
+                        );
+                    })
+                    .catch(err => {
+                        logger.warn('Failed to update receipt or broadcast for message', { messageId: msg.id, error: err.message });
+                    });
+            }
+
+            logger.info('Messages marked as read (per-user receipts)', {
                 conversationId,
                 userId,
                 lastReadMessageId,
+                affectedCount: messagesToMark.length
             });
         } catch (error) {
             logger.error('Error marking messages as read', {
@@ -713,6 +720,16 @@ export class ChatService implements IChatService {
                 logger.error("Failed to fetch user profiles", { error: (error as Error).message });
             }
 
+            // Fetch block relationships
+            const blockOps = await this._chatRepository.getBlockRelationships(userId);
+            const blockedByMe = new Set(blockOps.blockedByMe);
+            const blockedMe = new Set(blockOps.blockedMe);
+            const otherParticipant = conversation.type === 'DIRECT' 
+                ? conversation.participants.find(p => p.userId !== userId)
+                : null;
+            const isBlockedByMe = otherParticipant ? blockedByMe.has(otherParticipant.userId) : false;
+            const isBlockedByThem = otherParticipant ? blockedMe.has(otherParticipant.userId) : false;
+
             // 5. Build DTO
             const enrichedConversation: ConversationWithMetadataDto = {
                 conversationId: conversation.id,
@@ -737,17 +754,23 @@ export class ChatService implements IChatService {
                 }),
                 lastMessage: null, // Will fetch separately below
                 lastMessageAt: conversation.lastMessageAt,
-                unreadCount: 0 // Fetching single conversation, usually implies opening it, so unread count might be irrelevant or needs specific calculation logic if we want to show it before read
+                unreadCount: 0, // Fetching single conversation, usually implies opening it, so unread count might be irrelevant or needs specific calculation logic if we want to show it before read
+                isBlockedByMe,
+                isBlockedByThem,
+                createdAt: conversation.createdAt
             };
 
             // Fetch last message separately if needed
             try {
-                const lastMsg = await this._chatRepository.getMessagesByConversationId(conversationId, 1, 0);
+                const lastMsg = await this._chatRepository.getMessagesByConversationId(conversationId, userId, 1, 0);
                 if (lastMsg && lastMsg.length > 0) {
                     const msg = lastMsg[0];
                     const senderProfile = userProfilesMap.get(msg.senderId);
                     enrichedConversation.lastMessage = {
+                        id: msg.id,
                         content: msg.content,
+                        type: msg.type,
+                        status: msg.status,
                         senderId: msg.senderId,
                         senderName: senderProfile?.name || senderProfile?.username || 'Unknown',
                         createdAt: msg.createdAt
@@ -769,6 +792,213 @@ export class ChatService implements IChatService {
 
         } catch (error) {
             logger.error("Error in getConversationWithMetadata", { error: (error as Error).message });
+            throw error;
+        }
+    }
+    // --- Message Actions ---
+
+    async editMessage(messageId: string, userId: string, newContent: string): Promise<Message> {
+        return this._chatActionService.editMessage(messageId, userId, newContent);
+    }
+
+    async deleteMessage(messageId: string, userId: string): Promise<void> {
+        return this._chatActionService.deleteMessage(messageId, userId);
+    }
+
+    async deleteMessageForMe(messageId: string, userId: string): Promise<void> {
+        return this._chatActionService.deleteMessageForMe(messageId, userId);
+    }
+
+    async replyToMessage(senderId: string, conversationId: string, content: string, replyToId: string, dedupeId?: string): Promise<Message> {
+        return this.sendMessage(senderId, [], content, 'TEXT', undefined, undefined, undefined, undefined, undefined, undefined, conversationId, dedupeId, replyToId);
+    }
+
+    async addReaction(messageId: string, userId: string, emoji: string): Promise<void> {
+        return this._chatActionService.addReaction(messageId, userId, emoji);
+    }
+
+    async removeReaction(messageId: string, userId: string, emoji: string): Promise<void> {
+        return this._chatActionService.removeReaction(messageId, userId, emoji);
+    }
+
+    async pinMessage(messageId: string, userId: string): Promise<void> {
+        return this._chatActionService.pinMessage(messageId, userId);
+    }
+
+    async unpinMessage(messageId: string, userId: string): Promise<void> {
+        return this._chatActionService.unpinMessage(messageId, userId);
+    }
+
+    async getPinnedMessages(conversationId: string, userId: string): Promise<Message[]> {
+        return this._chatActionService.getPinnedMessages(conversationId, userId);
+    }
+
+    async forwardMessage(messageIds: string[], targetConversationIds: string[], userId: string): Promise<MessageResponseDto[]> {
+        // Business logic: Forward multiple messages to one or more targets
+        const forwardedMessages: MessageResponseDto[] = [];
+
+        for (const messageId of messageIds) {
+            const originalMessage = await this._chatRepository.findMessageById(messageId);
+            if (!originalMessage) {
+                logger.warn("Attempted to forward non-existent message", { messageId });
+                continue;
+            }
+
+            for (const targetId of targetConversationIds) {
+                // Determine if targetId is a conversation or a user
+                let conversationId: string | undefined = undefined;
+                let recipientIds: string[] = [];
+
+                const conversation = await this._chatRepository.findConversationById(targetId);
+                if (conversation) {
+                    conversationId = targetId;
+                } else {
+                    // Treat as userId
+                    recipientIds = [targetId];
+                }
+
+                // Forward the message
+                const newMessage = await this.sendMessage(
+                    userId,
+                    recipientIds, 
+                    originalMessage.content,
+                    originalMessage.type,
+                    originalMessage.mediaUrl || undefined,
+                    originalMessage.mediaId || undefined,
+                    originalMessage.mediaMimeType || undefined,
+                    originalMessage.mediaSize || undefined,
+                    originalMessage.mediaName || undefined,
+                    originalMessage.mediaDuration || undefined,
+                    conversationId,
+                    undefined, // dedupeId
+                    undefined, // replyToId
+                    true,      // isForwarded
+                    originalMessage.senderId,
+                    originalMessage.id
+                );
+
+                forwardedMessages.push(MessageMapper.toResponseDto(newMessage));
+            }
+        }
+        return forwardedMessages;
+    }
+
+
+    async blockUser(userId: string, targetUserId: string): Promise<void> {
+        return this._chatActionService.blockUser(userId, targetUserId);
+    }
+
+    async unblockUser(userId: string, targetUserId: string): Promise<void> {
+        return this._chatActionService.unblockUser(userId, targetUserId);
+    }
+
+    async getBlockedUsers(userId: string): Promise<any[]> {
+        return this._chatActionService.getBlockedUsers(userId);
+    }
+
+    async isUserBlocked(userId: string, targetUserId: string): Promise<boolean> {
+        return this._chatActionService.isUserBlocked(userId, targetUserId);
+    }
+
+    async getSharedMedia(
+        conversationId: string, 
+        userId: string, 
+        types: string[], 
+        limit: number, 
+        offset: number
+    ): Promise<Message[]> {
+        try {
+            // Verify user is a participant
+            const conversation = await this._chatRepository.findConversationById(conversationId);
+            if (!conversation) {
+                throw new Error("Conversation not found");
+            }
+
+            const isParticipant = conversation.participants.some(p => p.userId === userId);
+            if (!isParticipant) {
+                throw new Error("User is not a participant of this conversation");
+            }
+
+            return await this._chatRepository.getMessagesByType(conversationId, userId, types, limit, offset);
+        } catch (error) {
+            logger.error("Error getting shared media", { error: (error as Error).message });
+            throw error;
+        }
+    }
+
+    async getCommonGroups(userId: string, targetUserId: string): Promise<Conversation[]> {
+        try {
+            return await this._chatRepository.getCommonGroups(userId, targetUserId);
+        } catch (error) {
+            logger.error("Error getting common groups", { error: (error as Error).message });
+            throw error;
+        }
+    }
+
+    async softDeleteConversation(conversationId: string, userId: string): Promise<void> {
+        try {
+            await this._chatRepository.softDeleteConversation(conversationId, userId);
+            // Invalidate caches
+            await RedisCacheService.invalidateUserConversationsMetadataCache(userId);
+            await RedisCacheService.invalidateConversationCache(conversationId);
+        } catch (error) {
+            logger.error("Error soft deleting conversation", { error: (error as Error).message });
+            throw error;
+        }
+    }
+
+    async clearChatHistory(conversationId: string, userId: string): Promise<void> {
+        try {
+            await this._chatRepository.clearChatHistory(conversationId, userId);
+            // Invalidate message cache
+            await RedisCacheService.invalidateConversationCache(conversationId);
+        } catch (error) {
+            logger.error("Error clearing chat history", { error: (error as Error).message });
+            throw error;
+        }
+    }
+
+    async searchMessages(conversationId: string, userId: string, query: string): Promise<Message[]> {
+        try {
+            // Verify user is a participant
+            const conversation = await this._chatRepository.findConversationById(conversationId);
+            if (!conversation) {
+                throw new Error("Conversation not found");
+            }
+
+            const isParticipant = conversation.participants.some(p => p.userId === userId);
+            if (!isParticipant) {
+                throw new Error("User is not a participant of this conversation");
+            }
+
+            return await this._chatRepository.searchMessages(conversationId, userId, query);
+        } catch (error) {
+            logger.error("Error searching messages", { error: (error as Error).message });
+            throw error;
+        }
+    }
+
+    async getConversationLinks(
+        conversationId: string, 
+        userId: string, 
+        limit: number, 
+        offset: number
+    ): Promise<any[]> {
+        try {
+            // Verify user is a participant
+            const conversation = await this._chatRepository.findConversationById(conversationId);
+            if (!conversation) {
+                throw new Error("Conversation not found");
+            }
+
+            const isParticipant = conversation.participants.some(p => p.userId === userId);
+            if (!isParticipant) {
+                throw new Error("User is not a participant of this conversation");
+            }
+
+            return await this._chatRepository.getConversationLinks(conversationId, limit, offset);
+        } catch (error) {
+            logger.error("Error getting conversation links", { error: (error as Error).message });
             throw error;
         }
     }

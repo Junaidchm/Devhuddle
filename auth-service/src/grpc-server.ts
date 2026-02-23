@@ -2,14 +2,17 @@ import * as grpc from "@grpc/grpc-js";
 
 import { AuthServiceService } from "./grpc/generated/auth";
 import { UserServiceService } from "./grpc/generated/user";
+import { AdminServiceService } from "./grpc/generated/admin";
 
 import logger from "./utils/logger.util";
-import { userServic } from "./serviceDefinition/userService";
+import { userService } from "./serviceDefinition/userService";
 import { authService } from "./serviceDefinition/authService";
+import { adminGrpcService } from "./serviceDefinition/adminService";
 
 const server = new grpc.Server();
 server.addService(AuthServiceService, authService);
-server.addService(UserServiceService, userServic);
+server.addService(UserServiceService, userService);
+server.addService(AdminServiceService, adminGrpcService);
 
 const GRPC_PORT = process.env.GRPC_PORT || "50051";
 server.bindAsync(

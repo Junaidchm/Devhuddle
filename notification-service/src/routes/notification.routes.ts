@@ -25,6 +25,11 @@ router
     validateDto(NotificationOwnerDto),
     notificationController.deleteNotification.bind(notificationController)
   )
+  .patch(
+    "/:id/restore",
+    validateDto(NotificationOwnerDto),
+    notificationController.restoreNotification.bind(notificationController)
+  )
   .get(
     "/:recipientId/unread-count",
     notificationController.getUnreadCount.bind(notificationController)

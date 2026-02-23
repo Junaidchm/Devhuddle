@@ -13,4 +13,6 @@ export interface INotificationService {
     deleteNotification(notificationId: string, recipientId: string): Promise<void>;
     getUnreadCount(recipientId: string): Promise<number>;
     markAllAsRead(recipientId: string): Promise<void>;
+    restoreNotification(notificationId: string, recipientId: string): Promise<void>;
+    createChatNotification(senderId: string, recipientId: string, conversationId: string, messageId: string, content: string, version: number): Promise<void>;
 }

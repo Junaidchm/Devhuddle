@@ -12,7 +12,7 @@ interface AuthenticatedWebSocket extends WebSocket {
 // Configuration constants
 const MAX_CONNECTIONS_PER_USER = 5;
 const HEARTBEAT_INTERVAL = 30000;
-const WEBSOCKET_PATH = '/api/v1/notifications';
+const WEBSOCKET_PATH = '/notifications';
 const AUTH_TIMEOUT = 5000; // 5 seconds
 
 export class WebSocketService {

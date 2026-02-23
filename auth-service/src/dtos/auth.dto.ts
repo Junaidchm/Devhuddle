@@ -95,6 +95,10 @@ export class UpdateProfileDto {
   @IsNumber()
   @Min(0)
   yearsOfExperience?: number;
+
+  @IsOptional()
+  @IsString()
+  coverImage?: string;
 }
 
 export class RefreshTokenDto {

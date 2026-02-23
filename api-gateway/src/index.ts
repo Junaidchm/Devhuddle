@@ -14,7 +14,7 @@ import { mediaServiceProxy } from "./middleware/media.proxy.middleware";
 import { connectRedis } from "./utils/redis.util";
 import { app_config } from "./config/app.config";
 import conditionalJwtMiddleware from "./middleware/conditional-jwt.middleware";
-import { ROUTES } from "./constants/routes";
+import { ROUTES, API_VERSION } from "./constants/routes";
 import { engagementServiceProxy } from "./middleware/engagement.proxy.middleware";
 import { adminServiceProxy } from "./middleware/admin.proxy.middleware";
 import { chatServiceProxy } from "./middleware/chat.proxy.middleware";
@@ -32,9 +32,9 @@ const server = createServer(app);
 app.use(
   cors({
     origin: [app_config.frontend_URL!],
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key"],
+    allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key", "x-user-data", "Cookie"],
   })
 );
 
@@ -53,11 +53,17 @@ app.use(express.urlencoded({
 }));
 
 
-// Log all requests
+// Log all requests (Commented out for performance optimization)
+/*
 app.use((req: Request, res: Response, next: NextFunction) => {
-  logger.info(`${req.method} ${req.url}`);
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    logger.info(`${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`);
+  });
   next();
 });
+*/
 
 // ============================================
 // HTTP Proxy Routes (forwarded to microservices)
@@ -88,9 +94,33 @@ app.use(
 );
 
 
-// app.use(ROUTES.PROJECTS.BASE, conditionalJwtMiddleware, projectServiceProxy);
+app.use(ROUTES.PROJECTS.BASE, conditionalJwtMiddleware, projectServiceProxy);
 
 
+// ============================================
+// Admin Routes (Domain-Specific Dispatching)
+// ============================================
+
+// User Management (Auth Service)
+app.use(ROUTES.ADMIN.USERS, conditionalJwtMiddleware, adminServiceProxy);
+app.use(`${API_VERSION}/admin/user`, conditionalJwtMiddleware, adminServiceProxy);
+
+// Content Moderation - Posts & Comments (Post Service)
+app.use(ROUTES.ADMIN.POSTS, conditionalJwtMiddleware, postServiceProxy);
+app.use(ROUTES.ADMIN.COMMENTS, conditionalJwtMiddleware, postServiceProxy);
+
+// Content Moderation - Projects (Project Service)
+app.use(ROUTES.ADMIN.PROJECTS, conditionalJwtMiddleware, projectServiceProxy);
+
+// Content Moderation - Hubs (Chat Service)
+app.use(ROUTES.ADMIN.HUBS, conditionalJwtMiddleware, chatServiceProxy);
+
+// Reports & Audit (Auth Service - Centralized)
+app.use(ROUTES.ADMIN.REPORTS, conditionalJwtMiddleware, adminServiceProxy);
+app.use(ROUTES.ADMIN.AUDIT_LOGS, conditionalJwtMiddleware, adminServiceProxy);
+app.use(ROUTES.ADMIN.BASE + "/analytics", conditionalJwtMiddleware, adminServiceProxy);
+
+// Fallback for any other admin routes
 app.use(ROUTES.ADMIN.BASE, conditionalJwtMiddleware, adminServiceProxy);
 
 // Chat Service Route

@@ -84,6 +84,7 @@ message ListProjectsRequest {
   repeated string tags = 5;
   optional string period = 6; // "day", "week", "month", "all"
   int32 limit = 7;
+  optional string authorId = 8;
 }
 
 message ListProjectsResponse {

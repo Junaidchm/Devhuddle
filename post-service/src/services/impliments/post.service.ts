@@ -181,9 +181,11 @@ export class PostService implements IpostService {
     pageParam?: string,
     userId?: string, // This is viewerId
     authorId?: string, // This is filter by author
-    sortBy: string = "RECENT" // Default to RECENT
+    sortBy: string = "RECENT", // Default to RECENT
+    limit?: number // Add limit parameter
   ): Promise<ListPostsResponse> {
     try {
+      const PAGE_SIZE = limit || 10;
       // 1. Construct Privacy Filter
       const privacyFilter = await this._getVisibilityFilter(userId);
       const baseWhere: Prisma.postsWhereInput = authorId 
@@ -193,7 +195,7 @@ export class PostService implements IpostService {
       // MODE 1: TOP SORTING (High Engagement)
       // Strategy: Bypass FeedService (chronological only) and query DB directly with Offset Pagination
       if (sortBy === "TOP") {
-        const PAGE_SIZE = 10;
+        
         const pageNumber = parseInt(pageParam || "1", 10); // Treat pageParam as page number (default 1)
         const skip = (pageNumber - 1) * PAGE_SIZE;
 
@@ -458,7 +460,7 @@ export class PostService implements IpostService {
 
       //  FALLBACK: Legacy naive query (for backwards compatibility or if feedService unavailable)
       //  FIX: Order by createdAt DESC to ensure newest posts appear first (UUIDs don't sort chronologically)
-      const PAGE_SIZE = 10;
+      // PAGE_SIZE is already defined at the top of the function
       
       //  FIX: Use offset-based pagination with createdAt ordering
       // If pageParam (post ID) is provided, find how many posts to skip based on createdAt

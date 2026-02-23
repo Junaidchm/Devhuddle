@@ -30,7 +30,10 @@ export class FollowsRepository
     const followings = await prisma.user.findUnique({
       where: { id: userId },
       select: {
-        following: { select: { followingId: true } },
+        following: { 
+          where: { deletedAt: null },
+          select: { followingId: true } 
+        },
       },
     });
 

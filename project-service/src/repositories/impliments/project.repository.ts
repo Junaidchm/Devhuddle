@@ -82,15 +82,31 @@ export class ProjectRepository
 
         // Attach media to project if provided
         if (data.mediaIds && data.mediaIds.length > 0) {
-          await tx.projectMedia.updateMany({
-            where: {
-              id: { in: data.mediaIds },
-              projectId: null, // Only update media that's not already attached
-            },
+          // Set first media as preview
+          const [previewId, ...otherIds] = data.mediaIds;
+
+          await tx.projectMedia.update({
+            where: { id: previewId },
             data: {
               projectId: newProject.id,
+              isPreview: true,
+              order: 0,
             },
           });
+
+          if (otherIds.length > 0) {
+            await tx.projectMedia.updateMany({
+              where: {
+                id: { in: otherIds },
+                projectId: null,
+              },
+              data: {
+                projectId: newProject.id,
+                isPreview: false,
+                order: 1, // Start orders after preview
+              },
+            });
+          }
         }
 
         return newProject;
@@ -237,7 +253,7 @@ export class ProjectRepository
           likesCount: project._count.likes,
           commentsCount: project._count.comments,
           sharesCount: project._count.shares,
-          viewsCount: project.viewsCount,
+          viewsCount: userId === project.userId ? project.viewsCount : 0,
           isLiked: project.likes && project.likes.length > 0,
           isShared: project.shares && project.shares.length > 0,
         },
@@ -263,7 +279,7 @@ export class ProjectRepository
         },
         include: {
           media: {
-            where: { isPreview: true },
+            orderBy: [{ isPreview: "desc" }, { order: "asc" }],
             take: 1,
           },
           _count: {
@@ -300,7 +316,7 @@ export class ProjectRepository
         },
         include: {
           media: {
-            where: { isPreview: true },
+            orderBy: [{ isPreview: "desc" }, { order: "asc" }],
             take: 1,
           },
           _count: {
@@ -338,7 +354,7 @@ export class ProjectRepository
         ],
         include: {
           media: {
-            where: { isPreview: true },
+            orderBy: [{ isPreview: "desc" }, { order: "asc" }],
             take: 1,
           },
           _count: {
@@ -382,7 +398,7 @@ export class ProjectRepository
         take: filters.limit || 20,
         include: {
           media: {
-            where: { isPreview: true },
+            orderBy: [{ isPreview: "desc" }, { order: "asc" }],
             take: 1,
           },
           _count: {
@@ -484,6 +500,86 @@ export class ProjectRepository
     }
   }
 
+  async trackView(projectId: string, userId?: string): Promise<boolean> {
+    try {
+      if (userId) {
+        // Check if user has already viewed this project
+        const existingView = await prisma.projectAnalytics.findFirst({
+          where: {
+            projectId,
+            userId,
+            eventType: "VIEW",
+          },
+        });
+
+        if (existingView) {
+          return false; // Already viewed
+        }
+
+        // Record unique view
+        await prisma.projectAnalytics.create({
+          data: {
+            projectId,
+            userId,
+            eventType: "VIEW",
+          },
+        });
+      } else {
+        // For anonymous users, we just record a view without checking uniqueness
+        // (Alternatively, we could use IP address, but userId is safer for now)
+        await prisma.projectAnalytics.create({
+          data: {
+            projectId,
+            eventType: "VIEW",
+          },
+        });
+      }
+
+      // Increment the counter only for unique views (if userId provided) or all (if no userId)
+      await this.incrementViews(projectId);
+      return true;
+    } catch (error: unknown) {
+      logger.error("Error tracking unique view", {
+        error: (error as Error).message,
+        projectId,
+        userId,
+      });
+      return false;
+    }
+  }
+
+  async incrementCommentsCount(projectId: string): Promise<void> {
+    try {
+      await prisma.project.update({
+        where: { id: projectId },
+        data: {
+          commentsCount: { increment: 1 },
+        },
+      });
+    } catch (error: unknown) {
+      logger.error("Error incrementing comments count", {
+        error: (error as Error).message,
+        projectId,
+      });
+    }
+  }
+
+  async decrementCommentsCount(projectId: string): Promise<void> {
+    try {
+      await prisma.project.update({
+        where: { id: projectId },
+        data: {
+          commentsCount: { decrement: 1 },
+        },
+      });
+    } catch (error: unknown) {
+      logger.error("Error decrementing comments count", {
+        error: (error as Error).message,
+        projectId,
+      });
+    }
+  }
+
   async updateTrendingScore(projectId: string, score: number): Promise<void> {
     try {
       await prisma.project.update({
@@ -497,6 +593,44 @@ export class ProjectRepository
         error: (error as Error).message,
         projectId,
       });
+    }
+  }
+
+  async adminListProjects(options: ProjectSelectOptions): Promise<EnrichedProject[]> {
+    try {
+      const projects = await prisma.project.findMany({
+        ...options,
+        include: {
+          media: {
+            orderBy: [{ isPreview: "desc" }, { order: "asc" }],
+          },
+          _count: {
+            select: {
+              likes: { where: { deletedAt: null } },
+              comments: { where: { deletedAt: null } },
+              shares: true,
+            },
+          },
+        },
+      });
+
+      return this.enrichProjectsWithUsers(projects as unknown as ProjectWithRelations[]);
+    } catch (error: unknown) {
+      logger.error("Error in adminListProjects", {
+        error: (error as Error).message,
+      });
+      throw new Error("Database error");
+    }
+  }
+
+  async getProjectCount(where?: Prisma.ProjectWhereInput): Promise<number> {
+    try {
+      return await prisma.project.count({ where });
+    } catch (error: unknown) {
+      logger.error("Error getting project count", {
+        error: (error as Error).message,
+      });
+      throw new Error("Database error");
     }
   }
 

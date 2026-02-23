@@ -209,6 +209,7 @@ export class UserRepository
         role: true,
         emailVerified: true,
         profilePicture: true,
+        coverImage: true,
         location: true,
         bio: true,
         jobTitle: true,
@@ -265,6 +266,7 @@ export class UserRepository
     const result = {
       ...user,
       profilePicture: user.profilePicture || undefined,
+      coverImage: user.coverImage || undefined,
       location: user.location || undefined,
       bio: user.bio || undefined,
       jobTitle: user.jobTitle || undefined,
@@ -454,5 +456,28 @@ export class UserRepository
     return following;
   }
 
+  async deleteUser(id: string, tx?: any): Promise<void> {
+    try {
+      const client = tx || prisma;
+      await client.user.delete({
+        where: { id },
+      });
+    } catch (error) {
+      logger.error(`Error deleting user: ${id}`, {
+        error: (error as Error).message,
+      });
+      throw new Error("Database error");
+    }
+  }
 
+  async createOutboxEvent(data: Prisma.OutboxEventCreateInput, tx?: Prisma.TransactionClient): Promise<any> {
+    try {
+      const client = tx || prisma;
+      return await client.outboxEvent.create({ data });
+    } catch (error: unknown) {
+      logger.error("Error creating outbox event", { error: (error as Error).message });
+      throw new Error("Database error");
+    }
+  }
 }
+

@@ -57,7 +57,7 @@ services:
     networks:
       - shared
     # command: sh -c "npx ts-node src/generate.ts && npx prisma migrate deploy && npm run dev"
-    command: sh -c "npx ts-node src/generate.ts && npx prisma db push && npm run dev"
+    command: sh -c "npx prisma generate && npx ts-node src/generate.ts && npx prisma db push && npm run dev"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
       interval: 10s
@@ -88,7 +88,7 @@ services:
       - shared
     command: sh -c "npx prisma generate && npx prisma db push --accept-data-loss && npm run dev"
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4004/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:4004/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -258,7 +258,7 @@ services:
     networks:
       - shared
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
       interval: 30s
       timeout: 10s
       retries: 3

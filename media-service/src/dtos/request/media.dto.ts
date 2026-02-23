@@ -4,6 +4,7 @@ export enum MediaType {
   POST_IMAGE = 'POST_IMAGE',
   POST_VIDEO = 'POST_VIDEO',
   PROFILE_IMAGE = 'PROFILE_IMAGE',
+  COVER_IMAGE = 'COVER_IMAGE',
 }
 
 /**

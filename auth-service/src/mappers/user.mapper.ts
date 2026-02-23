@@ -44,6 +44,7 @@ export class UserMapper {
       fullName: entity.name, // Use name as fullName since DB doesn't have fullName field
       profilePhoto: entity.profilePicture || undefined,
       bio: entity.bio || undefined,
+      jobTitle: entity.jobTitle || undefined,
       skills: entity.skills || []
     };
   }

@@ -11,17 +11,18 @@ import { Request, Response } from "express";
 export const postServiceProxy = createProxyMiddleware({
   target: app_config.postServiceUrl,
   changeOrigin: true,
-  // Map /feed routes to /api/v1/posts routes
+  // Strip /api/v1 prefix
   pathRewrite: {
-    "^/api/v1/feed": "/api/v1/posts",
+    "^/api/v1/feed": "/posts",
+    "^/api/v1": "",
   },
   onProxyReq: (proxyReq, req: any, res: Response) => {
     // Forward user data from JWT middleware if available
     if (req.user) {
       proxyReq.setHeader("x-user-data", JSON.stringify(req.user));
-      logger.info(`[Post Proxy] User authenticated: ${req.user.id}`);
+      // logger.info(`[Post Proxy] User authenticated: ${req.user.id}`);
     } else {
-      logger.warn(`[Post Proxy] No user data found in request for ${req.originalUrl}`);
+      // logger.warn(`[Post Proxy] No user data found in request for ${req.originalUrl}`);
     }
     
     // CRITICAL: Handle request body for POST/PUT/PATCH requests
@@ -54,11 +55,11 @@ export const postServiceProxy = createProxyMiddleware({
       // This ensures http-proxy-middleware doesn't try to pipe the consumed original stream
       proxyReq.end();
       
-      logger.info(`[Post Proxy] Writing body to proxy request`, {
-        bodyLength: bodyLength,
-        bodyKeys: Object.keys(req.body),
-        bodyPreview: bodyData.substring(0, 200),
-      });
+      // logger.info(`[Post Proxy] Writing body to proxy request`, {
+      //   bodyLength: bodyLength,
+      //   bodyKeys: Object.keys(req.body),
+      //   bodyPreview: bodyData.substring(0, 200),
+      // });
     }
     
     // Special handling for DELETE /feed/delete - extract postId from body and add to path
@@ -69,20 +70,20 @@ export const postServiceProxy = createProxyMiddleware({
          // just ensure the body is passed correctly (handled above)
     }
     
-    logger.info(
-      `[Post Proxy] Forwarding ${req.method} ${req.originalUrl} to ${app_config.postServiceUrl}${proxyReq.path}`,
-      {
-        target: app_config.postServiceUrl,
-        targetPath: proxyReq.path,
-        originalPath: req.path,
-        hasBody: !!req.body,
-        bodyKeys: req.body ? Object.keys(req.body) : [],
-      }
-    );
+    // logger.info(
+    //   `[Post Proxy] Forwarding ${req.method} ${req.originalUrl} to ${app_config.postServiceUrl}${proxyReq.path}`,
+    //   {
+    //     target: app_config.postServiceUrl,
+    //     targetPath: proxyReq.path,
+    //     originalPath: req.path,
+    //     hasBody: !!req.body,
+    //     bodyKeys: req.body ? Object.keys(req.body) : [],
+    //   }
+    // );
   },
   onProxyRes: (proxyRes, req, res) => {
     // Log response for debugging
-    logger.info(`[Post Proxy] Response ${proxyRes.statusCode} for ${req.method} ${req.originalUrl}`);
+    // logger.info(`[Post Proxy] Response ${proxyRes.statusCode} for ${req.method} ${req.originalUrl}`);
     
     if (proxyRes.headers["content-type"]?.includes("image")) {
       proxyRes.headers["access-control-allow-origin"] =

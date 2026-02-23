@@ -9,8 +9,15 @@ import { UserMapper } from "../../mappers/user.mapper";
 import { chatStatsClient } from "../../clients/chat-stats.client";
 import { getCachedChatSuggestions, cacheChatSuggestions } from "../../utils/redis.util";
 import logger from "../../utils/logger.util";
+import prisma from "../../config/prisma.config";
+import { createCircuitBreaker } from "../../utils/circuit.breaker.util";
 
 export class UserService implements IUserService {
+  private deleteAccountBreaker = createCircuitBreaker(
+    this.deleteAccountCore.bind(this),
+    "DeleteAccount"
+  );
+
   constructor(
     private userRepository: IUserRepository,
     private followsService: IFollowsService
@@ -226,6 +233,41 @@ export class UserService implements IUserService {
        await this.userRepository.updateProfile(userId, { skills });
     } catch (error) {
        throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, (error as Error).message);
+    }
+  }
+
+  async deleteAccount(userId: string): Promise<void> {
+    try {
+      await this.deleteAccountBreaker.fire(userId);
+    } catch (error: any) {
+      logger.error(`Error in deleteAccount for user: ${userId}`, { error: error.message });
+      throw error instanceof CustomError ? error : new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, error.message);
+    }
+  }
+
+  private async deleteAccountCore(userId: string): Promise<void> {
+    try {
+      await prisma.$transaction(async (tx) => {
+        // 1. Delete user (Cascading deletes handle relations in DB)
+        await this.userRepository.deleteUser(userId, tx);
+
+        // 2. Create Outbox event for other services (Saga)
+        await this.userRepository.createOutboxEvent({
+          aggregateType: "USER",
+          aggregateId: userId,
+          eventType: "USER_DELETED",
+          topic: "user-events",
+          payload: {
+            userId,
+            deletedAt: new Date().toISOString(),
+          },
+        }, tx);
+      });
+      
+      logger.info(`✅ User account deleted and outbox event created: ${userId}`);
+    } catch (error: any) {
+      logger.error(`❌ Failed to delete account for user: ${userId}`, { error: error.message });
+      throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Account deletion failed");
     }
   }
 }

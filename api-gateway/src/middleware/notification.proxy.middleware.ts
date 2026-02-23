@@ -12,12 +12,13 @@ import { verifyAccessToken } from "../utils/jwt.util";
 export const notificationServiceProxy = createProxyMiddleware({
   target: app_config.notificationServiceUrl,
   changeOrigin: true,
+  pathRewrite: { "^/api/v1": "" },
   ws: false, // Disable auto-upgrade to handle manually
   
   onProxyReq: (proxyReq, req: any, res) => {
-    logger.info(
-      `[Notification Proxy] Forwarding ${req.method} ${req.originalUrl} to ${app_config.notificationServiceUrl}`
-    );
+    // logger.info(
+    //   `[Notification Proxy] Forwarding ${req.method} ${req.originalUrl} to ${app_config.notificationServiceUrl}`
+    // );
 
     // Forward user data from JWT middleware if available
     const userData = req.user || (req.headers["x-user-data"] ? JSON.parse(req.headers["x-user-data"] as string) : null);
@@ -33,7 +34,7 @@ export const notificationServiceProxy = createProxyMiddleware({
 
     // CRITICAL: Handle request body for POST/PUT/PATCH requests
     // When Express.json() parses the body, it consumes the request stream
-    if (req.method !== "GET" && req.method !== "HEAD" && req.body && Object.keys(req.body).length > 0) {
+    if (req.method !== "GET" && req.method !== "HEAD" && req.body) {
       const bodyData = JSON.stringify(req.body);
       const bodyLength = Buffer.byteLength(bodyData);
       
@@ -48,10 +49,10 @@ export const notificationServiceProxy = createProxyMiddleware({
       proxyReq.write(bodyData);
       proxyReq.end();
       
-      logger.info(`[Notification Proxy] Writing body to proxy request`, {
-        bodyLength: bodyLength,
-        bodyKeys: Object.keys(req.body),
-      });
+      // logger.info(`[Notification Proxy] Writing body to proxy request`, {
+      //   bodyLength: bodyLength,
+      //   bodyKeys: Object.keys(req.body),
+      // });
     }
   },
 

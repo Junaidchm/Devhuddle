@@ -44,6 +44,9 @@ message UserProfile {
   string username = 2;
   string name = 3;
   string profilePhoto = 4;
+  string bio = 5;
+  bool isOnline = 6;
+  string lastSeen = 7;
 }
 
 message GetUserProfilesResponse {

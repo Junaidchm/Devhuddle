@@ -15,6 +15,8 @@ import grpcServer from "./grpc-server";
 import { connectRedis } from "./config/redis.config";
 import { startCompensationConsumer } from "./consumers/compensation.consumer";
 import userRoutes from "./routes/user.routes";
+import { OutboxProcessor } from "./utils/outbox.processor";
+import { startMetricsConsumer } from "./consumers/metrics.consumer";
 
 dotenv.config();
 
@@ -55,8 +57,8 @@ app.use("/users", userRoutes);
 // Follow routes: receives /users/follows/* after gateway removes /api/v1
 app.use("/users/follows", followRoutes);
 
-// Admin routes: receives /auth/admin/* after gateway removes /api/v1
-app.use("/auth/admin", adminRoutes);
+// Admin routes: receives /admin/* from Gateway (via both auth and admin proxies)
+app.use("/admin", adminRoutes);
 
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
@@ -72,12 +74,17 @@ const startServer = async () => {
   try {
     logger.info("Prisma connection established");
     await connectPrisma();
-
     await connectRedis();
     logger.info("Redis connection established");
 
     await startCompensationConsumer();
     logger.info("Compensation consumer started");
+
+    await startMetricsConsumer();
+    logger.info("Metrics consumer started");
+
+    await OutboxProcessor.start();
+
     const PORT = process.env.PORT || 3001;
     app.listen(PORT, () => {
       logger.info(`Auth Service running on port ${PORT}`);

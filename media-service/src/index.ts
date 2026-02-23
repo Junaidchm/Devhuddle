@@ -50,7 +50,7 @@ postConsumer.init().catch(err => logger.error("Failed to init Post Consumer", {e
 // Register auth middleware
 app.use(extractUserFromHeader);
 
-app.use("/api/v1/media", mediaRouter);
+app.use("/media", mediaRouter);
 
 app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({ status: "Media service is running" });

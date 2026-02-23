@@ -128,7 +128,7 @@ export class NotificationController {
         res.status(400).json({ error: "User ID is required" });
         return;
       }
-
+      
       await this._notificationService.markAllAsRead(userId);
 
       res.status(200).json({
@@ -137,6 +137,38 @@ export class NotificationController {
       });
     } catch (error: any) {
       logger.error("Error marking all notifications as read", {
+        error: error.message,
+      });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  /**
+   * Restore a soft-deleted notification
+   */
+  async restoreNotification(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const userId = (req as any).user?.id;
+
+      if (!id) {
+        res.status(400).json({ error: "Notification ID is required" });
+        return;
+      }
+
+      if (!userId) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      await this._notificationService.restoreNotification(id, userId);
+
+      res.status(200).json({
+        success: true,
+        message: "Notification restored",
+      });
+    } catch (error: any) {
+      logger.error("Error restoring notification", {
         error: error.message,
       });
       res.status(500).json({ error: "Internal server error" });

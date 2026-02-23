@@ -33,9 +33,9 @@ export const authServiceProxy = createProxyMiddleware({
     
     if (userData) {
       proxyReq.setHeader("x-user-data", JSON.stringify(userData));
-      logger.info(`[Auth Proxy] User authenticated: ${userData.id}, role: ${userData.role}`);
+      // logger.info(`[Auth Proxy] User authenticated: ${userData.id}, role: ${userData.role}`);
     } else {
-      logger.warn(`[Auth Proxy] No user data found for ${req.method} ${req.originalUrl}`);
+      // logger.warn(`[Auth Proxy] No user data found for ${req.method} ${req.originalUrl}`);
     }
     
     // Also forward Authorization header if present (for services that might need it)
@@ -47,7 +47,8 @@ export const authServiceProxy = createProxyMiddleware({
     // When Express.json() parses the body, it consumes the request stream
     // http-proxy-middleware will try to pipe the consumed stream (which is empty)
     // We MUST manually write the parsed body to the proxy request
-    if (req.method !== "GET" && req.method !== "HEAD" && req.body && Object.keys(req.body).length > 0) {
+    // CRITICAL: Handle request body for POST/PUT/PATCH requests
+    if (req.method !== "GET" && req.method !== "HEAD" && req.body) {
       const bodyData = JSON.stringify(req.body);
       const bodyLength = Buffer.byteLength(bodyData);
       
@@ -73,23 +74,23 @@ export const authServiceProxy = createProxyMiddleware({
       // This ensures http-proxy-middleware doesn't try to pipe the consumed original stream
       proxyReq.end();
       
-      logger.info(`[Auth Proxy] Writing body to proxy request`, {
-        bodyLength: bodyLength,
-        bodyKeys: Object.keys(req.body),
-        bodyPreview: bodyData.substring(0, 100),
-      });
+      // logger.info(`[Auth Proxy] Writing body to proxy request`, {
+      //   bodyLength: bodyLength,
+      //   bodyKeys: Object.keys(req.body),
+      //   bodyPreview: bodyData.substring(0, 100),
+      // });
     }
     
     // Log the actual path being forwarded
-    const targetPath = proxyReq.path;
-    logger.info(`[Auth Proxy] Forwarding ${req.method} ${req.originalUrl}`, {
-      target: authServiceUrl,
-      targetPath: targetPath,
-      originalPath: req.path,
-      hasBody: !!req.body,
-      bodyKeys: req.body ? Object.keys(req.body) : [],
-      bodyPreview: req.body ? JSON.stringify(req.body).substring(0, 100) : undefined,
-    });
+    // const targetPath = proxyReq.path;
+    // logger.info(`[Auth Proxy] Forwarding ${req.method} ${req.originalUrl}`, {
+    //   target: authServiceUrl,
+    //   targetPath: targetPath,
+    //   originalPath: req.path,
+    //   hasBody: !!req.body,
+    //   bodyKeys: req.body ? Object.keys(req.body) : [],
+    //   bodyPreview: req.body ? JSON.stringify(req.body).substring(0, 100) : undefined,
+    // });
   },
   onProxyRes: (proxyRes, req, res) => {
     const statusCode = proxyRes.statusCode ?? 200; // Default to 200 if undefined
@@ -101,7 +102,7 @@ export const authServiceProxy = createProxyMiddleware({
         url: req.originalUrl,
       });
     } else {
-      logger.info(`[Auth Proxy] Response ${statusCode} for ${req.method} ${req.originalUrl}`);
+      // logger.info(`[Auth Proxy] Response ${statusCode} for ${req.method} ${req.originalUrl}`);
     }
     
     if (proxyRes.headers["content-type"]?.includes("image")) {

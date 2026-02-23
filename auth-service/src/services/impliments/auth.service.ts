@@ -351,7 +351,8 @@ export class AuthService implements IAuthService {
       skills,
       jobTitle,
       company,
-      yearsOfExperience
+      yearsOfExperience,
+      coverImage
     } = data;
 
     // Validate username uniqueness if username is being updated
@@ -409,6 +410,7 @@ export class AuthService implements IAuthService {
       jobTitle,
       company,
       yearsOfExperience,
+      coverImage,
     };
 
     // Remove undefined fields to avoid overwriting with undefined
@@ -437,6 +439,7 @@ export class AuthService implements IAuthService {
       company: updatedUser.company || "",
       yearsOfExperience: updatedUser.yearsOfExperience || "",
       emailVerified: updatedUser.emailVerified,
+      coverImage: updatedUser.coverImage || "",
     };
   }
 

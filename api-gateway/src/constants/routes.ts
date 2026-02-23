@@ -58,11 +58,11 @@ export const ROUTES = {
   ADMIN: {
     BASE: `${API_VERSION}/admin`,
     // User Management (handled by Auth Service)
-    USERS: `${API_VERSION}/auth/admin/users`,
-    USER_BY_ID: (id: string) => `${API_VERSION}/auth/admin/user/${id}`,
-    TOGGLE_USER: (id: string) => `${API_VERSION}/auth/admin/users/${id}/toogle`,
-    USER_REPORTED_CONTENT: (userId: string) => `${API_VERSION}/auth/admin/users/${userId}/reported-content`,
-    USER_REPORTS: (userId: string) => `${API_VERSION}/auth/admin/users/${userId}/reports`,
+    USERS: `${API_VERSION}/admin/users`,
+    USER_BY_ID: (id: string) => `${API_VERSION}/admin/user/${id}`,
+    TOGGLE_USER: (id: string) => `${API_VERSION}/admin/users/${id}/toggle`,
+    USER_REPORTED_CONTENT: (userId: string) => `${API_VERSION}/admin/users/${userId}/reported-content`,
+    USER_REPORTS: (userId: string) => `${API_VERSION}/admin/users/${userId}/reports`,
     // Reports Management (handled by Post Service)
     REPORTS: `${API_VERSION}/admin/reports`,
     REPORT_BY_ID: (id: string) => `${API_VERSION}/admin/reports/${id}`,
@@ -79,10 +79,24 @@ export const ROUTES = {
     COMMENTS_REPORTED: `${API_VERSION}/admin/comments/reported`,
     COMMENT_BY_ID: (id: string) => `${API_VERSION}/admin/comments/${id}`,
     COMMENT_DELETE: (id: string) => `${API_VERSION}/admin/comments/${id}`,
+    // Projects Management (handled by Project Service)
+    PROJECTS: `${API_VERSION}/admin/projects`,
+    PROJECTS_REPORTED: `${API_VERSION}/admin/projects/reported`,
+    PROJECT_BY_ID: (id: string) => `${API_VERSION}/admin/projects/${id}`,
+    PROJECT_HIDE: (id: string) => `${API_VERSION}/admin/projects/${id}/hide`,
+    PROJECT_DELETE: (id: string) => `${API_VERSION}/admin/projects/${id}`,
+    // Hubs Management (handled by Chat Service)
+    HUBS: `${API_VERSION}/admin/hubs`,
+    HUBS_REPORTED: `${API_VERSION}/admin/hubs/reported`,
+    HUB_BY_ID: (id: string) => `${API_VERSION}/admin/hubs/${id}`,
+    HUB_SUSPEND: (id: string) => `${API_VERSION}/admin/hubs/${id}/suspend`,
+    HUB_DELETE: (id: string) => `${API_VERSION}/admin/hubs/${id}`,
     // Analytics (handled by Post Service)
     ANALYTICS_DASHBOARD: `${API_VERSION}/admin/analytics/dashboard`,
     ANALYTICS_REPORTS_BY_REASON: `${API_VERSION}/admin/analytics/reports-by-reason`,
     ANALYTICS_REPORTS_BY_SEVERITY: `${API_VERSION}/admin/analytics/reports-by-severity`,
+    // Audit Logs
+    AUDIT_LOGS: `${API_VERSION}/admin/audit-logs`,
   },
   
   // Notification Service Routes
@@ -134,23 +148,16 @@ export const ROUTES = {
     SHARE: (projectId: string) => `${API_VERSION}/projects/${projectId}/share`,
     REPORT: (projectId: string) => `${API_VERSION}/projects/${projectId}/report`,
     TRACK_VIEW: (projectId: string) => `${API_VERSION}/projects/${projectId}/view`,
+    // Comments
+    CREATE_COMMENT: (projectId: string) => `${API_VERSION}/projects/${projectId}/comments`,
+    GET_COMMENTS: (projectId: string) => `${API_VERSION}/projects/${projectId}/comments`,
+    UPDATE_COMMENT: (commentId: string) => `${API_VERSION}/comments/${commentId}`,
+    DELETE_COMMENT: (commentId: string) => `${API_VERSION}/comments/${commentId}`,
+    GET_REPLIES: (commentId: string) => `${API_VERSION}/comments/${commentId}/replies`,
   },
   
   // Health Check
   HEALTH: '/health',
 } as const;
 
-// Type helper for route values
-// Extracts all string values from nested route objects
-// type ExtractRouteValues<T> = T extends string
-//   ? T
-//   : T extends (...args: any[]) => string
-//   ? T
-//   : T extends object
-//   ? {
-//       [K in keyof T]: ExtractRouteValues<T[K]>;
-//     }[keyof T]
-//   : never;
-
-// export type RouteValue = ExtractRouteValues<typeof ROUTES[keyof typeof ROUTES]>;
 

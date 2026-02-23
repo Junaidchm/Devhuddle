@@ -68,7 +68,7 @@ export class ProjectController {
       } = req.body;
 
       const result = await this._projectService.updateProject({
-        projectId,
+        projectId: projectId as string,
         userId,
         title,
         description,
@@ -102,7 +102,7 @@ export class ProjectController {
         : undefined;
 
       const result = await this._projectService.getProject({
-        projectId,
+        projectId: projectId as string,
         userId,
       });
 
@@ -126,13 +126,14 @@ export class ProjectController {
       const userId = req.headers["x-user-data"]
         ? getUserIdFromRequest(req)
         : undefined;
-      const { cursor, pageParam, filter, techStack, tags, period, limit } = req.query;
+      const { cursor, pageParam, filter, techStack, tags, period, limit, authorId } = req.query;
       // Support both 'cursor' (from client) and 'pageParam' (legacy) for backward compatibility
       const pageCursor = (cursor as string) || (pageParam as string) || undefined;
 
       const result = await this._projectService.listProjects({
         pageParam: pageCursor,
         userId,
+        authorId: authorId as string | undefined,
         filter: filter as string | undefined,
         techStack: techStack
           ? (Array.isArray(techStack) ? techStack.map(String) : [String(techStack)])
@@ -161,7 +162,7 @@ export class ProjectController {
       const userId = getUserIdFromRequest(req);
 
       const result = await this._projectService.deleteProject({
-        projectId,
+        projectId: projectId as string,
         userId,
       });
 
@@ -185,7 +186,7 @@ export class ProjectController {
       const userId = getUserIdFromRequest(req);
 
       const result = await this._projectService.publishProject({
-        projectId,
+        projectId: projectId as string,
         userId,
       });
 
@@ -309,7 +310,7 @@ export class ProjectController {
         : undefined;
 
       const result = await this._projectService.trackProjectView({
-        projectId,
+        projectId: projectId as string,
         userId,
       });
 

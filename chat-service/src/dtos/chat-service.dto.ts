@@ -12,7 +12,7 @@ export class SendMessageCommand {
     public readonly recipientIds: string[] = [],
     public readonly content: string,
     // Media fields (optional)
-    public readonly messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'FILE' | 'STICKER' = 'TEXT',
+    public readonly messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'FILE' | 'STICKER' | 'SYSTEM' = 'TEXT',
     public readonly mediaUrl?: string,
     public readonly mediaId?: string,
     public readonly mediaMimeType?: string,
@@ -22,7 +22,13 @@ export class SendMessageCommand {
     // ✅ FIX: Add conversationId for existing conversations
     public readonly conversationId?: string,
     // ✅ FIX: Add dedupeId for idempotency
-    public readonly dedupeId?: string
+    public readonly dedupeId?: string,
+    // ✅ FIX: Add replyToId for replies
+    public readonly replyToId?: string,
+    // ✅ ADD: Forwarding fields
+    public readonly isForwarded: boolean = false,
+    public readonly forwardedFrom?: string,
+    public readonly originalMessageId?: string
   ) {
     if (!senderId) throw new Error("Sender ID is required");
     
@@ -229,6 +235,7 @@ export interface ConversationWithMetadataDto {
   ownerId?: string | null;
   onlyAdminsCanPost?: boolean;
   onlyAdminsCanEditInfo?: boolean;
+  memberCount?: number;
   participantIds: string[];
   participants: {
     userId: string;
@@ -238,13 +245,33 @@ export interface ConversationWithMetadataDto {
     role?: 'ADMIN' | 'MEMBER';
   }[];
   lastMessage: {
+    id: string; // ✅ FIX: Include message ID
     content: string;
+    type: string; // ✅ FIX: Include message type
+    status: string; // ✅ FIX: Include status
     senderId: string;
     senderName: string;
     createdAt: Date;
   } | null;
   lastMessageAt: Date;
   unreadCount: number;
+  isBlockedByMe?: boolean;
+  isBlockedByThem?: boolean;
+  createdAt: Date;
+}
+
+/**
+ * Lightweight DTO for listing groups in Hubs discovery
+ */
+export interface GroupListDto {
+  conversationId: string;
+  name: string | null;
+  description: string | null;
+  icon: string | null;
+  memberCount: number;
+  topics: string[];
+  isMember: boolean;
+  createdAt: Date;
 }
 
 

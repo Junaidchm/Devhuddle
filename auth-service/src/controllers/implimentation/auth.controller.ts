@@ -153,7 +153,8 @@ export class AuthController implements IAuthController {
       skills,
       jobTitle,
       company,
-      yearsOfExperience
+      yearsOfExperience,
+      coverImage
     } = req;
 
     if (!userId) {
@@ -178,6 +179,7 @@ export class AuthController implements IAuthController {
     if (jobTitle !== undefined) payload.jobTitle = jobTitle || undefined;
     if (company !== undefined) payload.company = company || undefined;
     if (yearsOfExperience !== undefined) payload.yearsOfExperience = yearsOfExperience || undefined;
+    if (coverImage !== undefined) payload.coverImage = coverImage || undefined;
 
     const updatedUser: UpdateProfileResponse =
       await this._authService.updateProfile(userId, payload);

@@ -36,7 +36,7 @@ export default async function jwtMiddleware(
 
    
     if (!token) {
-      logger.error("No JWT token provided");
+      // logger.error("No JWT token provided");
       throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.TOKEN_NOT_FOUND);
     }
     const decoded = await verifyAccessToken(token);

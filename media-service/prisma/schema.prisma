@@ -15,6 +15,7 @@ enum MediaType {
   CHAT_VIDEO
   CHAT_AUDIO
   CHAT_FILE
+  COVER_IMAGE
 }
 
 enum MediaStatus {

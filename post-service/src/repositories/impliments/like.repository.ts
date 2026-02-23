@@ -191,7 +191,8 @@ export class LikeRepository
   async getLikes(
     targetType: ReactionTargetType,
     targetId: string,
-    limit: number = 50
+    limit: number = 50,
+    skip: number = 0
   ): Promise<Reaction[]> {
     try {
       const whereClause: any = {
@@ -208,6 +209,7 @@ export class LikeRepository
       return await prisma.reaction.findMany({
         where: whereClause,
         take: limit,
+        skip: skip,
         orderBy: {
           createdAt: "desc",
         },

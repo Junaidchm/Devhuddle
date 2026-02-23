@@ -1,9 +1,3 @@
-// interface INotificationRepository {
-//     // getCurrentVersion(entityId: string): Promise<number>;
-//     createFollowNotification(issuerId: string, recipientId: string, version: number): Promise<void>;
-//     deleteFollowNotification(issuerId: string, recipientId: string): Promise<void>;
-// }
-
 import { NotificationObject } from "@prisma/client";
 
 export interface INotificationRepository {
@@ -22,7 +16,7 @@ export interface INotificationRepository {
     issuerId: string,
     recipientId: string,
     entityId: string,
-    entityType: "POST" | "COMMENT",
+    entityType: "POST" | "COMMENT" | "PROJECT",
     version: number,
     contextId?: string,
     metadata?: any
@@ -32,14 +26,14 @@ export interface INotificationRepository {
     issuerId: string,
     recipientId: string,
     entityId: string,
-    entityType: "POST" | "COMMENT",
+    entityType: "POST" | "COMMENT" | "PROJECT",
     version: number
   ): Promise<void>;
 
   getLikeNotification(
     recipientId: string,
     entityId: string,
-    entityType: "POST" | "COMMENT"
+    entityType: "POST" | "COMMENT" | "PROJECT"
   ): Promise<NotificationObject | null>;
 
   // Comment notifications (aggregated)
@@ -48,7 +42,7 @@ export interface INotificationRepository {
     recipientId: string,
     postId: string,
     commentId: string,
-    notificationType: "POST" | "COMMENT",
+    notificationType: "POST" | "COMMENT" | "PROJECT",
     version: number
   ): Promise<void>;
 
@@ -63,7 +57,7 @@ export interface INotificationRepository {
     recipientId: string,
     postId: string,
     commentId: string,
-    entityType: "POST" | "COMMENT",
+    entityType: "POST" | "COMMENT" | "PROJECT",
     version: number
   ): Promise<void>;
 
@@ -84,8 +78,25 @@ export interface INotificationRepository {
     version: number
   ): Promise<void>;
 
-  // // Report notifications (typically not aggregated, but keeping for consistency)
-  // createReportNotification(issuerId: string, recipientId: string, postId: string): Promise<void>;
+  // Share notifications
+  createShareNotification(
+    issuerId: string,
+    recipientId: string,
+    entityId: string,
+    version: number,
+    entityType?: "POST" | "PROJECT"
+  ): Promise<void>;
+
+  // Report notifications
+  createReportNotification(
+    issuerId: string,
+    recipientId: string,
+    entityId: string,
+    entityType: "POST" | "COMMENT" | "PROJECT",
+    reason: string,
+    version: number,
+    metadata?: any
+  ): Promise<void>;
 
   getNotifications(
     recipientId: string,
@@ -103,4 +114,21 @@ export interface INotificationRepository {
   ): Promise<void>;
   getUnreadCount(recipientId: string): Promise<number>;
   markAllAsRead(recipientId: string): Promise<void>;
+  restoreNotification(
+    notificationId: string,
+    recipientId: string
+  ): Promise<void>;
+
+  // Chat notifications
+  createChatNotification(
+    senderId: string,
+    recipientId: string,
+    conversationId: string,
+    messageId: string,
+    content: string,
+    version: number
+  ): Promise<void>;
+
+  // Cleanup
+  deleteUserNotifications(userId: string): Promise<void>;
 }

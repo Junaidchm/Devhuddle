@@ -58,6 +58,15 @@ export const KAFKA_TOPICS = {
   POST_REPORTED: "post.reported.v1",
   POST_REPORTED_DLQ: "post.reported.v1-dlq",
   
+  // Project events
+  PROJECT_LIKE_CREATED: "project.like.created.v1",
+  PROJECT_LIKE_REMOVED: "project.like.removed.v1",
+  PROJECT_COMMENT_CREATED: "project.comment.created.v1",
+  PROJECT_COMMENT_EDITED: "project.comment.edited.v1",
+  PROJECT_COMMENT_DELETED: "project.comment.deleted.v1",
+  PROJECT_SHARE_CREATED: "project.share.created.v1",
+  PROJECT_REPORT_CREATED: "project.report.created.v1",
+  
   // Mention events
   USER_MENTIONED: "user.mentioned.v1",
   USER_MENTIONED_DLQ: "user.mentioned.v1-dlq",
@@ -70,6 +79,7 @@ export const KAFKA_TOPICS = {
   // System events
   NOTIFICATION_FAILED: "notification-failed",
   NOTIFICATION_FAILED_DLQ: "notification-failed-dlq",
+  USER_DELETED: "user-events",
 } as const;
 
 export const KAFKA_CONFIG = {

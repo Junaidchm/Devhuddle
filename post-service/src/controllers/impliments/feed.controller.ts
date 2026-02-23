@@ -37,10 +37,13 @@ export class PostController implements IfeedController {
 
   async getPostsController(req: ListPostsRequest): Promise<ListPostsResponse> {
     try {
-      const { pageParam, userId } = req;
+      const { pageParam, userId, limit } = req;
       const result: ListPostsResponse = await this._postService.getPosts(
         pageParam as string | undefined,
-        userId as string | undefined
+        userId as string | undefined,
+        undefined, // authorId
+        undefined, // sortBy
+        limit
       );
 
       return result;
@@ -131,6 +134,7 @@ export class PostController implements IfeedController {
       const userId = req.query?.userId as string | undefined;
       const authorId = req.query?.authorId as string | undefined; // Get authorId from query
       const sortBy = req.query?.sortBy as string | undefined; // Get sortBy from query
+      const limit = req.query?.limit ? parseInt(req.query.limit as string, 10) : undefined; // Get limit from query
       
       // Get userId from headers (set by API Gateway)
       const userIdFromHeader = req.headers["x-user-data"]
@@ -143,7 +147,8 @@ export class PostController implements IfeedController {
         pageParam,
         finalUserId,
         authorId,
-        sortBy
+        sortBy,
+        limit
       });
 
       // Call service directly to support authorId (bypassing strict gRPC request type)
@@ -151,7 +156,8 @@ export class PostController implements IfeedController {
         pageParam,
         finalUserId,
         authorId,
-        sortBy
+        sortBy,
+        limit
       );
 
       logger.info("Posts fetched successfully", {

@@ -34,14 +34,14 @@ export const projectServiceProxy = app_config.projectServiceUrl
   ? createProxyMiddleware({
       target: app_config.projectServiceUrl,
       changeOrigin: true,
+      pathRewrite: { "^/api/v1": "" },
       timeout: 30000, // 30 second timeout
-      // Forward path as-is: /api/v1/projects/* -> /api/v1/projects/*
-      // No pathRewrite needed since paths match exactly
+      // Forward path: /api/v1/projects/* -> /projects/*
       onProxyReq: (proxyReq, req: any, res) => {
         // Forward user data from JWT middleware if available
         if (req.user) {
           proxyReq.setHeader("x-user-data", JSON.stringify(req.user));
-          logger.info(`[Project Proxy] User authenticated: ${req.user.id}`);
+          // logger.info(`[Project Proxy] User authenticated: ${req.user.id}`);
         } else if (req.headers["x-user-data"]) {
           // Forward existing x-user-data header if present
           proxyReq.setHeader("x-user-data", req.headers["x-user-data"]);
@@ -78,11 +78,11 @@ export const projectServiceProxy = app_config.projectServiceUrl
             // This ensures http-proxy-middleware doesn't try to pipe the consumed original stream
             proxyReq.end();
             
-            logger.info(`[Project Proxy] Writing body to proxy request`, {
-              bodyLength: bodyLength,
-              bodyKeys: Object.keys(req.body),
-              url: req.originalUrl,
-            });
+            // logger.info(`[Project Proxy] Writing body to proxy request`, {
+            //   bodyLength: bodyLength,
+            //   bodyKeys: Object.keys(req.body),
+            //   url: req.originalUrl,
+            // });
           } catch (bodyError: unknown) {
             logger.error("[Project Proxy] Error writing body to proxy request", {
               error: (bodyError as Error).message,
@@ -92,16 +92,16 @@ export const projectServiceProxy = app_config.projectServiceUrl
           }
         }
         
-        logger.info(
-          `[Project Proxy] Forwarding ${req.method} ${req.originalUrl} to ${app_config.projectServiceUrl}${req.url}`,
-          {
-            target: app_config.projectServiceUrl,
-            targetPath: req.url,
-            originalPath: req.path,
-            hasBody: !!req.body,
-            bodyKeys: req.body ? Object.keys(req.body) : [],
-          }
-        );
+        // logger.info(
+        //   `[Project Proxy] Forwarding ${req.method} ${req.originalUrl} to ${app_config.projectServiceUrl}${req.url}`,
+        //   {
+        //     target: app_config.projectServiceUrl,
+        //     targetPath: req.url,
+        //     originalPath: req.path,
+        //     hasBody: !!req.body,
+        //     bodyKeys: req.body ? Object.keys(req.body) : [],
+        //   }
+        // );
       },
       onProxyRes: (proxyRes, req, res) => {
         // Log successful proxy responses

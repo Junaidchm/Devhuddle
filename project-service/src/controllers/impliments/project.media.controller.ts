@@ -9,23 +9,6 @@ export class ProjectMediaController {
   constructor(private _mediaService: IProjectMediaService) {}
 
   async uploadProjectMediaHttp(req: Request, res: Response): Promise<void> {
-    // Check if request was aborted
-    if (req.aborted || !req.readable) {
-      logger.warn("Request aborted before processing", {
-        url: req.url,
-        method: req.method,
-      });
-      if (!res.headersSent && !res.writableEnded) {
-        res.status(400).json({
-          status: 400,
-          message: "Request was cancelled",
-          success: false,
-        });
-        return;
-      }
-      return;
-    }
-
     try {
       // Validate request body exists
       // Validation handled by DTO
@@ -64,25 +47,13 @@ export class ProjectMediaController {
         return;
       }
 
-      res.status(HttpStatus.OK).json(response);
+      res.status(HttpStatus.OK).json({
+        success: true,
+        data: response,
+      });
     } catch (err: unknown) {
-      // Check if request was aborted during processing
       const error = err as any;
-      if (req.aborted || error.message === 'request aborted' || error.message?.includes('aborted')) {
-        logger.warn("Request aborted during media upload processing", {
-          error: error.message,
-        });
-        if (!res.headersSent && !res.writableEnded) {
-          res.status(400).json({
-            status: 400,
-            message: "Request was cancelled",
-            success: false,
-          });
-          return;
-        }
-        return;
-      }
-
+      
       logger.error("Error in POST /api/v1/projects/media", {
         error: error.message,
         stack: error.stack,

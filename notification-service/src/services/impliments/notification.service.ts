@@ -238,4 +238,49 @@ export class NotificationService implements INotificationService {
       throw error;
     }
   }
+
+  async restoreNotification(notificationId: string, recipientId: string): Promise<void> {
+    try {
+      await this._notificationRepository.restoreNotification(notificationId, recipientId);
+      logger.info(`Notification ${notificationId} restored for user ${recipientId}`);
+    } catch (error: unknown) {
+      logger.error("Error in notification service - restoreNotification", {
+        error: (error as Error).message,
+        notificationId,
+        recipientId,
+      });
+      throw error;
+    }
+  }
+
+  async createChatNotification(
+    senderId: string,
+    recipientId: string,
+    conversationId: string,
+    messageId: string,
+    content: string,
+    version: number
+  ): Promise<void> {
+    try {
+      await this._notificationRepository.createChatNotification(
+        senderId,
+        recipientId,
+        conversationId,
+        messageId,
+        content,
+        version
+      );
+      logger.info(
+        `Chat notification created for user ${recipientId} by ${senderId} in conversation ${conversationId}`
+      );
+    } catch (error: unknown) {
+      logger.error("Error in notification service - createChatNotification", {
+        error: (error as Error).message,
+        senderId,
+        recipientId,
+        conversationId,
+      });
+      throw error;
+    }
+  }
 }

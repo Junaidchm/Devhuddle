@@ -50,4 +50,7 @@ export interface IPostRepository {
   getMediaIds(postId: string): Promise<string[]>;
   findMediaByIds(mediaIds: string[]): Promise<Media[]>;
   countPostsAfter(date: Date): Promise<number>;
+  hideAllPostsByUser(userId: string, reason: string): Promise<void>;
+  unhideAllPostsByUser(userId: string): Promise<void>;
+  hidePost(postId: string, reason: string): Promise<void>;
 }

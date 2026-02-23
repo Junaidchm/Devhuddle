@@ -93,6 +93,36 @@ export class SendService implements ISendService {
           // This ensures partial success
         }
       }
+      
+      // 7. Notify the post author that their post was shared (sent to connections)
+      // Only notify if the sender is NOT the author
+      if (senderId !== post.userId) {
+        try {
+          await this._outboxService.createOutboxEvent({
+            aggregateType: OutboxAggregateType.POST,
+            aggregateId: postId,
+            type: OutboxEventType.SHARE_CREATED,
+            topic: KAFKA_TOPICS.POST_SENT, // Use same topic
+            key: post.userId,
+            payload: {
+              postId,
+              senderId,
+              recipientId: post.userId,
+              postAuthorId: post.userId,
+              action: "POST_SHARED",
+              eventTimestamp,
+              version,
+            },
+          });
+          logger.info(`Post share notification event created for author ${post.userId}`);
+        } catch (error: any) {
+          logger.error("Failed to create share notification for post author", {
+            authorId: post.userId,
+            postId,
+            error: error.message,
+          });
+        }
+      }
 
       logger.info(`Post ${postId} sent to ${validRecipients.length} recipients`, {
         postId,

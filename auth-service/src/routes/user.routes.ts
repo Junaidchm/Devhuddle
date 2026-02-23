@@ -38,6 +38,11 @@ router.get(
 );
 
 // Profile Update Routes
+router.delete(
+  "/account",
+  userController.deleteAccount.bind(userController)
+);
+
 router.post(
   "/experience",
   userController.addExperience.bind(userController)

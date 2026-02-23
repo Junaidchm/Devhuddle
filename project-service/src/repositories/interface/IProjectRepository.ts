@@ -40,7 +40,12 @@ export interface IProjectRepository {
   deleteProject(projectId: string, userId: string): Promise<Project>;
   publishProject(projectId: string, userId: string): Promise<Project>;
   incrementViews(projectId: string): Promise<void>;
+  trackView(projectId: string, userId?: string): Promise<boolean>;
+  incrementCommentsCount(projectId: string): Promise<void>;
+  decrementCommentsCount(projectId: string): Promise<void>;
   updateTrendingScore(projectId: string, score: number): Promise<void>;
+  adminListProjects(options: ProjectSelectOptions): Promise<EnrichedProject[]>;
+  getProjectCount(where?: Prisma.ProjectWhereInput): Promise<number>;
   findProject(projectId: string): Promise<Project | null>;
 }
 

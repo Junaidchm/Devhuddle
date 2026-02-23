@@ -40,7 +40,7 @@ export const engagementServiceProxy = app_config.postServiceUrl
       changeOrigin: true,
       // Remove /engagement prefix, keep the rest
       // /api/v1/engagement/posts/:id/likes -> /api/v1/posts/:id/likes
-      pathRewrite: { "^/api/v1/engagement": "/api/v1" },
+      pathRewrite: { "^/api/v1/engagement": "" },
       onProxyReq: (proxyReq, req: any, res) => {
         // Forward user data from JWT middleware if available
         if (req.user) {
@@ -52,7 +52,7 @@ export const engagementServiceProxy = app_config.postServiceUrl
         // When Express.json() parses the body, it consumes the request stream
         // http-proxy-middleware will try to pipe the consumed stream (which is empty)
         // We MUST manually write the parsed body to the proxy request
-        if (req.method !== "GET" && req.method !== "HEAD" && req.body && Object.keys(req.body).length > 0) {
+        if (req.method !== "GET" && req.method !== "HEAD" && req.body) {
           const bodyData = JSON.stringify(req.body);
           const bodyLength = Buffer.byteLength(bodyData);
           

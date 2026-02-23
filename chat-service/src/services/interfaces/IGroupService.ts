@@ -1,5 +1,5 @@
 import { Conversation, Participant } from "@prisma/client";
-import { ConversationWithMetadataDto } from "../../dtos/chat-service.dto";
+import { ConversationWithMetadataDto, GroupListDto } from "../../dtos/chat-service.dto";
 
 export interface IGroupService {
   createGroup(
@@ -37,4 +37,21 @@ export interface IGroupService {
   ): Promise<Conversation>;
   leaveGroup(groupId: string, userId: string): Promise<void>;
   joinGroup(groupId: string, userId: string): Promise<void>; // Self-join for public groups
+
+  getMyGroups(
+    userId: string,
+    query?: string,
+    limit?: number,
+    offset?: number
+  ): Promise<GroupListDto[]>;
+
+  getDiscoverGroups(
+    userId: string,
+    query?: string,
+    topics?: string[],
+    limit?: number,
+    offset?: number
+  ): Promise<GroupListDto[]>;
+
+  getGroupTopics(limit?: number): Promise<{ topic: string, count: number }[]>;
 }

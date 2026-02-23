@@ -195,6 +195,7 @@ export const filterUserProfileData = (
       company: user.company || "",
       yearsOfExperience: user.yearsOfExperience || "",
       emailVerified: user.emailVerified,
+      coverImage: user.coverImage || "",
     };
   }
 

@@ -82,7 +82,7 @@ interface PostSentEvent extends BaseEngagementEvent {
   recipientId: string;
   postAuthorId: string;
   message?: string;
-  action: "POST_SENT";
+  action: "POST_SENT" | "POST_SHARED";
 }
 
 // ✅ NEW: Post creation event (for fan-out notifications)
@@ -109,6 +109,64 @@ interface PostReportedEvent extends BaseEngagementEvent {
   metadata?: any;
 }
 
+// ✅ NEW: Project event types
+interface ProjectLikeCreatedEvent extends BaseEngagementEvent {
+  projectId: string;
+  userId: string;
+  projectAuthorId: string;
+  action: "LIKE" | "LIKE_RESTORED";
+}
+
+interface ProjectLikeRemovedEvent extends BaseEngagementEvent {
+  projectId: string;
+  userId: string;
+  projectAuthorId: string;
+  action: "UNLIKE";
+}
+
+interface ProjectCommentCreatedEvent extends BaseEngagementEvent {
+  commentId: string;
+  projectId: string;
+  userId: string;
+  projectAuthorId: string;
+  parentCommentId?: string;
+  parentCommentAuthorId?: string;
+  content: string;
+  action: "PROJECT_COMMENT_CREATED";
+}
+
+interface ProjectCommentEditedEvent extends BaseEngagementEvent {
+  commentId: string;
+  projectId: string;
+  userId: string;
+  content: string;
+  action: "PROJECT_COMMENT_EDITED";
+}
+
+interface ProjectCommentDeletedEvent extends BaseEngagementEvent {
+  commentId: string;
+  projectId: string;
+  userId: string;
+  action: "PROJECT_COMMENT_DELETED";
+}
+
+interface ProjectShareCreatedEvent extends BaseEngagementEvent {
+  shareId: string;
+  projectId: string;
+  userId: string;
+  projectAuthorId: string;
+  shareType: "SHARE" | "QUOTE";
+  action: "PROJECT_SHARE_CREATED";
+}
+
+interface ProjectReportedEvent extends BaseEngagementEvent {
+  reportId: string;
+  projectId: string;
+  reporterId: string;
+  projectAuthorId: string;
+  reason: string;
+}
+
 export async function startEngagementConsumer(
   wsService: WebSocketService
 ): Promise<void> {
@@ -128,7 +186,14 @@ export async function startEngagementConsumer(
       KAFKA_TOPICS.POST_SENT,
       KAFKA_TOPICS.POST_REPORTED,
       KAFKA_TOPICS.USER_MENTIONED,
-      KAFKA_TOPICS.POST_CREATED, // ✅ NEW: Subscribe to post creation events
+      KAFKA_TOPICS.POST_CREATED,
+      KAFKA_TOPICS.PROJECT_LIKE_CREATED,
+      KAFKA_TOPICS.PROJECT_LIKE_REMOVED,
+      KAFKA_TOPICS.PROJECT_COMMENT_CREATED,
+      KAFKA_TOPICS.PROJECT_COMMENT_EDITED,
+      KAFKA_TOPICS.PROJECT_COMMENT_DELETED,
+      KAFKA_TOPICS.PROJECT_SHARE_CREATED,
+      KAFKA_TOPICS.PROJECT_REPORT_CREATED,
     ],
     fromBeginning: false,
   });
@@ -137,16 +202,22 @@ export async function startEngagementConsumer(
     eachMessage: async ({ topic, message }) => {
       if (!message.value) return;
 
-      const event = JSON.parse(message.value.toString()) as BaseEngagementEvent;
-      const { dedupeId } = event;
-
-      // Idempotency check
-      if (await redisClient.sIsMember("processed-notifications", dedupeId)) {
-        logger.info(`Duplicate event skipped: ${dedupeId}`);
-        return;
-      }
-
       try {
+        const event = JSON.parse(message.value.toString()) as BaseEngagementEvent;
+        
+        // Ensure we have a dedupeId (fallback to generating one if missing from source)
+        const dedupeId = event.dedupeId || `fallback-${topic}-${message.offset}`;
+        const version = event.version || Date.now();
+
+        // Idempotency check with safety
+        if (dedupeId) {
+          const isProcessed = await redisClient.sIsMember("processed-notifications", dedupeId);
+          if (isProcessed) {
+            logger.info(`Duplicate event skipped: ${dedupeId}`);
+            return;
+          }
+        }
+
         // Mark as processing
         await redisClient.sAdd("processed-notifications", dedupeId);
         await redisClient.expire("processed-notifications", 3600);
@@ -198,6 +269,27 @@ export async function startEngagementConsumer(
           case KAFKA_TOPICS.POST_REPORTED:
             await handlePostReported(event as PostReportedEvent, repo);
             break;
+          case KAFKA_TOPICS.PROJECT_LIKE_CREATED:
+            await handleProjectLikeCreated(event as ProjectLikeCreatedEvent, repo);
+            break;
+          case KAFKA_TOPICS.PROJECT_LIKE_REMOVED:
+            await handleProjectLikeRemoved(event as ProjectLikeRemovedEvent, repo);
+            break;
+          case KAFKA_TOPICS.PROJECT_COMMENT_CREATED:
+            await handleProjectCommentCreated(event as ProjectCommentCreatedEvent, repo);
+            break;
+          case KAFKA_TOPICS.PROJECT_COMMENT_EDITED:
+            await handleProjectCommentEdited(event as ProjectCommentEditedEvent, repo);
+            break;
+          case KAFKA_TOPICS.PROJECT_COMMENT_DELETED:
+            await handleProjectCommentDeleted(event as ProjectCommentDeletedEvent, repo);
+            break;
+          case KAFKA_TOPICS.PROJECT_SHARE_CREATED:
+            await handleProjectShareCreated(event as ProjectShareCreatedEvent, repo);
+            break;
+          case KAFKA_TOPICS.PROJECT_REPORT_CREATED:
+            await handleProjectReported(event as ProjectReportedEvent, repo);
+            break;
           default:
             logger.warn(`Unhandled topic: ${topic}`);
         }
@@ -206,8 +298,8 @@ export async function startEngagementConsumer(
           error instanceof Error ? error.message : String(error);
         logger.error(`Error processing engagement event`, {
           topic,
+          offset: message.offset,
           error: errorMessage,
-          event,
         });
       }
     },
@@ -445,24 +537,38 @@ async function handlePostSent(
   event: PostSentEvent,
   repo: NotificationsRepository
 ): Promise<void> {
-  const { postId, senderId, recipientId, postAuthorId, message, version } = event;
+  const { postId, senderId, recipientId, action, version } = event;
 
-  // Don't notify if user sent their own post to themselves
+  // Don't notify if user sent/shared their own post to themselves
   if (senderId === recipientId) return;
 
   const versionNumber = version || Date.now();
 
-  // Create a notification for the recipient
-  // This is similar to a message notification - someone sent you a post
-  await repo.createPostSentNotification(
-    senderId,
-    recipientId,
-    postId,
-    message,
-    versionNumber
-  );
-
-  logger.info(`Post sent notification created for ${recipientId} from ${senderId}`);
+  if (action === "POST_SHARED") {
+    // Notify the original author about the share
+    await repo.createShareNotification(senderId, recipientId, postId, versionNumber);
+    logger.info(`Post share notification created for author ${recipientId} triggered by ${senderId}`, {
+      postId,
+      authorId: recipientId,
+      sharerId: senderId,
+      version: versionNumber
+    });
+  } else {
+    // Create a notification for the recipient (direct send)
+    await repo.createPostSentNotification(
+      senderId,
+      recipientId,
+      postId,
+      event.message,
+      versionNumber
+    );
+    logger.info(`Post sent notification created for recipient ${recipientId} from ${senderId}`, {
+      postId,
+      recipientId,
+      senderId,
+      version: versionNumber
+    });
+  }
 }
 
 async function handlePostReported(
@@ -470,30 +576,169 @@ async function handlePostReported(
   repo: NotificationsRepository
 ): Promise<void> {
   const { 
-    reportId, 
     postId, 
     commentId, 
     reporterId, 
     postAuthorId, 
     commentAuthorId, 
     reason, 
-    severity 
+    version
   } = event;
 
-  // For now, we mainly log this as it's a moderation event.
-  // In a full production system, this could:
-  // 1. Notify admins via a separate channel
-  // 2. Track user moderation history
-  // 3. Trigger auto-moderation workflows
+  const recipientId = commentId ? commentAuthorId : postAuthorId;
   
-  logger.info(`Report handled: ${reportId}`, {
-    target: commentId ? `Comment ${commentId}` : `Post ${postId}`,
-    reporter: reporterId,
-    author: commentId ? commentAuthorId : postAuthorId,
-    reason,
-    severity
-  });
+  if (!recipientId) {
+    logger.warn("Skipping report notification: recipientId not found", { event });
+    return;
+  }
 
-  // Optional: We could notify the author that their post was reported (if policy allows)
-  // Or just notify that it was hidden if reportCount exceeded threshold
+  const versionNumber = version || Date.now();
+
+  // Notify the author that their content was reported
+  // In a real system, we might mask the reporterId or show "A user"
+  await repo.createReportNotification(
+    reporterId, // In production, consider using "System" or anonymizing
+    recipientId,
+    commentId || postId!,
+    commentId ? "COMMENT" : "POST",
+    reason,
+    versionNumber,
+    { postId, commentId }
+  );
+
+  logger.info(`Report notification sent to author ${recipientId}`, {
+    target: commentId ? `Comment ${commentId}` : `Post ${postId}`,
+    reason
+  });
+}
+
+// ✅ NEW: Project Event Handlers
+
+async function handleProjectLikeCreated(
+  event: ProjectLikeCreatedEvent,
+  repo: NotificationsRepository
+): Promise<void> {
+  const { projectId, userId, projectAuthorId, version } = event;
+
+  if (userId === projectAuthorId) return;
+
+  await repo.createLikeNotification(
+    userId,
+    projectAuthorId,
+    projectId,
+    "PROJECT" as any, // We'll update the repository to handle this
+    version,
+    undefined,
+    { projectId }
+  );
+
+  logger.info(`Project like notification created for ${projectAuthorId}`);
+}
+
+async function handleProjectLikeRemoved(
+  event: ProjectLikeRemovedEvent,
+  repo: NotificationsRepository
+): Promise<void> {
+  const { projectId, userId, projectAuthorId, version } = event;
+
+  if (userId === projectAuthorId) return;
+
+  await repo.deleteLikeNotification(
+    userId,
+    projectAuthorId,
+    projectId,
+    "PROJECT" as any,
+    version
+  );
+
+  logger.info(`Project like notification removed for ${projectAuthorId}`);
+}
+
+async function handleProjectCommentCreated(
+  event: ProjectCommentCreatedEvent,
+  repo: NotificationsRepository
+): Promise<void> {
+  const {
+    commentId,
+    projectId,
+    userId,
+    projectAuthorId,
+    parentCommentId,
+    parentCommentAuthorId,
+    version,
+  } = event;
+
+  // Notify project author
+  if (userId !== projectAuthorId) {
+    await repo.createCommentNotification(
+      userId,
+      projectAuthorId,
+      projectId,
+      commentId,
+      "PROJECT" as any,
+      version
+    );
+    logger.info(`Comment notification created for project author ${projectAuthorId}`);
+  }
+
+  // Notify parent comment author if reply
+  if (parentCommentId && parentCommentAuthorId && userId !== parentCommentAuthorId) {
+    await repo.createCommentNotification(
+      userId,
+      parentCommentAuthorId,
+      projectId,
+      commentId,
+      "COMMENT", // Comment replies are still comments
+      version
+    );
+    logger.info(`Comment reply notification created for parent comment author ${parentCommentAuthorId}`);
+  }
+}
+
+async function handleProjectCommentEdited(
+  event: ProjectCommentEditedEvent,
+  repo: NotificationsRepository
+): Promise<void> {
+  const { commentId, projectId, userId } = event;
+  logger.info(`Project comment edited: ${commentId} on project ${projectId} by user ${userId}`);
+}
+
+async function handleProjectCommentDeleted(
+  event: ProjectCommentDeletedEvent,
+  repo: NotificationsRepository
+): Promise<void> {
+  const { commentId, version } = event;
+  await repo.deleteCommentNotification(commentId, version);
+  logger.info(`Project comment notifications deleted for comment ${commentId}`);
+}
+
+async function handleProjectShareCreated(
+  event: ProjectShareCreatedEvent,
+  repo: NotificationsRepository
+): Promise<void> {
+  const { projectId, userId, projectAuthorId, version } = event;
+
+  if (userId === projectAuthorId) return;
+
+  await repo.createShareNotification(userId, projectAuthorId, projectId, version, "PROJECT" as any);
+  logger.info(`Project share notification created for author ${projectAuthorId} by ${userId}`);
+}
+
+async function handleProjectReported(
+  event: ProjectReportedEvent,
+  repo: NotificationsRepository
+): Promise<void> {
+  const { reportId, projectId, reporterId, projectAuthorId, reason, version } = event;
+
+  await repo.createReportNotification(
+    reporterId,
+    projectAuthorId,
+    projectId,
+    "PROJECT" as any,
+    reason,
+    version,
+    { projectId }
+  );
+
+  logger.info(`Project report notification sent to author ${projectAuthorId}`, { reportId, reason });
 }

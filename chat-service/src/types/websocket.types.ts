@@ -30,6 +30,7 @@ export interface SendMessagePayload {
     mediaDuration?: number;
     conversationId?: string;
     dedupeId?: string;
+    replyToId?: string;
 }
 
 /**

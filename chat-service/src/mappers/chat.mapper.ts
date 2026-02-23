@@ -23,7 +23,13 @@ export class MessageMapper {
       mediaMimeType: command.mediaMimeType || null,
       mediaSize: command.mediaSize || null,
       mediaName: command.mediaName || null,
-      mediaDuration: command.mediaDuration || null
+      mediaDuration: command.mediaDuration || null,
+      replyTo: command.replyToId ? { connect: { id: command.replyToId } } : undefined,
+      dedupeId: command.dedupeId || null,
+      // Forwarding fields
+      isForwarded: command.isForwarded,
+      forwardedFrom: command.forwardedFrom || null,
+      originalMessageId: command.originalMessageId || null
     };
   }
 
@@ -38,7 +44,41 @@ export class MessageMapper {
       content: entity.content,
       createdAt: entity.createdAt,
       // Note: Message model doesn't have updatedAt in schema
-      updatedAt: entity.createdAt // Use createdAt as fallback
+      updatedAt: entity.createdAt, // Use createdAt as fallback
+      
+      status: entity.status as 'SENT' | 'DELIVERED' | 'READ',
+      deliveredAt: entity.deliveredAt,
+      readAt: entity.readAt,
+      dedupeId: entity.dedupeId || undefined,
+      
+      // Forwarding fields
+      isForwarded: entity.isForwarded,
+      forwardedFrom: entity.forwardedFrom || undefined,
+      originalMessageId: entity.originalMessageId || undefined,
+
+      // Map replyTo relation if it exists (requires 'include' in repo)
+      replyTo: (entity as any).replyTo ? {
+        id: (entity as any).replyTo.id,
+        content: (entity as any).replyTo.content,
+        senderId: (entity as any).replyTo.senderId,
+        // senderName would require user profile lookup, can be done in service or left for client to resolve
+      } : null,
+
+      // Map reactions
+      reactions: (entity as any).reactions ? (entity as any).reactions.map((r: any) => ({
+        id: r.id,
+        emoji: r.emoji,
+        userId: r.userId
+      })) : [],
+
+      // Map media fields
+      type: entity.type as any,
+      mediaUrl: entity.mediaUrl,
+      mediaId: entity.mediaId,
+      mediaMimeType: entity.mediaMimeType,
+      mediaSize: entity.mediaSize,
+      mediaName: entity.mediaName,
+      mediaDuration: entity.mediaDuration
     };
   }
 

@@ -1,3 +1,4 @@
+import * as grpc from "@grpc/grpc-js";
 import {
   getUserForFeedListingRequest,
   getUserForFeedListingResponse,
@@ -9,8 +10,8 @@ import {
   GetUserProfilesResponse,
   UserServiceServer,
 } from "../grpc/generated/user";
-import * as grpc from "@grpc/grpc-js";
 import logger from "../utils/logger.util";
+import redisClient from "../config/redis.config";
 import { AuthController } from "../controllers/implimentation/auth.controller";
 import { CustomError } from "../utils/error.util";
 import { UserRepository } from "../repositories/impliments/user.repository";
@@ -25,7 +26,7 @@ const authController: AuthController = new AuthController(
   authenticationService
 );
 
-export const userServic: UserServiceServer = {
+export const userService: UserServiceServer = {
   getUserForFeedListing: async (
     call: grpc.ServerUnaryCall<
       getUserForFeedListingRequest,
@@ -144,11 +145,14 @@ export const userServic: UserServiceServer = {
   ) => {
     try {
       const request = call.request;
-      const { userIds } = request;
+      // Handle both camelCase (generated) and snake_case (proto-loader)
+      const userIds = request.userIds || (request as any).user_ids;
 
-      logger.info("gRPC getUserProfiles called", { userCount: userIds?.length || 0 });
+      logger.info("gRPC getUserProfiles called", { 
+        userCount: userIds?.length || 0,
+        originalRequest: JSON.stringify(request)
+      });
 
-      // If no user IDs provided, return empty array
       if (!userIds || userIds.length === 0) {
         logger.info("No user IDs provided");
         callback(null, { profiles: [] });
@@ -166,15 +170,37 @@ export const userServic: UserServiceServer = {
           username: true,
           name: true,
           profilePicture: true,
+          bio: true,
         },
       });
 
-      const profiles = users.map((user) => ({
-        id: user.id,
-        username: user.username,
-        name: user.name || user.username,
-        profilePhoto: user.profilePicture || "",
-      }));
+      // Fetch presence info from Redis in batch using MGET
+      const onlineKeys = userIds.map((id: string) => `user:${id}:online`);
+      const lastSeenKeys = userIds.map((id: string) => `user:${id}:lastSeen`);
+
+      // Combine keys for a single MGET call or two separate ones for clarity
+      const [onlineStatus, lastSeenStatus] = await Promise.all([
+        redisClient.mGet(onlineKeys),
+        redisClient.mGet(lastSeenKeys)
+      ]);
+
+      const profiles = users.map((user, index) => {
+        // Map user to their corresponding presence info by index
+        // userIds and users order might differ if prisma returned them in different order
+        // but onlineKeys/lastSeenKeys follow userIds order. 
+        // Let's use a more robust mapping.
+        
+        const userIndex = userIds.indexOf(user.id);
+        return {
+          id: user.id,
+          username: user.username,
+          name: user.name || user.username,
+          profilePhoto: user.profilePicture || "",
+          bio: user.bio || "",
+          isOnline: userIndex !== -1 ? onlineStatus[userIndex] === 'true' : false,
+          lastSeen: userIndex !== -1 ? lastSeenStatus[userIndex] || "" : "",
+        };
+      });
 
       logger.info("User profiles fetched successfully", {
         requested: userIds.length,

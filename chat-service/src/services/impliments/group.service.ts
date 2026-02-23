@@ -3,13 +3,24 @@ import { IGroupService } from "../interfaces/IGroupService";
 import { IChatRepository } from "../../repositories/interfaces/IChatRepository";
 import { AppError } from "../../utils/AppError";
 import { authServiceClient } from "../../clients/auth-service.client";
-import { ConversationWithMetadataDto } from "../../dtos/chat-service.dto";
+import { ConversationWithMetadataDto, GroupListDto } from "../../dtos/chat-service.dto";
 
 import { redisPublisher } from "../../config/redis.config";
 import logger from "../../utils/logger.util";
 
+import { MessageSagaService } from "./message.service";
+import { RedisCacheService } from "../../utils/redis-cache.util";
+
 export class GroupService implements IGroupService {
-  constructor(private _chatRepository: IChatRepository) {}
+  constructor(
+    private _chatRepository: IChatRepository,
+    private _messageSagaService: MessageSagaService
+  ) {
+    // 🔥 Trigger initialization of member counts for existing groups
+    this._chatRepository.syncAllMemberCounts().catch(err => {
+        logger.error("Failed to sync member counts on startup", { error: err.message });
+    });
+  }
 
   async createGroup(
     creatorId: string, 
@@ -55,6 +66,7 @@ export class GroupService implements IGroupService {
         ownerId: conversation.ownerId,
         onlyAdminsCanPost: conversation.onlyAdminsCanPost,
         onlyAdminsCanEditInfo: conversation.onlyAdminsCanEditInfo,
+        memberCount: conversation.memberCount,
         participantIds: uniqueParticipants,
         participants: conversation.participants.map(p => {
              const profile = userProfilesMap.get(p.userId);
@@ -68,8 +80,16 @@ export class GroupService implements IGroupService {
         }),
         lastMessage: null,
         lastMessageAt: conversation.createdAt,
-        unreadCount: 0
+        unreadCount: 0,
+        createdAt: conversation.createdAt
     };
+
+    // ✅ Inject SYSTEM message for group creation via Saga
+    await this._messageSagaService.sendSystemMessage(
+        conversation.id,
+        "group_created",
+        creatorId
+    );
 
     // Emit event
     this.publishEvent(conversation.id, 'group_created', enrichedConversation);
@@ -113,8 +133,52 @@ export class GroupService implements IGroupService {
         }),
         lastMessage: null, // Could fetch if needed, but not critical for list
         lastMessageAt: group.lastMessageAt,
-        unreadCount: 0
+        unreadCount: 0,
+        createdAt: group.createdAt
     }));
+  }
+
+  async getMyGroups(
+    userId: string,
+    query?: string,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<GroupListDto[]> {
+    const groups = await this._chatRepository.findMyGroups(userId, query, limit, offset);
+    return groups.map(group => ({
+      conversationId: group.id,
+      name: group.name,
+      description: group.description,
+      icon: group.icon,
+      memberCount: group.participants.length,
+      topics: group.topics,
+      isMember: true, // Always true for my groups
+      createdAt: group.createdAt
+    }));
+  }
+
+  async getDiscoverGroups(
+    userId: string,
+    query?: string,
+    topics?: string[],
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<GroupListDto[]> {
+    const groups = await this._chatRepository.findDiscoverGroups(userId, query, topics, limit, offset);
+    return groups.map(group => ({
+      conversationId: group.id,
+      name: group.name,
+      description: group.description,
+      icon: group.icon,
+      memberCount: group.participants.length,
+      topics: group.topics,
+      isMember: false, // Always false for discover groups
+      createdAt: group.createdAt
+    }));
+  }
+
+  async getGroupTopics(limit: number = 10): Promise<{ topic: string; count: number }[]> {
+    return await this._chatRepository.getPopularTopics(limit);
   }
 
   async getGroupDetails(groupId: string): Promise<Conversation & { participants: Participant[] }> {
@@ -124,8 +188,23 @@ export class GroupService implements IGroupService {
     return conversation as Conversation & { participants: Participant[] };
   }
 
+  private async verifyAdmin(userId: string, groupId: string): Promise<{ isAdmin: boolean; isOwner: boolean }> {
+    const conversation = await this._chatRepository.findConversationById(groupId);
+    if (!conversation) throw new AppError("Group not found", 404);
+
+    const participant = conversation.participants.find(p => p.userId === userId);
+    
+    const isAdmin = participant?.role === GroupRole.ADMIN;
+    const isOwner = conversation.ownerId === userId;
+
+    return { isAdmin, isOwner };
+  }
+
   async addParticipants(groupId: string, adminId: string, userIds: string[]): Promise<void> {
-    await this.verifyAdmin(groupId, adminId);
+    const { isAdmin, isOwner } = await this.verifyAdmin(adminId, groupId);
+    if (!isAdmin && !isOwner) {
+        throw new AppError("Only admins can add participants", 403);
+    }
     
     const addedUserIds: string[] = [];
     for (const userId of userIds) {
@@ -147,94 +226,141 @@ export class GroupService implements IGroupService {
             role: 'MEMBER'
         }));
 
+        const snapshottedAdded = addedParticipants.map(ap => ({ id: ap.userId, name: ap.name }));
+
+        // ✅ Inject SYSTEM message for added participants via Saga
+        await this._messageSagaService.sendSystemMessage(
+            groupId,
+            `added_participant:${JSON.stringify(snapshottedAdded)}`,
+            adminId
+        );
+
+        // Update member count atomically
+        const newMemberCount = await this._chatRepository.updateMemberCount(groupId, addedUserIds.length);
+
         this.publishEvent(groupId, 'participants_added', {
             conversationId: groupId,
             addedBy: adminId,
-            participants: addedParticipants
+            participants: addedParticipants,
+            memberCount: newMemberCount
         });
     }
   }
 
   async removeParticipant(groupId: string, adminId: string, targetUserId: string): Promise<void> {
-    await this.verifyAdmin(groupId, adminId);
+    const { isOwner, isAdmin } = await this.verifyAdmin(adminId, groupId);
     
-    if (adminId === targetUserId) {
-        throw new AppError("Admins cannot remove themselves via this endpoint, use leaveGroup instead", 400);
+    if (!isAdmin && !isOwner) {
+        throw new AppError("Only admins can remove participants", 403);
     }
 
-    // Check if target is an admin
     const conversation = await this._chatRepository.findConversationById(groupId);
-    const targetParticipant = conversation?.participants.find(p => p.userId === targetUserId);
-    const actorParticipant = conversation?.participants.find(p => p.userId === adminId);
-    
-    // Allow Owner to remove anyone (except themselves, handled above).
-    // Allow Admin to remove Member.
-    // BLOCK Admin removing Admin.
-    const isOwner = conversation?.ownerId === adminId;
-    if (!isOwner && targetParticipant?.role === GroupRole.ADMIN) {
-        throw new AppError("Cannot remove an admin. Demote them first.", 403);
+    if (!conversation) throw new Error("Group not found");
+
+    const targetParticipant = conversation.participants.find(p => p.userId === targetUserId);
+    if (!targetParticipant) throw new Error("User is not a participant");
+
+    // Hierarchy check: Admin cannot remove Owner or another Admin
+    if (!isOwner && (targetUserId === conversation.ownerId || targetParticipant.role === GroupRole.ADMIN)) {
+        throw new AppError("Admins cannot remove other admins or the owner", 403);
     }
+
+    const targetProfile = await authServiceClient.getUserProfiles([targetUserId]);
+    const snapshotName = targetProfile.get(targetUserId)?.name || targetProfile.get(targetUserId)?.username || targetUserId;
 
     await this._chatRepository.removeParticipantFromGroup(groupId, targetUserId);
+    
+    // ✅ Invalidate caches
+    await RedisCacheService.invalidateConversationCache(groupId);
+    await RedisCacheService.invalidateUserConversationsMetadataCache(targetUserId);
+
+    // ✅ Inject SYSTEM message via Saga
+    await this._messageSagaService.sendSystemMessage(
+        groupId,
+        `removed_participant:${JSON.stringify({ id: targetUserId, name: snapshotName })}`,
+        adminId
+    );
+
+    // Update member count atomically
+    const newMemberCount = await this._chatRepository.updateMemberCount(groupId, -1);
 
     this.publishEvent(groupId, 'participant_removed', {
-        conversationId: groupId,
-        removedUserId: targetUserId,
-        removedBy: adminId
+      conversationId: groupId,
+      removedUserId: targetUserId,
+      removedBy: adminId,
+      memberCount: newMemberCount
     });
   }
 
   async promoteToAdmin(groupId: string, adminId: string, targetUserId: string): Promise<void> {
-     // Check for orphaned group (self-claim)
-     if (adminId === targetUserId) {
-        const conversation = await this._chatRepository.findConversationById(groupId);
-        const hasAdmin = conversation?.participants.some(p => p.role === GroupRole.ADMIN);
-        const hasOwner = !!conversation?.ownerId;
-        
-        if (!hasAdmin && !hasOwner) {
-            // Allow self-promotion for orphaned groups
-            await this._chatRepository.updateParticipantRole(groupId, targetUserId, GroupRole.ADMIN);
-             await this.publishEvent(groupId, 'role_updated', {
-                 conversationId: groupId,
-                 userId: targetUserId,
-                 role: 'ADMIN'
-             });
-             return;
-        }
-     }
-
-     await this.verifyAdmin(groupId, adminId);
-     await this._chatRepository.updateParticipantRole(groupId, targetUserId, GroupRole.ADMIN);
-
-     await this.publishEvent(groupId, 'role_updated', {
-         conversationId: groupId,
-         userId: targetUserId,
-         role: 'ADMIN'
-     });
-  }
-
-  async demoteToMember(groupId: string, adminId: string, targetUserId: string): Promise<void> {
-    await this.verifyAdmin(groupId, adminId);
+    const isSelfPromotion = adminId === targetUserId;
     
-    // Verify we are not demoting the last admin
-    if (adminId !== targetUserId) { // If demoting someone else, check if they are the last admin
-        // Actually, logic is: Count admins. If count is 1 and that one is the target, deny.
-        const conversation = await this._chatRepository.findConversationById(groupId);
-        const adminCount = conversation?.participants.filter(p => p.role === GroupRole.ADMIN).length || 0;
-        
-        // If target is an admin (checked by role update logic generally, but safe to check here)
-        // If there is only 1 admin, we can't demote them.
-        if (adminCount <= 1) {
-             const participantToDemote = conversation?.participants.find(p => p.userId === targetUserId);
-             if (participantToDemote?.role === GroupRole.ADMIN) {
-                 throw new AppError("Cannot demote the last admin. Promote someone else first.", 400);
-             }
+    // Verify adminId has permission (Owner or Admin)
+    const { isOwner, isAdmin } = await this.verifyAdmin(adminId, groupId);
+    
+    if (!isAdmin && !isOwner) {
+        // Allow promotion if group has no admins at all (Edge case)
+        const participants = await this._chatRepository.findConversationById(groupId);
+        const hasAdmins = participants?.participants.some(p => p.role === GroupRole.ADMIN);
+        if (hasAdmins && !isOwner && !isAdmin) {
+            throw new AppError("Only admins can promote others", 403);
         }
     }
 
-    await this._chatRepository.updateParticipantRole(groupId, targetUserId, GroupRole.MEMBER);
+    // Capture snapshot of target name for system message before role change
+    const targetProfile = await authServiceClient.getUserProfiles([targetUserId]);
+    const snapshotName = targetProfile.get(targetUserId)?.name || targetProfile.get(targetUserId)?.username || targetUserId;
 
-    this.publishEvent(groupId, 'role_updated', {
+    await this._chatRepository.updateParticipantRole(groupId, targetUserId, GroupRole.ADMIN);
+    
+    // ✅ CRITICAL: Invalidate the conversation cache immediately
+    // This allows findConversationById to see the new role in subsequent authorization checks
+    await RedisCacheService.invalidateConversationCache(groupId);
+
+    // ✅ Inject SYSTEM message via Saga for reliable broadcasting
+    await this._messageSagaService.sendSystemMessage(
+        groupId,
+        `promoted_admin:${JSON.stringify({ id: targetUserId, name: snapshotName })}`,
+        adminId
+    );
+
+    await this.publishEvent(groupId, 'role_updated', {
+        conversationId: groupId,
+        userId: targetUserId,
+        role: 'ADMIN'
+    });
+  }
+
+  async demoteToMember(groupId: string, adminId: string, targetUserId: string): Promise<void> {
+    const { isOwner, isAdmin } = await this.verifyAdmin(adminId, groupId);
+    
+    // Only Owner can demote an Admin
+    if (!isOwner) {
+        throw new AppError("Only the group owner can demote admins", 403);
+    }
+
+    // Cannot demote self if owner (must transfer ownership first)
+    const conversation = await this._chatRepository.findConversationById(groupId);
+    if (conversation?.ownerId === targetUserId) {
+        throw new AppError("Owner cannot be demoted. Transfer ownership first.", 403);
+    }
+
+    const targetProfile = await authServiceClient.getUserProfiles([targetUserId]);
+    const snapshotName = targetProfile.get(targetUserId)?.name || targetProfile.get(targetUserId)?.username || targetUserId;
+
+    await this._chatRepository.updateParticipantRole(groupId, targetUserId, GroupRole.MEMBER);
+    
+    // ✅ Invalidate cache for immediate privilege revocation
+    await RedisCacheService.invalidateConversationCache(groupId);
+
+    // ✅ Inject SYSTEM message via Saga
+    await this._messageSagaService.sendSystemMessage(
+        groupId,
+        `demoted_admin:${JSON.stringify({ id: targetUserId, name: snapshotName })}`,
+        adminId
+    );
+
+    await this.publishEvent(groupId, 'role_updated', {
         conversationId: groupId,
         userId: targetUserId,
         role: 'MEMBER'
@@ -256,17 +382,26 @@ export class GroupService implements IGroupService {
     const conversation = await this._chatRepository.findConversationById(groupId);
     if (!conversation) throw new AppError("Group not found", 404);
     
+    const { isAdmin, isOwner } = await this.verifyAdmin(adminId, groupId);
+
     if (conversation.onlyAdminsCanEditInfo) {
-      await this.verifyAdmin(groupId, adminId);
+      if (!isAdmin && !isOwner) {
+        throw new AppError("Only admins can edit group info", 403);
+      }
     }
     
     // Permission changes always require admin
     if (data.onlyAdminsCanPost !== undefined || data.onlyAdminsCanEditInfo !== undefined) {
-      await this.verifyAdmin(groupId, adminId);
+      if (!isAdmin && !isOwner) {
+        throw new AppError("Only admins can change group permissions", 403);
+      }
     }
     
     const updated = await this._chatRepository.updateGroupMetadata(groupId, data);
 
+    // ✅ Optional: Inject SYSTEM message for group info updates (e.g., changed name)
+    // For now we'll just publish the event so the UI updates
+    
     this.publishEvent(groupId, 'group_updated', {
         conversationId: groupId,
         updates: data,
@@ -280,26 +415,62 @@ export class GroupService implements IGroupService {
     const participant = await this._chatRepository.findParticipantInConversation(userId, groupId);
     if (!participant) throw new AppError("You are not a member of this group", 400);
     
+    // Admin transfer logic
+    const conversation = await this._chatRepository.findConversationById(groupId);
+    if (conversation && conversation.type === 'GROUP') {
+        const isOnlyAdmin = participant.role === GroupRole.ADMIN && 
+            conversation.participants.filter(p => p.role === GroupRole.ADMIN).length === 1;
+            
+        if (isOnlyAdmin) {
+            const otherMembers = conversation.participants.filter(p => p.userId !== userId);
+            if (otherMembers.length > 0) {
+                // Find oldest member
+                otherMembers.sort((a, b) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime());
+                const newAdmin = otherMembers[0];
+                
+                await this._chatRepository.updateParticipantRole(groupId, newAdmin.userId, GroupRole.ADMIN);
+                
+                const newAdminProfileMap = await authServiceClient.getUserProfiles([newAdmin.userId]);
+                const newAdminName = newAdminProfileMap.get(newAdmin.userId)?.name || newAdminProfileMap.get(newAdmin.userId)?.username || 'Unknown User';
+
+                // ✅ Inject SYSTEM message for auto-promotion via Saga
+                await this._messageSagaService.sendSystemMessage(
+                    groupId,
+                    `promoted_admin:${JSON.stringify({ id: newAdmin.userId, name: newAdminName })}`,
+                    userId // Leaving user triggered this
+                );
+
+                await this.publishEvent(groupId, 'role_updated', {
+                    conversationId: groupId,
+                    userId: newAdmin.userId,
+                    role: 'ADMIN'
+                });
+            }
+        }
+    }
+
     await this._chatRepository.removeParticipantFromGroup(groupId, userId);
 
+    const userProfileMap = await authServiceClient.getUserProfiles([userId]);
+    const snapshotName = userProfileMap.get(userId)?.name || userProfileMap.get(userId)?.username || 'Unknown User';
+
+    // ✅ Inject SYSTEM message via Saga
+    await this._messageSagaService.sendSystemMessage(
+        groupId,
+        `left_group:${JSON.stringify({ id: userId, name: snapshotName })}`,
+        userId
+    );
+
+    // Update member count atomically
+    const newMemberCount = await this._chatRepository.updateMemberCount(groupId, -1);
+
     this.publishEvent(groupId, 'participant_left', {
-        conversationId: groupId,
-        userId: userId
+      conversationId: groupId,
+      userId: userId,
+      memberCount: newMemberCount
     });
   }
 
-  private async verifyAdmin(groupId: string, userId: string): Promise<void> {
-      const participant = await this._chatRepository.findParticipantInConversation(userId, groupId);
-      if (!participant) {
-          throw new AppError("User is not a participant of this group", 403);
-      }
-      
-      // ✅ Check admin role OR owner status (defensive check to ensure owners can always manage)
-      const conversation = await this._chatRepository.findConversationById(groupId);
-      if (participant.role !== GroupRole.ADMIN && conversation?.ownerId !== userId) {
-          throw new AppError("Only admins can perform this action", 403);
-      }
-  }
 
   private async publishEvent(conversationId: string, type: string, data: any) {
       try {
@@ -334,21 +505,36 @@ export class GroupService implements IGroupService {
     // Add user as a participant with MEMBER role
     await this._chatRepository.addParticipantToGroup(groupId, userId);
 
+    // ✅ Invalidate caches
+    await RedisCacheService.invalidateConversationCache(groupId);
+
     // Enrich user profile and publish event
     const userProfilesMap = await authServiceClient.getUserProfiles([userId]);
     const userProfile = userProfilesMap.get(userId);
+    const snapshotName = userProfile?.name || userProfile?.username || 'Unknown User';
+
+    // ✅ Inject SYSTEM message for self-join via Saga
+    await this._messageSagaService.sendSystemMessage(
+        groupId,
+        `joined_group:${JSON.stringify({ id: userId, name: snapshotName })}`,
+        userId
+    );
+
+    // Update member count atomically
+    const newMemberCount = await this._chatRepository.updateMemberCount(groupId, 1);
 
     this.publishEvent(groupId, 'participant_joined', {
       conversationId: groupId,
-      participant: {
-        userId: userId,
+      memberCount: newMemberCount,
+      userId,
+      profile: {
+        userId,
         username: userProfile?.username || 'unknown',
         name: userProfile?.name || 'Unknown User',
         profilePhoto: userProfile?.profilePhoto || null,
         role: 'MEMBER'
       }
     });
-
     logger.info(`User ${userId} joined group ${groupId}`);
   }
 }

@@ -218,4 +218,50 @@ export class CommentRepository
     }
   }
 
+  async hideAllCommentsByUser(userId: string, reason: string): Promise<void> {
+    try {
+      await prisma.comment.updateMany({
+        where: { userId, deletedAt: null },
+        data: { isHidden: true, hiddenAt: new Date(), hiddenReason: reason },
+      });
+    } catch (error: any) {
+      logger.error("Error hiding all comments by user", { error: error.message, userId });
+      throw new Error("Database error");
+    }
+  }
+
+  async unhideAllCommentsByUser(userId: string): Promise<void> {
+    try {
+      await prisma.comment.updateMany({
+        where: { userId, deletedAt: null },
+        data: { isHidden: false, hiddenAt: null, hiddenReason: null },
+      });
+    } catch (error: any) {
+      logger.error("Error unhiding all comments by user", { error: error.message, userId });
+      throw new Error("Database error");
+    }
+  }
+
+  async hideComment(commentId: string, reason: string): Promise<void> {
+    try {
+      await prisma.comment.update({
+        where: { id: commentId },
+        data: { isHidden: true, hiddenAt: new Date(), hiddenReason: reason },
+      });
+    } catch (error: any) {
+      logger.error("Error hiding comment", { error: error.message, commentId });
+      throw new Error("Database error");
+    }
+  }
+
+  async deleteAllCommentsByUser(userId: string): Promise<void> {
+    try {
+      await prisma.comment.deleteMany({
+        where: { userId },
+      });
+    } catch (error: any) {
+      logger.error("Error deleting all comments by user", { error: error.message, userId });
+      throw new Error("Database error");
+    }
+  }
 }

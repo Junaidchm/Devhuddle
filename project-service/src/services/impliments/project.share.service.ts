@@ -63,11 +63,15 @@ export class ProjectShareService implements IProjectShareService {
           topic: KAFKA_TOPICS.PROJECT_SHARE_CREATED,
           key: share.id,
           payload: {
+            dedupeId: `share-${share.id}-${Date.now()}`,
             shareId: share.id,
             projectId: req.projectId,
             userId: req.userId,
+            projectAuthorId: project.userId,
             shareType: req.shareType,
             sharesCount,
+            version: Date.now(),
+            eventTimestamp: new Date().toISOString(),
           },
         });
       }

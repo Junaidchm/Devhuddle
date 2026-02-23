@@ -18,24 +18,84 @@ router
   // get all users
   .get(
     "/users",
-    extractUserMiddleware, // Extract user from x-user-data header
-    requireRole("superAdmin"), // Check if user has superAdmin role
+    extractUserMiddleware,
+    requireRole("superAdmin"),
     adminController.getUsers.bind(adminController)
   )
 
   // block unblock user
   .patch(
-    "/users/:id/toogle",
-    extractUserMiddleware, // Extract user from x-user-data header
-    requireRole("superAdmin"), // Check if user has superAdmin role
+    "/users/:id/toggle",
+    extractUserMiddleware,
+    requireRole("superAdmin"),
     adminController.toogleUserState.bind(adminController)
   )
 
   // get a specific user
   .get(
     "/user/:id",
-    extractUserMiddleware, // Extract user from x-user-data header
-    requireRole("superAdmin"), // Check if user has superAdmin role
+    extractUserMiddleware,
+    requireRole("superAdmin"),
     adminController.getUserFullDetails.bind(adminController)
   )
+
+  // Reporting Routes
+  .post(
+    "/reports",
+    extractUserMiddleware,
+    adminController.submitReport.bind(adminController)
+  )
+  .get(
+    "/reports",
+    extractUserMiddleware,
+    requireRole("superAdmin"),
+    adminController.getReports.bind(adminController)
+  )
+  .get(
+    "/reports/:id",
+    extractUserMiddleware,
+    requireRole("superAdmin"),
+    adminController.getReportById.bind(adminController)
+  )
+  .patch(
+    "/reports/:id/action",
+    extractUserMiddleware,
+    requireRole("superAdmin"),
+    adminController.processReportAction.bind(adminController)
+  )
+  .post(
+    "/reports/bulk-action",
+    extractUserMiddleware,
+    requireRole("superAdmin"),
+    adminController.bulkReportAction.bind(adminController)
+  )
+
+  // Audit Logs
+  .get(
+    "/audit-logs",
+    extractUserMiddleware,
+    requireRole("superAdmin"),
+    adminController.getAuditLogs.bind(adminController)
+  )
+
+  // Analytics
+  .get(
+    "/analytics/dashboard",
+    extractUserMiddleware,
+    requireRole("superAdmin"),
+    adminController.getDashboardStats.bind(adminController)
+  )
+  .get(
+    "/analytics/reports-by-reason",
+    extractUserMiddleware,
+    requireRole("superAdmin"),
+    adminController.getReportsByReason.bind(adminController)
+  )
+  .get(
+    "/analytics/reports-by-severity",
+    extractUserMiddleware,
+    requireRole("superAdmin"),
+    adminController.getReportsBySeverity.bind(adminController)
+  )
+
 export default router;
