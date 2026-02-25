@@ -167,29 +167,32 @@ export class AuthService implements IAuthService {
     try {
       const user = await this._userRepository.findByEmail(email);
 
-      if (user && user.email === email && user.password == "") {
-        throw new CustomError(
-          grpc.status.ALREADY_EXISTS,
-          Messages.LOGING_USING_GOOGLE_MESSAGE
-        );
-      }
-      if (
-        !user ||
-        !(await this._userRepository.verifyPassword(user.password, password))
-      ) {
+      if (!user) {
         throw new CustomError(grpc.status.NOT_FOUND, Messages.USER_NOT_FOUND);
-      }
-      if (!user.emailVerified) {
-        throw new CustomError(
-          grpc.status.PERMISSION_DENIED,
-          Messages.VERIFIED_EMAIL_ERR
-        );
       }
 
       if (user.isBlocked) {
         throw new CustomError(
           grpc.status.PERMISSION_DENIED,
           Messages.USER_BLOCKED
+        );
+      }
+
+      if (user.email === email && user.password == "") {
+        throw new CustomError(
+          grpc.status.ALREADY_EXISTS,
+          Messages.LOGING_USING_GOOGLE_MESSAGE
+        );
+      }
+      
+      if (!(await this._userRepository.verifyPassword(user.password, password))) {
+        throw new CustomError(grpc.status.NOT_FOUND, Messages.USER_NOT_FOUND);
+      }
+
+      if (!user.emailVerified) {
+        throw new CustomError(
+          grpc.status.PERMISSION_DENIED,
+          Messages.VERIFIED_EMAIL_ERR
         );
       }
 

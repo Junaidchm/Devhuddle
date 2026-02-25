@@ -156,4 +156,14 @@ export interface INotificationRepository {
     requestId: string,
     version: number
   ): Promise<void>;
+
+  createEnforcedNotification(
+    adminId: string,
+    recipientId: string,
+    entityId: string,
+    entityType: "POST" | "COMMENT" | "PROJECT",
+    action: "HIDE" | "UNHIDE",
+    reason: string,
+    version: number
+  ): Promise<void>;
 }

@@ -187,6 +187,32 @@ export class MediaService implements IMediaService {
     }
   }
 
+  async getMediaByPostId(postId: string): Promise<Media[]> {
+    try {
+      const media = await this._mediaRepository.findByPostId(postId);
+      return media;
+    } catch (error: unknown) {
+      logger.error("Failed to get media by post ID", {
+        error: (error as Error).message,
+        postId,
+      });
+      throw error;
+    }
+  }
+
+  async getMediaByProjectId(projectId: string): Promise<Media[]> {
+    try {
+      const media = await this._mediaRepository.findByProjectId(projectId);
+      return media;
+    } catch (error: unknown) {
+      logger.error("Failed to get media by project ID", {
+        error: (error as Error).message,
+        projectId,
+      });
+      throw error;
+    }
+  }
+
   async deleteMedia(mediaId: string, userId: string): Promise<void> {
     try {
       const media = await this._mediaRepository.findById(mediaId);
@@ -306,6 +332,43 @@ export class MediaService implements IMediaService {
     }
   }
 
+  async linkMediaToProject(
+    mediaIds: string[],
+    projectId: string,
+    userId: string
+  ): Promise<void> {
+    try {
+      // Verify all media belong to user
+      for (const mediaId of mediaIds) {
+        const media = await this._mediaRepository.findById(mediaId);
+        if (!media) {
+          throw new CustomError(404, `Media ${mediaId} not found`);
+        }
+        if (media.userId !== userId) {
+          throw new CustomError(403, `Unauthorized access to media ${mediaId}`);
+        }
+        if (media.projectId && media.projectId !== projectId) {
+          throw new CustomError(400, `Media ${mediaId} is already linked to another project`);
+        }
+      }
+
+      // Link media to project
+      for (const mediaId of mediaIds) {
+        await this._mediaRepository.update(mediaId, { projectId });
+      }
+
+      logger.info("Media linked to project", { mediaIds, projectId, userId });
+    } catch (error: unknown) {
+      logger.error("Failed to link media to project", {
+        error: (error as Error).message,
+        mediaIds,
+        projectId,
+        userId,
+      });
+      throw error;
+    }
+  }
+
   async linkMediaToPost(
     mediaIds: string[],
     postId: string,
@@ -392,11 +455,11 @@ export class MediaService implements IMediaService {
 
     const normalizedType = fileType.toLowerCase();
 
-    if (mediaType === "POST_IMAGE" || mediaType === "PROFILE_IMAGE" || mediaType === "CHAT_IMAGE" || mediaType === "COVER_IMAGE") {
+    if (mediaType === "POST_IMAGE" || mediaType === "PROFILE_IMAGE" || mediaType === "CHAT_IMAGE" || mediaType === "COVER_IMAGE" || mediaType === "PROJECT_IMAGE") {
       if (!allowedImageTypes.includes(normalizedType)) {
         throw new CustomError(400, `Invalid image type. Allowed: ${allowedImageTypes.join(", ")}`);
       }
-    } else if (mediaType === "POST_VIDEO" || mediaType === "CHAT_VIDEO") {
+    } else if (mediaType === "POST_VIDEO" || mediaType === "CHAT_VIDEO" || mediaType === "PROJECT_VIDEO") {
       if (!allowedVideoTypes.includes(normalizedType)) {
         throw new CustomError(400, `Invalid video type. Allowed: ${allowedVideoTypes.join(", ")}`);
       }
@@ -421,9 +484,11 @@ export class MediaService implements IMediaService {
         maxSize = MAX_FILE_SIZE.PROFILE_IMAGE;
         break;
       case "POST_IMAGE":
+      case "PROJECT_IMAGE":
         maxSize = MAX_FILE_SIZE.IMAGE;
         break;
       case "POST_VIDEO":
+      case "PROJECT_VIDEO":
         maxSize = MAX_FILE_SIZE.VIDEO;
         break;
       case "CHAT_IMAGE":

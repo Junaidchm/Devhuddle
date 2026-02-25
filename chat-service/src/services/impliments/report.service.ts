@@ -31,7 +31,12 @@ export class ReportService implements IReportService {
             targetType: dto.targetType,
             reason: dto.reason,
             description: dto.description,
-            metadata: JSON.stringify(dto.metadata || {}),
+            metadata: JSON.stringify({
+                ...(dto.metadata || {}),
+                ownerId: conversation.ownerId,
+                conversationName: conversation.name,
+                contentSnippet: conversation.description?.substring(0, 100),
+            }),
         });
 
         if (!grpcResponse.success) {

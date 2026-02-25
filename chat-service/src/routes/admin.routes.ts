@@ -18,6 +18,11 @@ export const setupAdminRoutes = (adminController: AdminController) => {
     adminController.getReportedHubs.bind(adminController)
   );
 
+  router.get(
+    "/hubs/:id",
+    adminController.getHubById.bind(adminController)
+  );
+
   router.patch(
     "/hubs/:id/suspend",
     adminController.suspendHub.bind(adminController)

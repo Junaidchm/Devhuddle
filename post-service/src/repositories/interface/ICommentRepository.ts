@@ -41,4 +41,5 @@ export interface ICommentRepository {
   hideAllCommentsByUser(userId: string, reason: string): Promise<void>;
   unhideAllCommentsByUser(userId: string): Promise<void>;
   hideComment(commentId: string, reason: string): Promise<void>;
+  unhideComment(commentId: string): Promise<void>;
 }

@@ -213,8 +213,15 @@ export class AdminRepository implements IAdminRepository {
         include: {
           Media: true,
           Report: {
+            orderBy: { createdAt: "desc" },
             include: {
-              posts: true,
+              posts: {
+                select: {
+                  id: true,
+                  content: true,
+                  userId: true,
+                }
+              },
             },
           },
         },
@@ -432,6 +439,38 @@ export class AdminRepository implements IAdminRepository {
     }
   }
 
+  async hideComment(commentId: string, reason: string): Promise<Comment> {
+    try {
+      return await prisma.comment.update({
+        where: { id: commentId },
+        data: {
+          isHidden: true,
+          hiddenAt: new Date(),
+          hiddenReason: reason,
+        },
+      });
+    } catch (error: any) {
+      logger.error("Error hiding comment", { error: error.message });
+      throw new Error("Failed to hide comment");
+    }
+  }
+
+  async unhideComment(commentId: string): Promise<Comment> {
+    try {
+      return await prisma.comment.update({
+        where: { id: commentId },
+        data: {
+          isHidden: false,
+          hiddenAt: null,
+          hiddenReason: null,
+        },
+      });
+    } catch (error: any) {
+      logger.error("Error unhiding comment", { error: error.message });
+      throw new Error("Failed to unhide comment");
+    }
+  }
+
   async listReportedComments(params: ListCommentsParams): Promise<ListCommentsResult> {
     try {
       const where: Prisma.CommentWhereInput = {
@@ -513,7 +552,6 @@ export class AdminRepository implements IAdminRepository {
         commentsToday,
         reportsTotal,
         reportsPending,
-        reportsOpen,
         reportsInvestigating,
         reportsResolved,
         reportsCritical,
@@ -536,7 +574,6 @@ export class AdminRepository implements IAdminRepository {
         prisma.comment.count({ where: { createdAt: { gte: todayStart } } }),
         prisma.report.count(),
         prisma.report.count({ where: { status: "PENDING" } }),
-        prisma.report.count({ where: { status: "OPEN" } }),
         prisma.report.count({ where: { status: "INVESTIGATING" } }),
         prisma.report.count({ 
           where: { 
@@ -580,7 +617,7 @@ export class AdminRepository implements IAdminRepository {
         reports: {
           total: reportsTotal,
           pending: reportsPending,
-          open: reportsOpen,
+          open: reportsPending,
           investigating: reportsInvestigating,
           resolved: reportsResolved,
           critical: reportsCritical,

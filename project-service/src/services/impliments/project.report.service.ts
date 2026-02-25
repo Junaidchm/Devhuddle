@@ -45,6 +45,19 @@ export class ProjectReportService implements IProjectReportService {
         );
       }
 
+      // 2.5 Check if already reported locally to avoid unique constraint error
+      const existingReport = await this._reportRepository.findReport(req.reporterId, req.projectId);
+      if (existingReport) {
+        logger.info("Project already reported by this user", { 
+          reporterId: req.reporterId, 
+          projectId: req.projectId 
+        });
+        return {
+          reportId: existingReport.id,
+          success: true,
+        };
+      }
+
       // 3. Centralized Ingestion: Forward to Admin Hub via gRPC (Circuit Breaker protected)
       logger.info("Forwarding project report to Admin Hub", { 
         reporterId: req.reporterId, 
@@ -57,7 +70,11 @@ export class ProjectReportService implements IProjectReportService {
         targetType: "PROJECT",
         reason: req.reason,
         description: "", // Description could be from metadata if needed
-        metadata: req.metadata || "{}",
+        metadata: JSON.stringify({
+          ...(req.metadata ? JSON.parse(req.metadata) : {}),
+          ownerId: project.userId,
+          contentSnippet: project.description?.substring(0, 100),
+        }),
       });
 
       if (!adminHubResponse.success) {

@@ -21,6 +21,16 @@ import {
 
 export const protobufPackage = "project";
 
+export interface GetProjectStatsRequest {
+}
+
+export interface GetProjectStatsResponse {
+  totalProjects: number;
+  reportedProjects: number;
+  hiddenProjects: number;
+  deletedProjects: number;
+}
+
 /** Messages */
 export interface CreateProjectRequest {
   userId: string;
@@ -277,6 +287,173 @@ export interface UserProfile {
   username: string;
   avatar: string;
 }
+
+function createBaseGetProjectStatsRequest(): GetProjectStatsRequest {
+  return {};
+}
+
+export const GetProjectStatsRequest: MessageFns<GetProjectStatsRequest> = {
+  encode(_: GetProjectStatsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetProjectStatsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetProjectStatsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): GetProjectStatsRequest {
+    return {};
+  },
+
+  toJSON(_: GetProjectStatsRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetProjectStatsRequest>, I>>(base?: I): GetProjectStatsRequest {
+    return GetProjectStatsRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetProjectStatsRequest>, I>>(_: I): GetProjectStatsRequest {
+    const message = createBaseGetProjectStatsRequest();
+    return message;
+  },
+};
+
+function createBaseGetProjectStatsResponse(): GetProjectStatsResponse {
+  return { totalProjects: 0, reportedProjects: 0, hiddenProjects: 0, deletedProjects: 0 };
+}
+
+export const GetProjectStatsResponse: MessageFns<GetProjectStatsResponse> = {
+  encode(message: GetProjectStatsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.totalProjects !== 0) {
+      writer.uint32(8).int32(message.totalProjects);
+    }
+    if (message.reportedProjects !== 0) {
+      writer.uint32(16).int32(message.reportedProjects);
+    }
+    if (message.hiddenProjects !== 0) {
+      writer.uint32(24).int32(message.hiddenProjects);
+    }
+    if (message.deletedProjects !== 0) {
+      writer.uint32(32).int32(message.deletedProjects);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetProjectStatsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetProjectStatsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.totalProjects = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.reportedProjects = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.hiddenProjects = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.deletedProjects = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetProjectStatsResponse {
+    return {
+      totalProjects: isSet(object.totalProjects)
+        ? globalThis.Number(object.totalProjects)
+        : isSet(object.total_projects)
+        ? globalThis.Number(object.total_projects)
+        : 0,
+      reportedProjects: isSet(object.reportedProjects)
+        ? globalThis.Number(object.reportedProjects)
+        : isSet(object.reported_projects)
+        ? globalThis.Number(object.reported_projects)
+        : 0,
+      hiddenProjects: isSet(object.hiddenProjects)
+        ? globalThis.Number(object.hiddenProjects)
+        : isSet(object.hidden_projects)
+        ? globalThis.Number(object.hidden_projects)
+        : 0,
+      deletedProjects: isSet(object.deletedProjects)
+        ? globalThis.Number(object.deletedProjects)
+        : isSet(object.deleted_projects)
+        ? globalThis.Number(object.deleted_projects)
+        : 0,
+    };
+  },
+
+  toJSON(message: GetProjectStatsResponse): unknown {
+    const obj: any = {};
+    if (message.totalProjects !== 0) {
+      obj.totalProjects = Math.round(message.totalProjects);
+    }
+    if (message.reportedProjects !== 0) {
+      obj.reportedProjects = Math.round(message.reportedProjects);
+    }
+    if (message.hiddenProjects !== 0) {
+      obj.hiddenProjects = Math.round(message.hiddenProjects);
+    }
+    if (message.deletedProjects !== 0) {
+      obj.deletedProjects = Math.round(message.deletedProjects);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetProjectStatsResponse>, I>>(base?: I): GetProjectStatsResponse {
+    return GetProjectStatsResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetProjectStatsResponse>, I>>(object: I): GetProjectStatsResponse {
+    const message = createBaseGetProjectStatsResponse();
+    message.totalProjects = object.totalProjects ?? 0;
+    message.reportedProjects = object.reportedProjects ?? 0;
+    message.hiddenProjects = object.hiddenProjects ?? 0;
+    message.deletedProjects = object.deletedProjects ?? 0;
+    return message;
+  },
+};
 
 function createBaseCreateProjectRequest(): CreateProjectRequest {
   return {
@@ -4205,6 +4382,17 @@ export const ProjectServiceService = {
       Buffer.from(TrackProjectViewResponse.encode(value).finish()),
     responseDeserialize: (value: Buffer): TrackProjectViewResponse => TrackProjectViewResponse.decode(value),
   },
+  getProjectStats: {
+    path: "/project.ProjectService/GetProjectStats",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: GetProjectStatsRequest): Buffer =>
+      Buffer.from(GetProjectStatsRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): GetProjectStatsRequest => GetProjectStatsRequest.decode(value),
+    responseSerialize: (value: GetProjectStatsResponse): Buffer =>
+      Buffer.from(GetProjectStatsResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer): GetProjectStatsResponse => GetProjectStatsResponse.decode(value),
+  },
 } as const;
 
 export interface ProjectServiceServer extends UntypedServiceImplementation {
@@ -4228,6 +4416,7 @@ export interface ProjectServiceServer extends UntypedServiceImplementation {
   reportProject: handleUnaryCall<ReportProjectRequest, ReportProjectResponse>;
   /** Analytics */
   trackProjectView: handleUnaryCall<TrackProjectViewRequest, TrackProjectViewResponse>;
+  getProjectStats: handleUnaryCall<GetProjectStatsRequest, GetProjectStatsResponse>;
 }
 
 export interface ProjectServiceClient extends Client {
@@ -4460,6 +4649,21 @@ export interface ProjectServiceClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: TrackProjectViewResponse) => void,
+  ): ClientUnaryCall;
+  getProjectStats(
+    request: GetProjectStatsRequest,
+    callback: (error: ServiceError | null, response: GetProjectStatsResponse) => void,
+  ): ClientUnaryCall;
+  getProjectStats(
+    request: GetProjectStatsRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: GetProjectStatsResponse) => void,
+  ): ClientUnaryCall;
+  getProjectStats(
+    request: GetProjectStatsRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: GetProjectStatsResponse) => void,
   ): ClientUnaryCall;
 }
 

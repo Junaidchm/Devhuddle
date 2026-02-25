@@ -21,6 +21,7 @@ enum NotificationType {
   HUB_JOIN_REQUEST
   HUB_JOIN_APPROVED
   HUB_JOIN_REJECTED
+  CONTENT_HIDDEN
 }
 
 enum EntityType {

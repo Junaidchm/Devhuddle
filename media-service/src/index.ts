@@ -1,6 +1,11 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+// Fix for BigInt serialization
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+
 import compression from "compression";
 import express, { Express, NextFunction, Request, Response } from "express";
 import helmet from "helmet";
@@ -21,8 +26,6 @@ import { MediaController } from "./controllers/impliments/media.controller";
 
 // Import routes
 import { setupMediaRoutes } from "./routes/media.routes";
-
-dotenv.config();
 
 app.use(helmet());
 app.use(compression());

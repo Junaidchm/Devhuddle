@@ -78,7 +78,7 @@ export const setUsertoBlockBlackList = async (
   try {
     const key = generateBlockUserRedisKey(userId);
     if (isBlocked) {
-      await redisClient.setEx(key, 900, "1");
+      await redisClient.setEx(key, 2_592_000, "1"); // 30 days — permanent until explicitly unblocked
     } else {
       await redisClient.del(key);
     }
@@ -96,15 +96,22 @@ export const checkUserBlockBlackList = async (
   try {
     const key = generateBlockUserRedisKey(userId);
     const isBlackListed = await redisClient.get(key);
+    
+    logger.info(`[Redis] Checking block status for user ${userId}`, {
+      key,
+      isBlackListed: !!isBlackListed
+    });
+
     if (isBlackListed) {
       return true;
     }
 
     return false;
   } catch (error: any) {
-    logger.error("Error blacklisting User", {
+    logger.error("Error checking block status for User", {
+      userId,
       error: (error as Error).message,
     });
-    return true;
+    return false; // Change to false for now so we can see if it's failing or returning nothing
   }
 };

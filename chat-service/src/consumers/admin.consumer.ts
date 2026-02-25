@@ -97,13 +97,50 @@ async function handleAdminActionEnforced(event: {
   targetId: string;
   reason: string;
 }) {
-  const { action, targetType } = event;
+  const { action, targetType, targetId, reason } = event;
 
-  if (action === "BAN" || action === "SUSPEND") {
+  if (action === "HIDE" || action === "DELETE") {
+    if (targetType === "HUB") {
+      logger.info(`Moderation: Hiding hub ${targetId}`);
+      await prisma.conversation.update({
+        where: { id: targetId },
+        data: { 
+          isSuspended: true,
+          suspendedAt: new Date()
+        }
+      });
+    } else if (targetType === "MESSAGE") {
+      logger.info(`Moderation: Hiding message ${targetId}`);
+      await prisma.message.update({
+        where: { id: targetId },
+        data: { deletedForAll: true }
+      });
+    }
+  } else if (action === "BAN" || action === "SUSPEND") {
     if (targetType === "USER") {
       // The auth-service Redis block list enforced by gRPC GetUserStatus will prevent 
       // new messages from being sent. Historical messages are kept for audit purposes.
-      logger.info(`Chat message restriction enforced for ${action} on user ${event.targetId} via Redis block list`);
+      logger.info(`Chat message restriction enforced for ${action} on user ${targetId} via Redis block list`);
+    } else if (targetType === "HUB" && action === "SUSPEND") {
+      logger.info(`Moderation: Suspending hub ${targetId}`);
+      await prisma.conversation.update({
+        where: { id: targetId },
+        data: { 
+          isSuspended: true,
+          suspendedAt: new Date()
+        }
+      });
+    }
+  } else if (action === "UNHIDE") {
+    if (targetType === "HUB") {
+      logger.info(`Moderation: Restoring hub ${targetId}`);
+      await prisma.conversation.update({
+        where: { id: targetId },
+        data: { 
+          isSuspended: false,
+          suspendedAt: null
+        }
+      });
     }
   }
 }

@@ -18,8 +18,13 @@ const GRPC_PORT = process.env.GRPC_PORT || "50051";
 server.bindAsync(
   `0.0.0.0:${GRPC_PORT}`,
   grpc.ServerCredentials.createInsecure(),
-  () => {
-    logger.info(`✅ gRPC server running on port ${GRPC_PORT}`);
+  (err, port) => {
+    if (err) {
+      logger.error(`gRPC server failed to bind: ${err.message}`);
+      return;
+    }
+    logger.info(`✅ gRPC server running on port ${port}`);
+    server.start();
   }
 );
 

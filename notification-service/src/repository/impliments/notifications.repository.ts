@@ -1491,6 +1491,9 @@ export class NotificationsRepository
 
       case NotificationType.HUB_JOIN_REJECTED:
         return "rejected your request to join the hub";
+
+      case NotificationType.CONTENT_HIDDEN:
+        return "hidden"; // This will be handled specifically in the summary if needed
         
       default:
         return "interacted with your content";
@@ -1554,6 +1557,47 @@ export class NotificationsRepository
       "rejected your request to join the hub",
       requestId,
       { hubId, requestId }
+    );
+  }
+
+  async createEnforcedNotification(
+    adminId: string,
+    recipientId: string,
+    entityId: string,
+    entityType: "POST" | "COMMENT" | "PROJECT" | "HUB" | "MESSAGE" | "CONVERSATION" | "USER",
+    action: "HIDE" | "UNHIDE" | "DELETE" | "BAN" | "SUSPEND" | "WARN",
+    reason: string,
+    version: number
+  ): Promise<void> {
+    const isHub = entityType === "HUB" || entityType === "CONVERSATION";
+    const contentLabel = isHub ? "hub" : entityType.toLowerCase();
+    const actionVerb = action === "HIDE" ? `hid your ${contentLabel}` 
+                     : action === "DELETE" ? `deleted your ${contentLabel}`
+                     : action === "BAN" ? "banned your account"
+                     : action === "SUSPEND" ? (isHub ? "suspended your hub" : "suspended your account")
+                     : `restored your ${contentLabel}`;
+    
+    // Use a composite entityId so each unique action creates its OWN notification record.
+    const compositeEntityId = `${entityId}::${action}`;
+    
+    let dbEntityType: EntityType;
+    if (entityType === "POST") dbEntityType = EntityType.POST;
+    else if (entityType === "PROJECT") dbEntityType = EntityType.PROJECT;
+    else if (entityType === "HUB" || entityType === "CONVERSATION") dbEntityType = EntityType.HUB;
+    else if (entityType === "MESSAGE") dbEntityType = EntityType.MESSAGE;
+    else if (entityType === "USER") dbEntityType = EntityType.USER;
+    else dbEntityType = EntityType.COMMENT;
+
+    await this._createOrUpdateNotification(
+      NotificationType.CONTENT_HIDDEN,
+      dbEntityType,
+      compositeEntityId,
+      adminId, // Admin is the actor
+      recipientId,
+      version,
+      actionVerb,
+      entityId, // contextId = real entity ID so frontend can navigate
+      { action, reason, entityType }
     );
   }
 

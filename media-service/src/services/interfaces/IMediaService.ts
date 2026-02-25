@@ -45,9 +45,12 @@ export interface IMediaService {
   createUploadSession(request: UploadSessionRequest): Promise<UploadSessionResponse>;
   completeUpload(request: CompleteUploadRequest): Promise<CompleteUploadResponse>;
   getMediaById(mediaId: string, userId: string): Promise<any>;
+  getMediaByPostId(postId: string): Promise<any[]>;
+  getMediaByProjectId(projectId: string): Promise<any[]>;
   deleteMedia(mediaId: string, userId: string): Promise<void>;
   validateMediaOwnership(request: ValidateMediaRequest): Promise<ValidateMediaResponse>;
   linkMediaToPost(mediaIds: string[], postId: string, userId: string): Promise<void>;
+  linkMediaToProject(mediaIds: string[], projectId: string, userId: string): Promise<void>;
   unlinkMediaFromPost(mediaIds: string[], userId: string): Promise<void>;
 }
 

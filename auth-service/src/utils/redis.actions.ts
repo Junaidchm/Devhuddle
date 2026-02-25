@@ -78,12 +78,15 @@ export const setUsertoBlockBlackList = async (
   try {
     const key = generateBlockUserRedisKey(userId);
     if (isBlocked) {
-      await redisClient.setEx(key, 900, "1");
+      await redisClient.setEx(key, 2_592_000, "1"); // 30 days — permanent until explicitly unblocked
+      logger.info(`[Redis] User ${userId} ADDED to block blacklist`, { key });
     } else {
       await redisClient.del(key);
+      logger.info(`[Redis] User ${userId} REMOVED from block blacklist`, { key });
     }
   } catch (error: any) {
     logger.error("Error blacklisting User", {
+      userId,
       error: (error as Error).message,
     });
     throw new Error("Failed to blacklist User");

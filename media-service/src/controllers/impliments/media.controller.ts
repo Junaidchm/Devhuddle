@@ -117,6 +117,58 @@ export class MediaController implements IMediaController {
     }
   }
 
+  async getMediaByPostId(req: Request, res: Response): Promise<void> {
+    try {
+      const { postId } = req.params;
+
+      if (!postId) {
+        return sendErrorResponse(res, {
+          status: 400,
+          message: "Missing postId",
+        });
+      }
+
+      const media = await this._mediaService.getMediaByPostId(postId as string);
+
+      res.status(200).json({
+        success: true,
+        data: media,
+      });
+    } catch (error: any) {
+      logger.error("Error in getMediaByPostId", {
+        error: error.message,
+        stack: error.stack,
+      });
+      sendErrorResponse(res, error);
+    }
+  }
+
+  async getMediaByProjectId(req: Request, res: Response): Promise<void> {
+    try {
+      const { projectId } = req.params;
+
+      if (!projectId) {
+        return sendErrorResponse(res, {
+          status: 400,
+          message: "Missing projectId",
+        });
+      }
+
+      const media = await this._mediaService.getMediaByProjectId(projectId as string);
+
+      res.status(200).json({
+        success: true,
+        data: media,
+      });
+    } catch (error: any) {
+      logger.error("Error in getMediaByProjectId", {
+        error: error.message,
+        stack: error.stack,
+      });
+      sendErrorResponse(res, error);
+    }
+  }
+
   async deleteMedia(req: Request, res: Response): Promise<void> {
     try {
       const userId = (req as any).user?.id || (req as any).user?.userId;
@@ -250,6 +302,29 @@ export class MediaController implements IMediaController {
       });
     } catch (error: any) {
       logger.error("Error in linkMediaToPost", {
+        error: error.message,
+        stack: error.stack,
+      });
+      sendErrorResponse(res, error);
+    }
+  }
+
+  async linkMediaToProject(req: Request, res: Response): Promise<void> {
+    try {
+      const { mediaIds, projectId, userId } = req.body;
+
+      if (!mediaIds || !Array.isArray(mediaIds) || mediaIds.length === 0) {
+        // Validation handled by DTO
+      }
+
+      await this._mediaService.linkMediaToProject(mediaIds, projectId, userId);
+
+      res.status(200).json({
+        success: true,
+        message: "Media linked to project successfully",
+      });
+    } catch (error: any) {
+      logger.error("Error in linkMediaToProject", {
         error: error.message,
         stack: error.stack,
       });

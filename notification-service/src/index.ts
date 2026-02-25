@@ -11,6 +11,7 @@ import { startDLQConsumer } from "./consumers/dlq.consumers";
 import { startEngagementConsumer } from "./consumers/engagement.consumer";
 import { startChatConsumer } from "./consumers/chat.consumer";
 import { startUserConsumer } from "./consumers/user.consumer";
+import { startAdminConsumer } from "./consumers/admin.consumer";
 
 const app: Express = express();
 const server = createServer(app);
@@ -84,6 +85,7 @@ const startServer = async () => {
     await startEngagementConsumer(wsService);
     await startChatConsumer(wsService);
     await startUserConsumer(wsService);
+    await startAdminConsumer(wsService);
     logger.info("All Kafka consumers started");
 
     // Start HTTP server

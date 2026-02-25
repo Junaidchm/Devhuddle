@@ -21,6 +21,14 @@ export interface HidePostParams {
   postId: string;
   hidden: boolean;
   reason?: string;
+  adminId?: string;
+}
+
+export interface HideCommentParams {
+  commentId: string;
+  hidden: boolean;
+  reason?: string;
+  adminId?: string;
 }
 
 export interface IAdminService {
@@ -40,6 +48,7 @@ export interface IAdminService {
   // Comments
   listComments(params: ListCommentsParams): Promise<ListCommentsResult>;
   getCommentById(commentId: string): Promise<Comment | null>;
+  hideComment(params: HideCommentParams): Promise<Comment>;
   deleteCommentAdmin(commentId: string): Promise<Comment>;
   listReportedComments(params: ListCommentsParams): Promise<ListCommentsResult>;
 

@@ -2,7 +2,6 @@ import { IOutboxRepository } from "../../repositories/interface/IOutboxRepositor
 import { OutboxStatus, OutboxEvent } from "@prisma/client";
 import { publishEvent } from "../../utils/kafka.util";
 import logger from "../../utils/logger.util";
-import { KAFKA_TOPICS } from "../../config/kafka.config";
 
 export class OutboxProcessor {
   private isRunning: boolean = false;

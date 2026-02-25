@@ -36,6 +36,9 @@ import { KAFKA_TOPICS } from "../../config/kafka.config";
 import { Prisma, OutboxAggregateType, OutboxEventType } from "@prisma/client";
 import { calculateTrendingScore } from "../../utils/trending.util";
 import { EnrichedProject } from "../../types/common.types";
+import CircuitBreaker from "opossum";
+import { fetchProjectMedia } from "../../config/media.client";
+import { createCircuitBreaker } from "../../utils/circuit.breaker.util";
 
 export class ProjectService implements IProjectService {
   constructor(
@@ -44,6 +47,12 @@ export class ProjectService implements IProjectService {
     private shareRepository?: IProjectShareRepository,
     private outboxService?: IOutboxService
   ) {}
+
+  private _mediaBreaker = createCircuitBreaker(fetchProjectMedia, "MediaService:fetchProjectMedia", {
+    timeout: 3000,
+    errorThresholdPercentage: 50,
+    resetTimeout: 10000,
+  });
 
   async createProject(req: CreateProjectRequest): Promise<CreateProjectResponse> {
     try {
@@ -169,6 +178,14 @@ export class ProjectService implements IProjectService {
         throw new CustomError(grpc.status.NOT_FOUND, "Project not found");
       }
 
+      // Check if project is available (published and not hidden/removed)
+      if (project.status !== "PUBLISHED" && project.userId !== req.userId) {
+        const errorMsg = project.status === "REMOVED" 
+          ? "This project has been removed by an administrator"
+          : "This project is not currently available";
+        throw new CustomError(grpc.status.PERMISSION_DENIED, errorMsg);
+      }
+
       // Check visibility
       if (project.visibility === "PRIVATE" && project.userId !== req.userId) {
         throw new CustomError(grpc.status.PERMISSION_DENIED, "Project is private");
@@ -179,8 +196,36 @@ export class ProjectService implements IProjectService {
         logger.error("Error tracking view", { error: err.message });
       });
 
+      // Fetch media from Media Service (Resiliently)
+      let mediaItems: any[] = [];
+      try {
+        mediaItems = await this._mediaBreaker.fire(req.projectId);
+      } catch (mediaError: any) {
+        logger.warn("Failed to fetch media from Media Service for project, falling back to empty list", {
+          projectId: req.projectId,
+          error: mediaError.message
+        });
+      }
+
+      const attachments = (mediaItems || []).map((media: any) => ({
+          id: media.id,
+          type: String(media.mediaType || "IMAGE").replace("PROJECT_", ""),
+          url: media.cdnUrl || media.originalUrl,
+          thumbnailUrl: media.thumbnailUrls?.[0] || media.cdnUrl || media.originalUrl,
+          order: 0,
+          isPreview: false,
+          processingStatus: (media.status || "COMPLETED") as any,
+          createdAt: media.createdAt ? new Date(media.createdAt).toISOString() : new Date().toISOString(),
+          updatedAt: media.updatedAt ? new Date(media.updatedAt).toISOString() : new Date().toISOString(),
+      }));
+
+      const projectProto = this.mapToProjectProto(project);
+
       return {
-        project: this.mapToProjectProto(project),
+        project: {
+          ...projectProto,
+          media: attachments,
+        }
       };
     } catch (err: unknown) {
       logger.error("GetProject error", { error: (err as Error).message });
@@ -192,13 +237,16 @@ export class ProjectService implements IProjectService {
   async listProjects(req: ListProjectsRequest): Promise<ListProjectsResponse> {
     try {
       const PAGE_SIZE = req.limit || 10;
-      const where: Prisma.ProjectWhereInput = {};
+      const where: Prisma.ProjectWhereInput = {
+        status: "PUBLISHED",
+        deletedAt: null,
+      };
       const options: ProjectSelectOptions = {
         take: PAGE_SIZE + 1,
         skip: req.pageParam ? 1 : 0,
         cursor: req.pageParam ? { id: req.pageParam } : undefined,
         orderBy: { createdAt: "desc" },
-        where,
+        where: where,
       };
 
       // Apply filters
@@ -369,7 +417,7 @@ export class ProjectService implements IProjectService {
         skip: req.pageParam ? 1 : 0,
         cursor: req.pageParam ? { id: req.pageParam } : undefined,
         orderBy: { trendingScore: "desc" },
-        where: {},
+        where: { status: "PUBLISHED" },
       };
 
       if (req.period && req.period !== "all-time") {
@@ -431,7 +479,7 @@ export class ProjectService implements IProjectService {
   async getTopProjects(req: GetTopProjectsRequest): Promise<GetTopProjectsResponse> {
     try {
       const PAGE_SIZE = req.limit || 10;
-      const where: Prisma.ProjectWhereInput = {};
+      const where: Prisma.ProjectWhereInput = { status: "PUBLISHED" };
       const options: ProjectSelectOptions = {
         take: PAGE_SIZE + 1,
         skip: req.pageParam ? 1 : 0,
@@ -506,6 +554,7 @@ export class ProjectService implements IProjectService {
         techStack: req.techStack || [],
         tags: req.tags || [],
         limit: req.limit || 20,
+        status: "PUBLISHED"
       });
 
       // Get user engagement status

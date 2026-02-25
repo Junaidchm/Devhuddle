@@ -1,4 +1,4 @@
-import { User, Report, AuditLog, ReportStatus, ReportTargetType, ReportSeverity } from "@prisma/client";
+import { User, Report, AuditLog, ReportStatus, ReportTargetType, ReportSeverity, ReportReason } from "@prisma/client";
 import { IAdminRepository } from "../../repositories/interfaces/IAdminRepository";
 import logger from "../../utils/logger.util";
 import { CustomError } from "../../utils/error.util";
@@ -105,7 +105,14 @@ export class AdminService implements IAdminService {
     metadata?: any;
   }): Promise<Report> {
     try {
-      return await this._adminRepository.createReport({
+      logger.info("AdminService.createReport called", { 
+        reporterId: data.reporterId, 
+        targetId: data.targetId, 
+        targetType: data.targetType,
+        reason: data.reason
+      });
+
+      const report = await this._adminRepository.createReport({
         reporter: { connect: { id: data.reporterId } },
         targetId: data.targetId,
         targetType: data.targetType,
@@ -113,8 +120,18 @@ export class AdminService implements IAdminService {
         description: data.description,
         metadata: data.metadata,
       });
+
+      logger.info("Report created successfully in database", { reportId: report.id });
+      return report;
     } catch (error: unknown) {
-      logger.error("Error creating report", { error: (error as Error).message });
+      logger.error("Error creating report in database", { 
+        error: (error as Error).message,
+        data: {
+          reporterId: data.reporterId,
+          targetId: data.targetId,
+          targetType: data.targetType
+        }
+      });
       throw new CustomError(500, "Failed to create report");
     }
   }
@@ -125,6 +142,10 @@ export class AdminService implements IAdminService {
     status?: ReportStatus;
     targetType?: ReportTargetType;
     severity?: ReportSeverity;
+    reason?: ReportReason;
+    search?: string;
+    sortBy?: "createdAt" | "severity" | "status";
+    sortOrder?: "asc" | "desc";
   }): Promise<{ reports: Report[]; total: number }> {
     return this._adminRepository.findReports(params);
   }
@@ -139,7 +160,7 @@ export class AdminService implements IAdminService {
   async processReportAction(reportId: string, adminId: string, action: {
     status: ReportStatus;
     resolution: string;
-    enforcementAction?: 'SUSPEND' | 'BAN' | 'HIDE' | 'WARN';
+    enforcementAction?: 'SUSPEND' | 'BAN' | 'HIDE' | 'WARN' | 'UNHIDE' | 'DELETE';
     severity?: ReportSeverity;
   }): Promise<Report> {
     try {
@@ -177,8 +198,10 @@ export class AdminService implements IAdminService {
             action: action.enforcementAction,
             targetId: report.targetId,
             targetType: report.targetType,
+            ownerId: (report.metadata as any)?.ownerId,
             reason: action.resolution,
             timestamp: new Date().toISOString(),
+            version: Date.now(),
           },
         });
         
@@ -200,6 +223,10 @@ export class AdminService implements IAdminService {
     limit: number;
     adminId?: string;
     targetType?: string;
+    search?: string;
+    action?: string;
+    startDate?: string;
+    endDate?: string;
   }): Promise<{ logs: AuditLog[]; total: number }> {
     return this._adminRepository.findAuditLogs(params);
   }

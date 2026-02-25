@@ -26,7 +26,7 @@ export class ProjectReportRepository
         ...(data.commentId ? { Comment: { connect: { id: data.commentId } } } : {}),
         reason: data.reason,
         metadata: data.metadata,
-        status: ReportStatus.OPEN,
+        status: ReportStatus.PENDING,
       });
 
       // Increment project reports count if reporting a project
@@ -100,7 +100,7 @@ export class ProjectReportRepository
     try {
       return await super.update(reportId, {
         status,
-        resolvedAt: status === "CLOSED" || status === "RESOLVED" ? new Date() : undefined,
+        resolvedAt: status.startsWith("RESOLVED") || status === ReportStatus.CLOSED ? new Date() : undefined,
         resolvedBy,
       });
     } catch (error: unknown) {

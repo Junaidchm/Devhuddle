@@ -236,6 +236,7 @@ export class ChatRepository extends BaseRepository<
             // Get conversations with participants and last message
             const conversations = await prisma.conversation.findMany({
                 where: {
+                    isSuspended: false,
                     participants: {
                         some: {
                             userId,
@@ -646,6 +647,8 @@ export class ChatRepository extends BaseRepository<
     ): Promise<(Conversation & { participants: Participant[] })[]> {
         const whereClause: Prisma.ConversationWhereInput = {
             type: 'GROUP',
+            isSuspended: false,
+            deletedAt: null,
             ...(query ? {
                 OR: [
                     { name: { contains: query, mode: 'insensitive' } },
@@ -680,6 +683,8 @@ export class ChatRepository extends BaseRepository<
     ): Promise<(Conversation & { participants: Participant[] })[]> {
         const whereClause: Prisma.ConversationWhereInput = {
             type: 'GROUP',
+            isSuspended: false,
+            deletedAt: null,
             participants: {
                 some: { userId }
             },
@@ -713,6 +718,8 @@ export class ChatRepository extends BaseRepository<
     ): Promise<(Conversation & { participants: Participant[] })[]> {
         const whereClause: Prisma.ConversationWhereInput = {
             type: 'GROUP',
+            isSuspended: false,
+            deletedAt: null,
             participants: {
                 none: { userId }
             },
@@ -1207,6 +1214,58 @@ export class ChatRepository extends BaseRepository<
             return await prisma.conversation.count({ where });
         } catch (error) {
             logger.error("Error getting conversation count", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async findHubsWithReportCount(
+        where: Prisma.ConversationWhereInput,
+        limit: number = 20,
+        offset: number = 0
+    ): Promise<(Conversation & { participants: Participant[]; _count: { reports: number } })[]> {
+        try {
+            return await prisma.conversation.findMany({
+                where,
+                include: {
+                    participants: true,
+                    _count: {
+                        select: {
+                            reports: true,
+                        },
+                    },
+                },
+                take: limit,
+                skip: offset,
+                orderBy: {
+                    createdAt: "desc",
+                },
+            }) as (Conversation & { participants: Participant[]; _count: { reports: number } })[];
+        } catch (error) {
+            logger.error("Error finding hubs with report count", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
+    async findHubByIdWithReportCount(
+        hubId: string
+    ): Promise<(Conversation & { participants: Participant[]; _count: { reports: number } }) | null> {
+        try {
+            return await prisma.conversation.findUnique({
+                where: { id: hubId },
+                include: {
+                    participants: true,
+                    _count: {
+                        select: {
+                            reports: true,
+                        },
+                    },
+                },
+            }) as (Conversation & { participants: Participant[]; _count: { reports: number } }) | null;
+        } catch (error) {
+            logger.error("Error finding hub by id with report count", {
+                error: (error as Error).message,
+                hubId,
+            });
             throw new Error("Database error");
         }
     }

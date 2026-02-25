@@ -25,7 +25,23 @@ message GetUserStatusResponse {
   bool isBlocked = 1;
 }
 
+message CreateAuditLogRequest {
+  string adminId = 1;
+  string action = 2;
+  string targetType = 3;
+  string targetId = 4;
+  string reason = 5;
+  string metadata = 6; // JSON string
+}
+
+message CreateAuditLogResponse {
+  bool success = 1;
+  string logId = 2;
+  string message = 3;
+}
+
 service AdminService {
   rpc SubmitReport (SubmitReportRequest) returns (SubmitReportResponse);
   rpc GetUserStatus (GetUserStatusRequest) returns (GetUserStatusResponse);
+  rpc CreateAuditLog (CreateAuditLogRequest) returns (CreateAuditLogResponse);
 }

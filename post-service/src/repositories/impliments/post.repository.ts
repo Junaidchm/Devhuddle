@@ -670,6 +670,21 @@ export class PostRepository
     }
   }
 
+  async unhidePost(postId: string): Promise<void> {
+    try {
+      await prisma.posts.update({
+        where: { id: postId },
+        data: { isHidden: false, hiddenAt: null, hiddenReason: null },
+      });
+    } catch (error: unknown) {
+      logger.error("Error unhiding post", {
+        error: (error as Error).message,
+        postId,
+      });
+      throw new Error("Database error");
+    }
+  }
+
   async deleteAllPostsByUser(userId: string): Promise<void> {
     try {
       // Hard delete all posts by user (cascading deletes for Media and PostVersions should be handled by DB or manually)

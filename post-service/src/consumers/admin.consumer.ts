@@ -86,38 +86,50 @@ async function handleUserStateToggled(event: {
 }
 
 async function handleAdminActionEnforced(event: {
-  action: "SUSPEND" | "BAN" | "HIDE" | "WARN";
+  action: "SUSPEND" | "BAN" | "HIDE" | "WARN" | "UNHIDE" | "DELETE";
   targetType: string;
   targetId: string;
   reason: string;
 }) {
   const { action, targetType, targetId, reason } = event;
 
-  if (action === "HIDE") {
+  if (action === "HIDE" || action === "DELETE") {
     if (targetType === "POST") {
-      logger.info(`Hiding post: ${targetId}`);
+      logger.info(`Moderation: Hiding post: ${targetId}`);
       await postRepository.hidePost(targetId, reason);
     } else if (targetType === "COMMENT") {
-      logger.info(`Hiding comment: ${targetId}`);
+      logger.info(`Moderation: Hiding comment: ${targetId}`);
       await commentRepository.hideComment(targetId, reason);
     } else if (targetType === "USER") {
-      // Hide all content from this user if HIDE action targets a USER
-      logger.info(`Hiding all content for user: ${targetId}`);
+      logger.info(`Moderation: Hiding all content for user: ${targetId}`);
       await Promise.all([
         postRepository.hideAllPostsByUser(targetId, reason),
         commentRepository.hideAllCommentsByUser(targetId, reason),
       ]);
     }
+  } else if (action === "UNHIDE") {
+    if (targetType === "POST") {
+      logger.info(`Moderation: Restoring post: ${targetId}`);
+      await postRepository.unhidePost(targetId);
+    } else if (targetType === "COMMENT") {
+      logger.info(`Moderation: Restoring comment: ${targetId}`);
+      await commentRepository.unhideComment(targetId);
+    } else if (targetType === "USER") {
+      logger.info(`Moderation: Restoring all content for user: ${targetId}`);
+      await Promise.all([
+        postRepository.unhideAllPostsByUser(targetId),
+        commentRepository.unhideAllCommentsByUser(targetId),
+      ]);
+    }
   } else if (action === "BAN" || action === "SUSPEND") {
     if (targetType === "USER") {
-      logger.info(`Hiding all content for ${action} user: ${targetId}`);
+      logger.info(`Moderation: Hiding all content for ${action} user: ${targetId}`);
       await Promise.all([
         postRepository.hideAllPostsByUser(targetId, reason),
         commentRepository.hideAllCommentsByUser(targetId, reason),
       ]);
     }
   }
-  // WARN action — no content visibility change needed
 }
 
 async function handleUserDeleted(event: { userId: string }) {

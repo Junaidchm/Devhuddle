@@ -53,4 +53,5 @@ export interface IPostRepository {
   hideAllPostsByUser(userId: string, reason: string): Promise<void>;
   unhideAllPostsByUser(userId: string): Promise<void>;
   hidePost(postId: string, reason: string): Promise<void>;
+  unhidePost(postId: string): Promise<void>;
 }

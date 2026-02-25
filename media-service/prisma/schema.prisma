@@ -16,6 +16,8 @@ enum MediaType {
   CHAT_AUDIO
   CHAT_FILE
   COVER_IMAGE
+  PROJECT_IMAGE
+  PROJECT_VIDEO
 }
 
 enum MediaStatus {
@@ -31,6 +33,7 @@ model Media {
   id             String      @id @default(uuid())
   userId         String      @map("user_id")
   postId         String?     @map("post_id")
+  projectId      String?     @map("project_id")
   mediaType      MediaType   @map("media_type")
   storageKey     String      @map("storage_key")
   cdnUrl         String?     @map("cdn_url")
@@ -55,6 +58,7 @@ model Media {
 
   @@index([userId])
   @@index([postId])
+  @@index([projectId])
   @@index([status])
   @@index([createdAt])
   @@index([mediaType])

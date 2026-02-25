@@ -3,7 +3,6 @@ import { Request, response, Response } from "express";
 import logger from "../../utils/logger.util";
 import { CustomError, sendErrorResponse } from "../../utils/error.util";
 import { HttpStatus } from "../../constents/httpStatus";
-import { User } from "@prisma/client";
 import { Messages } from "../../constents/reqresMessages";
 import { IAdminService } from "../../services/interface/IadminService";
 import { IAdminController } from "../interface/IadminController";
@@ -126,13 +125,21 @@ export class AdminController implements IAdminController {
       const status = req.query.status as any;
       const targetType = req.query.targetType as any;
       const severity = req.query.severity as any;
+      const reason = req.query.reason as any;
+      const search = req.query.search as string;
+      const sortBy = (req.query.sortBy as "createdAt" | "severity" | "status") || "createdAt";
+      const sortOrder = (req.query.sortOrder as "asc" | "desc") || "desc";
 
       const { reports, total } = await this._adminService.getReports({
         page,
         limit,
         status,
         targetType,
-        severity
+        severity,
+        reason,
+        search,
+        sortBy,
+        sortOrder,
       });
 
       res.json({
@@ -188,12 +195,20 @@ export class AdminController implements IAdminController {
       const limit = parseInt(req.query.limit as string) || 10;
       const adminId = req.query.adminId as string;
       const targetType = req.query.targetType as string;
+      const search = req.query.search as string;
+      const action = req.query.action as string;
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
 
       const { logs, total } = await this._adminService.getAuditLogs({
         page,
         limit,
         adminId,
-        targetType
+        targetType,
+        search,
+        action,
+        startDate,
+        endDate
       });
 
       res.json({

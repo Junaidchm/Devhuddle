@@ -9,6 +9,8 @@ export enum MediaType {
   CHAT_AUDIO = 'CHAT_AUDIO',
   CHAT_FILE = 'CHAT_FILE',
   COVER_IMAGE = 'COVER_IMAGE',
+  PROJECT_IMAGE = 'PROJECT_IMAGE',
+  PROJECT_VIDEO = 'PROJECT_VIDEO',
 }
 
 export class CreateUploadSessionDto {
@@ -48,6 +50,21 @@ export class LinkMediaToPostDto {
   @IsString()
   @IsNotEmpty({ message: "PostId is required" })
   postId!: string;
+
+  @IsString()
+  @IsNotEmpty({ message: "UserId is required" })
+  userId!: string;
+}
+
+export class LinkMediaToProjectDto {
+  @IsArray()
+  @ArrayMinSize(1, { message: "MediaIds array is required" })
+  @IsString({ each: true })
+  mediaIds!: string[];
+
+  @IsString()
+  @IsNotEmpty({ message: "ProjectId is required" })
+  projectId!: string;
 
   @IsString()
   @IsNotEmpty({ message: "UserId is required" })

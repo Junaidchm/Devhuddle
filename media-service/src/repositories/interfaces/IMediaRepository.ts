@@ -13,6 +13,7 @@ export interface CreateMediaData {
 export interface UpdateMediaData {
   status?: MediaStatus;
   postId?: string | null;
+  projectId?: string | null;
   cdnUrl?: string;
   originalUrl?: string;
   width?: number;
@@ -29,6 +30,7 @@ export interface IMediaRepository {
   findById(id: string): Promise<Media | null>;
   findByUserId(userId: string, limit?: number, offset?: number): Promise<Media[]>;
   findByPostId(postId: string): Promise<Media[]>;
+  findByProjectId(projectId: string): Promise<Media[]>;
   findUnusedMedia(olderThanHours?: number): Promise<Partial<Media>[]>;
   update(id: string, data: UpdateMediaData): Promise<Media>;
   delete(id: string): Promise<void>;

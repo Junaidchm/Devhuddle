@@ -74,9 +74,16 @@ export class MessageSagaService {
                     }
 
                     // Verify posting permissions for groups
-                    if (conversation.type === 'GROUP' && conversation.onlyAdminsCanPost) {
-                        if (senderParticipant.role !== GroupRole.ADMIN && conversation.ownerId !== command.senderId) {
-                             throw new AppError("Only admins can send messages in this group", 403);
+                    if (conversation.type === 'GROUP') {
+                        // ✅ SUSPENSION CHECK: Prevent messaging in suspended hubs
+                        if (conversation.isSuspended) {
+                            throw new AppError("This hub is currently suspended by an admin.", 403);
+                        }
+
+                        if (conversation.onlyAdminsCanPost) {
+                            if (senderParticipant.role !== GroupRole.ADMIN && conversation.ownerId !== command.senderId) {
+                                 throw new AppError("Only admins can send messages in this group", 403);
+                            }
                         }
                     }
                 }

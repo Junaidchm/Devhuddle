@@ -19,6 +19,7 @@ import { engagementServiceProxy } from "./middleware/engagement.proxy.middleware
 import { adminServiceProxy } from "./middleware/admin.proxy.middleware";
 import { chatServiceProxy } from "./middleware/chat.proxy.middleware";
 import { verifyAccessToken } from "./utils/jwt.util";
+import { checkUserBlockBlackList } from "./utils/redis.actions";
 
 import cookieParser from "cookie-parser";
 
@@ -183,6 +184,15 @@ server.on("upgrade", async (req, socket, head) => {
       throw new Error("Invalid token or signature");
     }
 
+    // 3b. Check if user is blocked
+    const isBlocked = await checkUserBlockBlackList(decoded.id);
+    if (isBlocked) {
+      logger.warn(`WebSocket connection rejected: user ${decoded.id} is blocked`);
+      socket.write("HTTP/1.1 403 Forbidden\r\n\r\n");
+      socket.destroy();
+      return;
+    }
+
     // 4. Inject Identity Headers
     // Modify the request headers before passing to proxy
     req.headers["x-user-id"] = decoded.id;
@@ -201,11 +211,16 @@ server.on("upgrade", async (req, socket, head) => {
 });
 
 // Error handling middleware
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  const status = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
+  const message = err.message || "Internal server error";
+  
   const error: ApiError = {
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    message: err.message || "Internal server error",
+    status,
+    message,
+    success: false,
   };
+  
   sendErrorResponse(res, error);
 });
 

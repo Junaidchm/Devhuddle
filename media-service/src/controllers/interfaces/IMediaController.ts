@@ -4,9 +4,12 @@ export interface IMediaController {
   createUploadSession(req: Request, res: Response): Promise<void>;
   completeUpload(req: Request, res: Response): Promise<void>;
   getMediaById(req: Request, res: Response): Promise<void>;
+  getMediaByPostId(req: Request, res: Response): Promise<void>;
+  getMediaByProjectId(req: Request, res: Response): Promise<void>;
   deleteMedia(req: Request, res: Response): Promise<void>;
   getUserMedia(req: Request, res: Response): Promise<void>;
   validateMediaOwnership(req: Request, res: Response): Promise<void>;
   linkMediaToPost(req: Request, res: Response): Promise<void>;
+  linkMediaToProject(req: Request, res: Response): Promise<void>;
 }
 

@@ -254,6 +254,18 @@ export class CommentRepository
     }
   }
 
+  async unhideComment(commentId: string): Promise<void> {
+    try {
+      await prisma.comment.update({
+        where: { id: commentId },
+        data: { isHidden: false, hiddenAt: null, hiddenReason: null },
+      });
+    } catch (error: any) {
+      logger.error("Error unhiding comment", { error: error.message, commentId });
+      throw new Error("Database error");
+    }
+  }
+
   async deleteAllCommentsByUser(userId: string): Promise<void> {
     try {
       await prisma.comment.deleteMany({

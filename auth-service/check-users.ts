@@ -10,6 +10,7 @@ async function main() {
       email: true,
       name: true,
       username: true,
+      role: true,
     }
   });
   console.log(JSON.stringify(users, null, 2));

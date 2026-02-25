@@ -19,10 +19,10 @@ model Comment {
   editedAt        DateTime?
   version         Int              @default(1)
   likesCount      Int              @default(0)
-  reportsCount    Int              @default(0)
-  isHidden        Boolean          @default(false)
   hiddenAt        DateTime?
   hiddenReason    String?
+  isHidden        Boolean          @default(false)
+  reportsCount    Int              @default(0)
   Comment         Comment?         @relation("CommentToComment", fields: [parentCommentId], references: [id])
   other_Comment   Comment[]        @relation("CommentToComment")
   posts           posts            @relation(fields: [postId], references: [id], onDelete: Cascade)
@@ -72,8 +72,8 @@ model Media {
   postId    String?
   type      MediaType
   url       String
-  thumbnail String?   // ✅ Added thumbnail support
   createdAt DateTime  @default(now())
+  thumbnail String?
   posts     posts?    @relation(fields: [postId], references: [id])
 }
 
@@ -239,25 +239,17 @@ model Share {
 }
 
 model UserFeed {
-  userId    String
-  postId    String
-  
-  // ✅ NEW: Relevance scoring for personalized feed ranking
-  relevanceScore Float    @default(0.0) // 0.0 - 1.0, higher = more relevant
-  scoreUpdatedAt DateTime @default(now()) @updatedAt
-  
-  // ✅ NEW: Feed metadata for UX
-  isRead       Boolean   @default(false)
-  readAt       DateTime?
-  
-  // ✅ NEW: Ranking metadata for efficient pagination
-  rankPosition Int?      // Position in user's feed (updated on score changes)
-  
-  createdAt    DateTime  @default(now())
-  posts     posts    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId         String
+  postId         String
+  relevanceScore Float     @default(0.0)
+  scoreUpdatedAt DateTime  @default(now()) @updatedAt
+  isRead         Boolean   @default(false)
+  readAt         DateTime?
+  rankPosition   Int?
+  createdAt      DateTime  @default(now())
+  posts          posts     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@id([userId, postId])
-  // ✅ Composite index for efficient feed queries (ranked by relevance)
   @@index([userId, relevanceScore(sort: Desc), createdAt(sort: Desc)])
   @@index([userId, isRead])
   @@index([scoreUpdatedAt])
@@ -289,8 +281,6 @@ model posts {
   hiddenAt        DateTime?
   hiddenReason    String?
   sharingDisabled Boolean         @default(false)
-
-
   canonicalUrl    String?
   Comment         Comment[]
   Media           Media[]
@@ -360,9 +350,9 @@ enum OutboxEventType {
   POST_MENTION_IN_POST_CREATED
   POST_MENTION_IN_COMMENT_CREATED
   POST_SENT
-  POST_CREATED  // ✅ NEW: For fan-out and notifications
-  POST_UPDATED  // ✅ NEW: For feed updates on post edits
-  POST_DELETED  // ✅ NEW: For post deletion saga
+  POST_CREATED
+  POST_UPDATED
+  POST_DELETED
 }
 
 enum OutboxStatus {
@@ -401,9 +391,9 @@ enum ReportReason {
   HATE_SPEECH
   VIOLENCE
   SELF_HARM
-  OTHER
   FALSE_INFORMATION
   COPYRIGHT_VIOLATION
+  OTHER
 }
 
 enum ReportSeverity {
@@ -414,13 +404,12 @@ enum ReportSeverity {
 }
 
 enum ReportStatus {
-  OPEN
-  INVESTIGATING
-  CLOSED
   PENDING
+  INVESTIGATING
   RESOLVED_APPROVED
   RESOLVED_REMOVED
   RESOLVED_IGNORED
+  CLOSED
 }
 
 enum ReportTargetType {

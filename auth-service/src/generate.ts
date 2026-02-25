@@ -5,8 +5,11 @@ import fs from "fs";
 const protoPath = [];
 protoPath.push(
   path.resolve(__dirname, "../", "protos", "auth.proto"),
-  path.resolve(__dirname,"../", "protos", "user.proto")
-)
+  path.resolve(__dirname, "../", "protos", "user.proto"),
+  path.resolve(__dirname, "../", "protos", "post.proto"),
+  path.resolve(__dirname, "../", "protos", "project.proto"),
+  path.resolve(__dirname, "../", "protos", "chat-admin.proto")
+);
 
 console.log('these are the protoPaths ...................' , protoPath)
 const outDir = path.resolve(__dirname, "grpc", "generated");

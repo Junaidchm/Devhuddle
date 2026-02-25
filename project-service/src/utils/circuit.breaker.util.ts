@@ -1,7 +1,16 @@
 import CircuitBreaker from "opossum";
 import logger from "./logger.util";
 
-const defaultOptions: CircuitBreaker.Options = {
+type CircuitBreakerOptions = {
+    timeout?: number;
+    errorThresholdPercentage?: number;
+    resetTimeout?: number;
+    rollingCountTimeout?: number;
+    rollingCountBuckets?: number;
+    name?: string;
+};
+
+const defaultOptions: CircuitBreakerOptions = {
     timeout: 5000,
     errorThresholdPercentage: 50,
     resetTimeout: 30000,
@@ -12,8 +21,8 @@ const defaultOptions: CircuitBreaker.Options = {
 export const createCircuitBreaker = <TArgs extends any[], TResult>(
     action: (...args: TArgs) => Promise<TResult>,
     name: string,
-    options: CircuitBreaker.Options = {}
-): CircuitBreaker<TArgs, TResult> => {
+    options: CircuitBreakerOptions = {}
+) => {
     const breaker = new CircuitBreaker(action, {
         ...defaultOptions,
         ...options,
@@ -32,7 +41,11 @@ export const createCircuitBreaker = <TArgs extends any[], TResult>(
         logger.info(`🟢 Circuit Breaker CLOSED: ${name} - Service recovered`);
     });
 
-    breaker.on("failure", (error: any) => {
+    (breaker as any).on("fallback", (_result: TResult) => {
+        logger.warn(`⚠️ Circuit Breaker FALLBACK: ${name} - Using fallback mechanism`);
+    });
+
+    breaker.on("failure", (error: Error) => {
         logger.error(`❌ Circuit Breaker FAILURE: ${name}`, {
             error: error.message,
         });

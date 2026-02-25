@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { MediaController } from "../controllers/impliments/media.controller";
 import { validateDto } from "../middlewares/validation.middleware";
-import { CreateUploadSessionDto, ValidateMediaDto, LinkMediaToPostDto } from "../dtos/media.dto";
+import { CreateUploadSessionDto, ValidateMediaDto, LinkMediaToPostDto, LinkMediaToProjectDto } from "../dtos/media.dto";
 
 export const setupMediaRoutes = (mediaController: MediaController): Router => {
   const router = Router();
@@ -19,6 +19,16 @@ export const setupMediaRoutes = (mediaController: MediaController): Router => {
   // Get media by ID
   router.get("/:mediaId", (req, res) => 
     mediaController.getMediaById(req, res)
+  );
+
+  // Get media by post ID
+  router.get("/post/:postId", (req, res) => 
+    mediaController.getMediaByPostId(req, res)
+  );
+
+  // Get media by project ID
+  router.get("/project/:projectId", (req, res) => 
+    mediaController.getMediaByProjectId(req, res)
   );
 
   // Delete media
@@ -39,6 +49,11 @@ export const setupMediaRoutes = (mediaController: MediaController): Router => {
   // Link media to post (called by Post Service)
   router.post("/link-to-post", validateDto(LinkMediaToPostDto), (req, res) => 
     mediaController.linkMediaToPost(req, res)
+  );
+
+  // Link media to project (called by Project Service)
+  router.post("/link-to-project", validateDto(LinkMediaToProjectDto), (req, res) => 
+    mediaController.linkMediaToProject(req, res)
   );
 
   return router;

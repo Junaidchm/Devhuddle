@@ -80,6 +80,7 @@ export const KAFKA_TOPICS = {
   NOTIFICATION_FAILED: "notification-failed",
   NOTIFICATION_FAILED_DLQ: "notification-failed-dlq",
   USER_DELETED: "user-events",
+  ADMIN_ACTION_ENFORCED: "admin-action-enforced",
 } as const;
 
 export const KAFKA_CONFIG = {

@@ -25,6 +25,10 @@ export interface IAdminRepository {
     status?: ReportStatus;
     targetType?: ReportTargetType;
     severity?: ReportSeverity;
+    reason?: ReportReason;
+    search?: string;
+    sortBy?: "createdAt" | "severity" | "status";
+    sortOrder?: "asc" | "desc";
   }): Promise<{ reports: Report[]; total: number }>;
 
   findReportById(id: string): Promise<Report | null>;
@@ -39,6 +43,10 @@ export interface IAdminRepository {
     limit: number;
     adminId?: string;
     targetType?: string;
+    search?: string;
+    action?: string;
+    startDate?: string;
+    endDate?: string;
   }): Promise<{ logs: AuditLog[]; total: number }>;
 
   // Outbox System

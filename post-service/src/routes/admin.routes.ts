@@ -35,6 +35,7 @@ router.delete("/posts/:postId", adminController.deletePostAdmin.bind(adminContro
 router.get("/comments", adminController.listComments.bind(adminController));
 router.get("/comments/reported", adminController.listReportedComments.bind(adminController));
 router.get("/comments/:commentId", adminController.getCommentById.bind(adminController));
+router.patch("/comments/:commentId/hide", adminController.hideComment.bind(adminController));
 router.delete("/comments/:commentId", adminController.deleteCommentAdmin.bind(adminController));
 
 // ==================== ANALYTICS ====================

@@ -5,7 +5,6 @@ import { ICommentRepository } from "../../repositories/interface/ICommentReposit
 import { IOutboxService } from "../interfaces/IOutboxService";
 import { CustomError } from "../../utils/error.util";
 import logger from "../../utils/logger.util";
-import * as grpc from "@grpc/grpc-js";
 import { HttpStatus } from "../../constands/http.status";
 import { KAFKA_TOPICS } from "../../config/kafka.config";
 import {
@@ -49,6 +48,13 @@ export class ReportService implements IReportService {
       const post = await this._postRepository.findPost(postId);
       if (!post) throw new CustomError(HttpStatus.NOT_FOUND, "Post not found");
       if (post.userId === reporterId) throw new CustomError(HttpStatus.FORBIDDEN, "Cannot report own post");
+      
+      // 2.5 Check if already reported locally
+      const existingReport = await this._reportRepository.findReport(reporterId, ReportTargetType.POST, postId);
+      if (existingReport) {
+        logger.info("Post already reported by this user", { reporterId, postId });
+        return existingReport;
+      }
 
       // 3. Centralized Ingestion: Forward to Admin Hub
       logger.info("Forwarding post report to Admin Hub", { reporterId, postId });
@@ -58,7 +64,11 @@ export class ReportService implements IReportService {
         targetType: "POST",
         reason,
         description: description || "",
-        metadata: JSON.stringify(metadata || {}),
+        metadata: JSON.stringify({
+          ...(metadata || {}),
+          ownerId: post.userId,
+          contentSnippet: post.content?.substring(0, 100),
+        }),
       });
 
       if (!adminResponse.success) {
@@ -122,6 +132,13 @@ export class ReportService implements IReportService {
       if (!comment) throw new CustomError(HttpStatus.NOT_FOUND, "Comment not found");
       if (comment.userId === reporterId) throw new CustomError(HttpStatus.FORBIDDEN, "Cannot report own comment");
 
+      // 1.5 Check if already reported locally
+      const existingReport = await this._reportRepository.findReport(reporterId, ReportTargetType.COMMENT, commentId);
+      if (existingReport) {
+        logger.info("Comment already reported by this user", { reporterId, commentId });
+        return existingReport;
+      }
+
       // 2. Centralized Ingestion: Forward to Admin Hub
       logger.info("Forwarding comment report to Admin Hub", { reporterId, commentId });
       const adminResponse: any = await adminServiceClient.submitReport({
@@ -130,7 +147,11 @@ export class ReportService implements IReportService {
         targetType: "COMMENT",
         reason,
         description: "",
-        metadata: JSON.stringify(metadata || {}),
+        metadata: JSON.stringify({
+          ...(metadata || {}),
+          ownerId: comment.userId,
+          contentSnippet: comment.content?.substring(0, 100),
+        }),
       });
 
       if (!adminResponse.success) {

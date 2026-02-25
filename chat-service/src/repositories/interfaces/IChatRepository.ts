@@ -163,6 +163,14 @@ export interface IChatRepository {
   findReportById(reportId: string): Promise<PrismaReport | null>;
   getConversationCount(where?: Prisma.ConversationWhereInput): Promise<number>;
   updateConversation(conversationId: string, data: Prisma.ConversationUpdateInput): Promise<Conversation>;
+  findHubsWithReportCount(
+    where: Prisma.ConversationWhereInput,
+    limit?: number,
+    offset?: number
+  ): Promise<(Conversation & { participants: Participant[]; _count: { reports: number } })[]>;
+  findHubByIdWithReportCount(
+    hubId: string
+  ): Promise<(Conversation & { participants: Participant[]; _count: { reports: number } }) | null>;
   /** Update member count atomically (+1 or -1) and return the new count */
     updateMemberCount(conversationId: string, delta: number): Promise<number>;
     syncAllMemberCounts(): Promise<void>;

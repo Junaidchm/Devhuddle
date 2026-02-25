@@ -42,6 +42,8 @@ import {
   GetFollowersResponse,
   UserServiceClient,
 } from "../../grpc/generated/user";
+import { createCircuitBreaker } from "../../utils/circuit.breaker.util";
+import { fetchPostMedia } from "../../config/media.client";
 
 export class PostService implements IpostService {
   constructor(
@@ -53,6 +55,8 @@ export class PostService implements IpostService {
     private feedService?: IFeedService, //  NEW: Feed service for fan-out
     private outboxService?: IOutboxService //  NEW: Outbox service for events
   ) {}
+
+  private _mediaBreaker = createCircuitBreaker(fetchPostMedia, "MediaService:fetchPostMedia");
 
   
 
@@ -188,9 +192,14 @@ export class PostService implements IpostService {
       const PAGE_SIZE = limit || 10;
       // 1. Construct Privacy Filter
       const privacyFilter = await this._getVisibilityFilter(userId);
-      const baseWhere: Prisma.postsWhereInput = authorId 
-        ? { AND: [{ userId: authorId }, privacyFilter] }
-        : privacyFilter;
+      const baseWhere: Prisma.postsWhereInput = {
+        AND: [
+          authorId ? { userId: authorId } : {},
+          privacyFilter,
+          { isHidden: { not: true } }, // More robust: matches false or null
+          { deletedAt: null } // Explicitly exclude deleted posts
+        ]
+      };
 
       // MODE 1: TOP SORTING (High Engagement)
       // Strategy: Bypass FeedService (chronological only) and query DB directly with Offset Pagination
@@ -282,12 +291,35 @@ export class PostService implements IpostService {
 
           let feedPosts = feedResponse.posts;
 
+          // 1.1 [NEW] Filter feedPosts for HIDDEN or DELETED status (Eventual consistency protection)
+          // Since feedService might return stale data, we must verify visibility
+          if (feedPosts.length > 0) {
+            const feedIds = feedPosts.map((p: any) => p.id);
+            const validPosts = await this._postRepository.getPostsRepo({
+              where: {
+                id: { in: feedIds },
+                isHidden: { not: true },
+                deletedAt: null
+              },
+              take: feedIds.length,
+              orderBy: { createdAt: "desc" }, // Added missing orderBy
+              include: { Media: true }
+            });
+            
+            const validIds = new Set(validPosts.map(p => p.id));
+            feedPosts = feedPosts.filter((p: any) => validIds.has(p.id));
+          }
+
           // 2. [FIX] Eagerly fetch User's Own Latest Posts (to bridge eventual consistency gap)
           // Only for the first page (no cursor), fetch the user's latest post to ensure it appears immediately
           if (!pageParam) {
             const myLatestPosts = await this._postRepository.getPostsRepo({
                 take: 5, // Fetch a few to be safe
-                where: { userId: userId },
+                where: { 
+                  userId: userId,
+                  isHidden: { not: true },
+                  deletedAt: null
+                },
                 orderBy: { createdAt: "desc" },
                 include: { Media: true }
             });
@@ -392,7 +424,10 @@ export class PostService implements IpostService {
                     take: remainingCount,
                     skip: 0,
                     where: { 
-                        id: { notIn: excludeIds },
+                        AND: [
+                            baseWhere,
+                            { id: { notIn: excludeIds } }
+                        ]
                     },
                     orderBy: { createdAt: "desc" },
                     include: { Media: true },
@@ -803,11 +838,17 @@ export class PostService implements IpostService {
 
   async getPostById(postId: string, userId?: string): Promise<any> {
     try {
-      // 1. Fetch post with Media
-      const post = await this._postRepository.findPostWithMedia(postId);
+      // 1. Fetch post
+      const post = await this._postRepository.findPost(postId);
 
       if (!post) {
         throw new CustomError(HttpStatus.NOT_FOUND, "Post not found");
+      }
+
+      // 1.1 Check if post is hidden
+      if (post.isHidden && post.userId !== userId) {
+        // Only author and admins can see hidden posts
+        throw new CustomError(HttpStatus.FORBIDDEN, "This post has been hidden by an administrator");
       }
 
       // 2. Fetch user information
@@ -842,16 +883,27 @@ export class PostService implements IpostService {
           isShared = !!shares[postId];
       }
 
-      // 4. Map attachments
-      const attachments = (post.Media || []).map((media: any) => ({
+      // 4. Fetch media from Media Service (Resiliently)
+      let mediaItems: any[] = [];
+      try {
+        mediaItems = await this._mediaBreaker.fire(postId);
+      } catch (mediaError) {
+        logger.warn("Failed to fetch media from Media Service, falling back to empty list", {
+          postId,
+          error: (mediaError as Error).message
+        });
+      }
+
+      // 5. Map attachments
+      const attachments = (mediaItems || []).map((media: any) => ({
           id: media.id,
           postId: media.postId || post.id,
-          type: String(media.type || "IMAGE"),
-          url: media.url,
+          type: String(media.mediaType || "POST_IMAGE").replace("POST_", ""),
+          url: media.cdnUrl || media.originalUrl,
           createdAt: media.createdAt ? new Date(media.createdAt).toISOString() : new Date().toISOString(),
       }));
 
-      // 5. Return enriched post
+      // 6. Return enriched post
       return {
           ...post,
           createdAt: post.createdAt.toISOString(),

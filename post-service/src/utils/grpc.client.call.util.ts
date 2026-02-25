@@ -1,10 +1,12 @@
 import * as grpc from "@grpc/grpc-js";
 import logger from "../utils/logger.util";
 import { createCircuitBreaker } from "./circuit.breaker.util";
-import CircuitBreaker from "opossum";
+type BreakerLike = {
+  fire: (...args: any[]) => Promise<any>;
+};
 
 // Cache to store circuit breakers for each method (ClientName.methodName -> breaker)
-const breakerCache = new Map<string, CircuitBreaker<any, any>>();
+const breakerCache = new Map<string, BreakerLike>();
 
 /**
  * Generic promise wrapper for callback-style gRPC client methods with Circuit Breaker support.

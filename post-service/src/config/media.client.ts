@@ -10,6 +10,8 @@
  * - Standard REST patterns for media operations
  */
 
+import logger from "../utils/logger.util";
+
 const MEDIA_SERVICE_URL = process.env.MEDIA_SERVICE_URL || "http://media-service:5003";
 
 export interface ValidateMediaRequest {
@@ -100,8 +102,36 @@ export async function linkMediaToPost(
       throw new Error(error.message || `HTTP ${response.status}`);
     }
   } catch (error: any) {
-    console.error("Failed to link media to post:", error.message);
+    logger.error("Failed to link media to post:", error.message);
     throw new Error(`Failed to link media: ${error.message}`);
+  }
+}
+
+/**
+ * Fetch media associated with a post
+ * 
+ * Used for displaying media on post details pages.
+ */
+export async function fetchPostMedia(postId: string): Promise<any[]> {
+  try {
+    const response = await fetch(`${MEDIA_SERVICE_URL}/media/post/${postId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) return [];
+      const error = await response.json().catch(() => ({ message: "Fetch failed" }));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result.data || [];
+  } catch (error: any) {
+    console.error(`Failed to fetch media for post ${postId}:`, error.message);
+    throw error;
   }
 }
 

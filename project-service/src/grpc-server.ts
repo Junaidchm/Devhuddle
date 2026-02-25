@@ -33,6 +33,8 @@ import {
   TrackProjectViewResponse,
   UploadProjectMediaRequest,
   UploadProjectMediaResponse,
+  GetProjectStatsRequest,
+  GetProjectStatsResponse,
 } from "./grpc/generated/project";
 import { ProjectService } from "./services/impliments/project.service";
 import { ProjectLikeService } from "./services/impliments/project.like.service";
@@ -125,6 +127,22 @@ const projectServiceActions: ProjectServiceServer = {
     async (req) => {
       // Stub implementation - media upload should be handled via HTTP
       throw new Error("Media upload should be handled via HTTP endpoint, not gRPC");
+    }
+  ),
+  getProjectStats: grpcHandler<GetProjectStatsRequest, GetProjectStatsResponse>(
+    async (req) => {
+      const [total, reported, hidden, deleted] = await Promise.all([
+        projectRepository.getProjectCount({ deletedAt: null }),
+        projectRepository.getProjectCount({ reportsCount: { gt: 0 } }),
+        projectRepository.getProjectCount({ status: "REMOVED" }),
+        projectRepository.getProjectCount({ deletedAt: { not: null } }),
+      ]);
+      return {
+        totalProjects: total,
+        reportedProjects: reported,
+        hiddenProjects: hidden,
+        deletedProjects: deleted,
+      };
     }
   ),
 };

@@ -1,9 +1,14 @@
 import prisma from "../../config/prisma.config";
 import logger from "../../utils/logger.util";
 import { BaseRepository } from "./base.repository";
-import { Prisma, User, Report, AuditLog, ReportStatus, ReportTargetType, ReportSeverity } from "@prisma/client";
+import { Prisma, User, Report, AuditLog, ReportStatus, ReportTargetType, ReportSeverity, ReportReason } from "@prisma/client";
 
 import { IAdminRepository } from "../interfaces/IAdminRepository";
+import { postClient, projectClient, chatClient } from "../../config/grpc.client";
+import { GetPostStatsResponse } from "../../grpc/generated/post";
+import { GetProjectStatsResponse } from "../../grpc/generated/project";
+import { GetHubStatsResponse } from "../../grpc/generated/chat-admin";
+import { ServiceError } from "@grpc/grpc-js";
 
 export class AdminRepository extends BaseRepository<
   typeof prisma.user,
@@ -162,21 +167,52 @@ export class AdminRepository extends BaseRepository<
     status?: ReportStatus;
     targetType?: ReportTargetType;
     severity?: ReportSeverity;
+    reason?: ReportReason;
+    search?: string;
+    sortBy?: "createdAt" | "severity" | "status";
+    sortOrder?: "asc" | "desc";
   }): Promise<{ reports: Report[]; total: number }> {
-    const { page, limit, status, targetType, severity } = params;
+    const {
+      page,
+      limit,
+      status,
+      targetType,
+      severity,
+      reason,
+      search,
+      sortBy = "createdAt",
+      sortOrder = "desc",
+    } = params;
     const skip = (page - 1) * limit;
     const where: Prisma.ReportWhereInput = {};
 
     if (status && (status as string) !== "all") where.status = status;
     if (targetType && (targetType as string) !== "all") where.targetType = targetType;
     if (severity && (severity as string) !== "all") where.severity = severity;
+    if (reason && (reason as string) !== "all") where.reason = reason;
+
+    if (search && search.trim().length > 0) {
+      const q = search.trim();
+      where.OR = [
+        { targetId: { contains: q, mode: "insensitive" } },
+        { reporterId: { contains: q, mode: "insensitive" } },
+        { description: { contains: q, mode: "insensitive" } },
+      ];
+    }
+
+    const orderBy: Prisma.ReportOrderByWithRelationInput =
+      sortBy === "severity"
+        ? { severity: sortOrder }
+        : sortBy === "status"
+        ? { status: sortOrder }
+        : { createdAt: sortOrder };
 
     const [reports, total] = await Promise.all([
       prisma.report.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         include: {
           reporter: {
             select: { id: true, name: true, username: true }
@@ -223,13 +259,34 @@ export class AdminRepository extends BaseRepository<
     limit: number;
     adminId?: string;
     targetType?: string;
+    search?: string;
+    action?: string;
+    startDate?: string;
+    endDate?: string;
   }): Promise<{ logs: AuditLog[]; total: number }> {
-    const { page, limit, adminId, targetType } = params;
+    const { page, limit, adminId, targetType, search, action, startDate, endDate } = params;
     const skip = (page - 1) * limit;
     const where: Prisma.AuditLogWhereInput = {};
 
     if (adminId) where.adminId = adminId;
-    if (targetType) where.targetType = targetType;
+    if (targetType && targetType !== "all") where.targetType = targetType;
+    if (action && action !== "all") where.action = { contains: action, mode: "insensitive" };
+
+    if (search && search.trim().length > 0) {
+      const q = search.trim();
+      where.OR = [
+        { targetId: { contains: q, mode: "insensitive" } },
+        { reason: { contains: q, mode: "insensitive" } },
+        { admin: { username: { contains: q, mode: "insensitive" } } },
+        { admin: { name: { contains: q, mode: "insensitive" } } },
+      ];
+    }
+
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate);
+      if (endDate) where.createdAt.lte = new Date(endDate);
+    }
 
     const [logs, total] = await Promise.all([
       prisma.auditLog.findMany({
@@ -305,6 +362,27 @@ export class AdminRepository extends BaseRepository<
       totalShares: 0
     };
 
+    // Helper for gRPC calls
+    const wrapGrpc = <T>(client: any, method: string): Promise<T | null> => {
+      return new Promise((resolve) => {
+        client[method]({}, (err: ServiceError | null, response: T) => {
+          if (err) {
+            logger.error(`gRPC error calling ${method}`, { error: err.message });
+            resolve(null);
+          } else {
+            resolve(response);
+          }
+        });
+      });
+    };
+
+    // Fetch dynamic stats in parallel
+    const [postStats, projectStats, hubStats] = await Promise.all([
+      wrapGrpc<GetPostStatsResponse>(postClient, "getPostStats"),
+      wrapGrpc<GetProjectStatsResponse>(projectClient, "getProjectStats"),
+      wrapGrpc<GetHubStatsResponse>(chatClient, "getHubStats"),
+    ]);
+
     return {
       users: {
         total: totalUsers,
@@ -329,36 +407,36 @@ export class AdminRepository extends BaseRepository<
         total: auditLogCount,
       },
       posts: { 
-        total: stats.totalPosts, 
-        reported: 0, 
-        hidden: 0, 
-        deleted: 0, 
-        createdToday: 0, 
-        createdThisWeek: 0, 
-        createdThisMonth: 0 
+        total: postStats?.totalPosts ?? stats.totalPosts, 
+        reported: postStats?.reportedPosts ?? 0, 
+        hidden: postStats?.hiddenPosts ?? 0, 
+        deleted: postStats?.deletedPosts ?? 0, 
+        createdToday: postStats?.createdToday ?? 0, 
+        createdThisWeek: postStats?.createdThisWeek ?? 0, 
+        createdThisMonth: postStats?.createdThisMonth ?? 0 
       },
       comments: { 
-        total: stats.totalComments, 
-        reported: 0, 
-        deleted: 0, 
-        createdToday: 0 
+        total: postStats?.totalComments ?? stats.totalComments, 
+        reported: postStats?.reportedComments ?? 0, 
+        deleted: postStats?.deletedComments ?? 0, 
+        createdToday: postStats?.createdTodayComments ?? 0 
       },
       projects: {
-        total: (stats as any).totalProjects || 0,
-        reported: 0,
-        hidden: 0,
-        deleted: 0
+        total: projectStats?.totalProjects ?? (stats as any).totalProjects ?? 0,
+        reported: projectStats?.reportedProjects ?? 0,
+        hidden: projectStats?.hiddenProjects ?? 0,
+        deleted: projectStats?.deletedProjects ?? 0
       },
       hubs: {
-        total: (stats as any).totalHubs || 0,
-        reported: 0,
-        suspended: 0,
-        deleted: 0
+        total: hubStats?.totalHubs ?? (stats as any).totalHubs ?? 0,
+        reported: hubStats?.reportedHubs ?? 0,
+        suspended: hubStats?.suspendedHubs ?? 0,
+        deleted: hubStats?.deletedHubs ?? 0
       },
       engagement: { 
-        totalLikes: stats.totalLikes, 
-        totalComments: stats.totalComments, 
-        totalShares: stats.totalShares 
+        totalLikes: postStats?.totalLikes ?? stats.totalLikes, 
+        totalComments: postStats?.totalComments ?? stats.totalComments, 
+        totalShares: postStats?.totalShares ?? stats.totalShares 
       },
     };
   }

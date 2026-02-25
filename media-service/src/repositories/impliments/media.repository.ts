@@ -84,6 +84,21 @@ export class MediaRepository implements IMediaRepository {
     }
   }
 
+  async findByProjectId(projectId: string): Promise<Media[]> {
+    try {
+      return await prisma.media.findMany({
+        where: { projectId },
+        orderBy: { createdAt: "asc" },
+      });
+    } catch (error: unknown) {
+      logger.error("Failed to find media by project ID", {
+        error: (error as Error).message,
+        projectId,
+      });
+      throw error;
+    }
+  }
+
   async findUnusedMedia(olderThanHours: number = 24): Promise<Partial<Media>[]> {
     try {
       const cutoffDate = new Date();
@@ -92,6 +107,7 @@ export class MediaRepository implements IMediaRepository {
       return await prisma.media.findMany({
         where: {
           postId: null,
+          projectId: null,
           status: {
             in: ["UPLOADED", "READY"],
           },

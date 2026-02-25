@@ -104,6 +104,7 @@ model Report {
   reporter     User             @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
   reviewer     User?            @relation("Reviewer", fields: [reviewedById], references: [id], onDelete: Cascade)
 
+  @@unique([reporterId, targetType, targetId])
   @@index([status])
   @@index([targetType, targetId])
   @@index([createdAt])

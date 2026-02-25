@@ -74,7 +74,8 @@ export class AdminController implements IAdminController {
   async takeReportAction(req: Request, res: Response): Promise<void> {
     try {
       const { reportId } = req.params;
-      const { action, resolution, hideContent, suspendUser } = req.body;
+      const { action: rawAction, resolution, hideContent, suspendUser } = req.body;
+      const action = Array.isArray(rawAction) ? rawAction[0] : rawAction;
       const userId = (req as any).user?.id; // From JWT middleware
 
       if (!reportId) {
@@ -116,7 +117,8 @@ export class AdminController implements IAdminController {
 
   async bulkReportAction(req: Request, res: Response): Promise<void> {
     try {
-      const { reportIds, action, resolution } = req.body;
+      const { reportIds, action: rawAction, resolution } = req.body;
+      const action = Array.isArray(rawAction) ? rawAction[0] : rawAction;
       const userId = (req as any).user?.id; // From JWT middleware
 
       if (!reportIds || !Array.isArray(reportIds) || reportIds.length === 0) {
@@ -231,6 +233,7 @@ export class AdminController implements IAdminController {
         postId: postId as string,
         hidden,
         reason,
+        adminId: (req as any).user?.id || "system",
       });
 
       res.status(200).json({
@@ -338,6 +341,42 @@ export class AdminController implements IAdminController {
         error instanceof CustomError
           ? error
           : { status: 500, message: "Failed to list comments" }
+      );
+    }
+  }
+
+  async hideComment(req: Request, res: Response): Promise<void> {
+    try {
+      const { commentId } = req.params;
+      const { hidden, reason } = req.body;
+
+      if (!commentId) {
+        throw new CustomError(400, "Comment ID is required");
+      }
+
+      if (hidden === undefined) {
+        throw new CustomError(400, "Hidden flag is required");
+      }
+
+      const comment = await this._adminService.hideComment({
+        commentId: commentId as string,
+        hidden,
+        reason,
+        adminId: (req as any).user?.id || "system",
+      });
+
+      res.status(200).json({
+        success: true,
+        data: comment,
+        message: hidden ? "Comment hidden successfully" : "Comment unhidden successfully",
+      });
+    } catch (error: any) {
+      logger.error("Error in hideComment controller", { error: error.message });
+      sendErrorResponse(
+        res,
+        error instanceof CustomError
+          ? error
+          : { status: 500, message: "Failed to hide/unhide comment" }
       );
     }
   }
@@ -536,4 +575,3 @@ export class AdminController implements IAdminController {
     }
   }
 }
-

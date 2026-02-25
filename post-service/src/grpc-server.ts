@@ -29,6 +29,8 @@ import {
   GetPostVersionsResponse,
   RestorePostVersionRequest,
   RestorePostVersionResponse,
+  GetPostStatsRequest,
+  GetPostStatsResponse,
 } from "./grpc/generated/post";
 import { PostController } from "./controllers/impliments/feed.controller";
 import { CustomError } from "./utils/error.util";
@@ -45,6 +47,7 @@ import { MediaController } from "./controllers/impliments/media.controller";
 import { ShareLinkService } from "./services/impliments/shareLink.service";
 import { ReportService } from "./services/impliments/report.service";
 import { ReportRepository } from "./repositories/impliments/report.repository";
+import { AdminRepository } from "./repositories/impliments/admin.repository";
 import { IOutboxService } from "./services/interfaces/IOutboxService";
 import { OutboxService } from "./services/impliments/outbox.service";
 import { OutboxRepository } from "./repositories/impliments/outbox.repository";
@@ -59,6 +62,7 @@ const likeRepository = new LikeRepository();
 const commentRepository = new CommentRepository();
 const shareRepository = new ShareRepository();
 const postVersionRepository = new PostVersionRepository();
+const adminRepository = new AdminRepository();
 const outboxRepository = new OutboxRepository();
 const outboxService = new OutboxService(outboxRepository);
 
@@ -161,6 +165,25 @@ const postServiceActions: PostServiceServer = {
   
   restorePostVersion: grpcHandler(async (request: RestorePostVersionRequest): Promise<RestorePostVersionResponse> => {
     return await postService.restorePostVersion(request);
+  }),
+  
+  getPostStats: grpcHandler(async (request: GetPostStatsRequest): Promise<GetPostStatsResponse> => {
+    const stats = await adminRepository.getDashboardStats();
+    return {
+      totalPosts: stats.posts.total,
+      reportedPosts: stats.posts.reported,
+      hiddenPosts: stats.posts.hidden,
+      deletedPosts: stats.posts.deleted,
+      createdToday: stats.posts.createdToday,
+      createdThisWeek: stats.posts.createdThisWeek,
+      createdThisMonth: stats.posts.createdThisMonth,
+      totalComments: stats.comments.total,
+      reportedComments: stats.comments.reported,
+      deletedComments: stats.comments.deleted,
+      createdTodayComments: stats.comments.createdToday,
+      totalLikes: stats.engagement.totalLikes,
+      totalShares: stats.engagement.totalShares,
+    };
   }),
 };
 export const grpcServer = new grpc.Server();

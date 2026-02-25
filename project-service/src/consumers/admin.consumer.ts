@@ -129,18 +129,32 @@ async function handleAdminActionEnforced(event: {
 }) {
   const { action, targetType, targetId } = event;
 
-  if (action === "HIDE" || action === "BAN" || action === "SUSPEND") {
+  if (action === "HIDE" || action === "DELETE" || action === "BAN" || action === "SUSPEND") {
     if (targetType === "PROJECT") {
-      logger.info(`Soft-removing project: ${targetId}`);
+      logger.info(`Moderation: Soft-removing project: ${targetId}`);
       await (prisma as any).project.update({
         where: { id: targetId },
         data: { removedAt: new Date(), removedBy: "admin-enforcement" },
       });
     } else if (targetType === "USER") {
-      logger.info(`Soft-removing all projects for ${action} user: ${targetId}`);
+      logger.info(`Moderation: Soft-removing all projects for ${action} user: ${targetId}`);
       await (prisma as any).project.updateMany({
         where: { userId: targetId, deletedAt: null },
         data: { removedAt: new Date(), removedBy: "admin-enforcement" },
+      });
+    }
+  } else if (action === "UNHIDE") {
+    if (targetType === "PROJECT") {
+      logger.info(`Moderation: Restoring project: ${targetId}`);
+      await (prisma as any).project.update({
+        where: { id: targetId },
+        data: { removedAt: null, removedBy: null },
+      });
+    } else if (targetType === "USER") {
+      logger.info(`Moderation: Restoring all projects for user: ${targetId}`);
+      await (prisma as any).project.updateMany({
+        where: { userId: targetId, removedBy: "admin-enforcement" },
+        data: { removedAt: null, removedBy: null },
       });
     }
   }

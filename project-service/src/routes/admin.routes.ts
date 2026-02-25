@@ -18,6 +18,11 @@ export const setupAdminRoutes = (adminController: AdminController) => {
     adminController.getReportedProjects.bind(adminController)
   );
 
+  router.get(
+    "/projects/:id",
+    adminController.getProjectById.bind(adminController)
+  );
+
   router.patch(
     "/projects/:id/hide",
     adminController.hideProject.bind(adminController)

@@ -11,6 +11,7 @@ export class AdminController {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const status = req.query.status as string;
+      const userId = req.query.userId as string;
       const search = req.query.search as string;
       const sortBy = req.query.sortBy as string;
       const sortOrder = req.query.sortOrder as "asc" | "desc";
@@ -19,6 +20,7 @@ export class AdminController {
         page,
         limit,
         status,
+        userId,
         search,
         sortBy,
         sortOrder
@@ -44,8 +46,10 @@ export class AdminController {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
+      const userId = req.query.userId as string;
+      const search = req.query.search as string;
 
-      const data = await this._adminService.getReportedProjects({ page, limit });
+      const data = await this._adminService.getReportedProjects({ page, limit, userId, search });
 
       res.status(HttpStatus.OK).json({
         success: true,
@@ -63,12 +67,40 @@ export class AdminController {
     }
   }
 
+  async getProjectById(req: Request, res: Response) {
+    try {
+      const idParam = req.params.id;
+      const id = Array.isArray(idParam) ? idParam[0] : idParam;
+      if (!id) {
+        res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: "Project ID is required" });
+        return;
+      }
+      const project = await this._adminService.getProjectById(id);
+
+      res.status(HttpStatus.OK).json({
+        success: true,
+        data: project,
+      });
+    } catch (error: unknown) {
+      logger.error("AdminController.getProjectById Error", { error });
+      const status = (error as any)?.status || HttpStatus.INTERNAL_SERVER_ERROR;
+      const message = (error as any)?.message || "Internal server error";
+      res.status(status).json({ success: false, message });
+    }
+  }
+
   async hideProject(req: Request, res: Response) {
     try {
-      const { id } = req.params;
-      const { hidden } = req.body;
+      const idParam = req.params.id;
+      const id = Array.isArray(idParam) ? idParam[0] : idParam;
+      if (!id) {
+        res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: "Project ID is required" });
+        return;
+      }
+      const { hidden, reason } = req.body;
+      const adminId = (req as any).user?.id || "system";
 
-      const result = await this._adminService.hideProject(id, !!hidden);
+      const result = await this._adminService.hideProject(id, !!hidden, reason, adminId);
 
       res.status(HttpStatus.OK).json({
         success: true,
@@ -83,7 +115,12 @@ export class AdminController {
 
   async deleteProject(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const idParam = req.params.id;
+      const id = Array.isArray(idParam) ? idParam[0] : idParam;
+      if (!id) {
+        res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: "Project ID is required" });
+        return;
+      }
 
       const result = await this._adminService.deleteProject(id);
 

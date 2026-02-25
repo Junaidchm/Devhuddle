@@ -1,6 +1,7 @@
 import {
   IProjectRepository,
   ProjectSelectOptions,
+  SearchFilters,
   CreateProjectData,
 } from "../interface/IProjectRepository";
 import { BaseRepository } from "./base.repository";
@@ -149,25 +150,31 @@ export class ProjectRepository
           },
         });
 
+        // Build update object safely
+        const updateData: any = {
+          version: { increment: 1 },
+          updatedAt: new Date(),
+        };
+
+        if (data.title !== undefined) updateData.title = data.title;
+        if (data.description !== undefined) updateData.description = data.description;
+        if (data.repositoryUrls !== undefined) updateData.repositoryUrls = data.repositoryUrls;
+        if (data.demoUrl !== undefined) updateData.demoUrl = data.demoUrl;
+        if (data.techStack !== undefined) updateData.techStack = data.techStack;
+        if (data.tags !== undefined) updateData.tags = data.tags;
+        if (data.visibility !== undefined) updateData.visibility = data.visibility as any;
+        if (data.status !== undefined) updateData.status = data.status as any;
+        
+        if (data.mediaIds && data.mediaIds.length > 0) {
+          updateData.media = {
+            set: data.mediaIds.map((id) => ({ id })),
+          };
+        }
+
         // Update project
         const updatedProject = await tx.project.update({
           where: { id: projectId },
-          data: {
-            title: data.title,
-            description: data.description,
-            repositoryUrls: data.repositoryUrls,
-            demoUrl: data.demoUrl,
-            techStack: data.techStack,
-            tags: data.tags,
-            visibility: data.visibility as Prisma.ProjectUpdateInput["visibility"],
-            version: { increment: 1 },
-            media:
-              data.mediaIds && data.mediaIds.length > 0
-                ? {
-                    set: data.mediaIds.map((id) => ({ id })),
-                  }
-                : undefined,
-          },
+          data: updateData,
           include: {
             media: true,
           },
@@ -257,6 +264,7 @@ export class ProjectRepository
           isLiked: project.likes && project.likes.length > 0,
           isShared: project.shares && project.shares.length > 0,
         },
+        isHidden: project.status === "REMOVED",
         author,
       } as EnrichedProject;
     } catch (error: unknown) {
@@ -276,6 +284,7 @@ export class ProjectRepository
           ...options.where,
           deletedAt: null,
           status: "PUBLISHED",
+          visibility: "PUBLIC",
         },
         include: {
           media: {
@@ -310,6 +319,7 @@ export class ProjectRepository
           ...options.where,
           deletedAt: null,
           status: "PUBLISHED",
+          visibility: "PUBLIC",
         },
         orderBy: {
           trendingScore: "desc",
@@ -346,6 +356,7 @@ export class ProjectRepository
           ...options.where,
           deletedAt: null,
           status: "PUBLISHED",
+          visibility: "PUBLIC",
         },
         orderBy: [
           { likesCount: "desc" },
@@ -376,12 +387,13 @@ export class ProjectRepository
     }
   }
 
-  async searchProjects(query: string, filters: { techStack?: string[]; tags?: string[]; limit?: number }): Promise<EnrichedProject[]> {
+  async searchProjects(query: string, filters: SearchFilters): Promise<EnrichedProject[]> {
     try {
       const projects = await prisma.project.findMany({
         where: {
           deletedAt: null,
           status: "PUBLISHED",
+          visibility: "PUBLIC",
           OR: [
             { title: { contains: query, mode: "insensitive" } },
             { description: { contains: query, mode: "insensitive" } },
@@ -394,6 +406,7 @@ export class ProjectRepository
           ...(filters.tags && filters.tags.length > 0
             ? { tags: { hasSome: filters.tags } }
             : {}),
+          ...(filters.status ? { status: filters.status as any } : {}),
         },
         take: filters.limit || 20,
         include: {
@@ -680,6 +693,7 @@ export class ProjectRepository
             sharesCount: project._count.shares,
             viewsCount: project.viewsCount,
           },
+          isHidden: project.status === "REMOVED",
           author,
         } as EnrichedProject;
       })

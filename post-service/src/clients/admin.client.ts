@@ -7,7 +7,7 @@ class AdminServiceClient {
   private _client: AdminClient;
 
   constructor() {
-    const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_GRPC_URL || "localhost:50051";
+    const AUTH_SERVICE_URL = process.env.AUTH_GRPC_URL || process.env.AUTH_SERVICE_GRPC_URL || "auth-service:50051";
     this._client = new AdminClient(
       AUTH_SERVICE_URL,
       grpc.credentials.createInsecure()

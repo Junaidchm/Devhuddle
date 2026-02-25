@@ -1,4 +1,4 @@
-import { User, Report, AuditLog, ReportStatus, ReportTargetType, ReportSeverity } from "@prisma/client";
+import { User, Report, AuditLog, ReportStatus, ReportTargetType, ReportSeverity, ReportReason } from "@prisma/client";
 
 export interface IAdminService {
   // User Management
@@ -30,6 +30,10 @@ export interface IAdminService {
     status?: ReportStatus;
     targetType?: ReportTargetType;
     severity?: ReportSeverity;
+    reason?: ReportReason;
+    search?: string;
+    sortBy?: "createdAt" | "severity" | "status";
+    sortOrder?: "asc" | "desc";
   }): Promise<{ reports: Report[]; total: number }>;
 
   getReportById(id: string): Promise<Report | null>;
@@ -40,7 +44,7 @@ export interface IAdminService {
   processReportAction(reportId: string, adminId: string, action: {
     status: ReportStatus;
     resolution: string;
-    enforcementAction?: 'SUSPEND' | 'BAN' | 'HIDE' | 'WARN';
+    enforcementAction?: 'SUSPEND' | 'BAN' | 'HIDE' | 'WARN' | 'UNHIDE' | 'DELETE';
     severity?: ReportSeverity;
   }): Promise<Report>;
 
@@ -56,6 +60,10 @@ export interface IAdminService {
     limit: number;
     adminId?: string;
     targetType?: string;
+    search?: string;
+    action?: string;
+    startDate?: string;
+    endDate?: string;
   }): Promise<{ logs: AuditLog[]; total: number }>;
 
   // Analytics

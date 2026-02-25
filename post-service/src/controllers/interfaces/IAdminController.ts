@@ -17,6 +17,7 @@ export interface IAdminController {
   // Comments
   listComments(req: Request, res: Response): Promise<void>;
   getCommentById(req: Request, res: Response): Promise<void>;
+  hideComment(req: Request, res: Response): Promise<void>;
   deleteCommentAdmin(req: Request, res: Response): Promise<void>;
   listReportedComments(req: Request, res: Response): Promise<void>;
 

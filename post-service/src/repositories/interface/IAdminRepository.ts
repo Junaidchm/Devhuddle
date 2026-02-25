@@ -120,6 +120,8 @@ export interface IAdminRepository {
   // Comments
   listComments(params: ListCommentsParams): Promise<ListCommentsResult>;
   getCommentById(commentId: string): Promise<Comment | null>;
+  hideComment(commentId: string, reason: string): Promise<Comment>;
+  unhideComment(commentId: string): Promise<Comment>;
   deleteCommentAdmin(commentId: string): Promise<Comment>;
   listReportedComments(params: ListCommentsParams): Promise<ListCommentsResult>;
 

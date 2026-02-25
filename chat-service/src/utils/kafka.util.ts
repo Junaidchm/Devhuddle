@@ -106,3 +106,28 @@ export async function disconnectProducer(): Promise<void> {
     logger.info("Kafka producer disconnected");
   }
 }
+
+/**
+ * Publish a generic event to any Kafka topic
+ */
+export async function publishEvent(topic: string, payload: any): Promise<void> {
+  try {
+    const prod = await getProducer();
+    await prod.send({
+      topic,
+      messages: [
+        {
+          key: payload.targetId || payload.entityId || null,
+          value: JSON.stringify(payload),
+        },
+      ],
+    });
+    logger.info("Event published to Kafka", { topic, payload });
+  } catch (error: unknown) {
+    logger.error("Failed to publish event to Kafka", {
+      topic,
+      error: (error as Error).message,
+    });
+    // Don't throw – notification failure should not break hub moderation
+  }
+}
