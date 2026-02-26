@@ -64,8 +64,14 @@ export const KAFKA_TOPICS = {
   PROJECT_COMMENT_CREATED: "project.comment.created.v1",
   PROJECT_COMMENT_EDITED: "project.comment.edited.v1",
   PROJECT_COMMENT_DELETED: "project.comment.deleted.v1",
+  PROJECT_COMMENT_LIKE_CREATED: "project.comment.like.created.v1",
+  PROJECT_COMMENT_LIKE_REMOVED: "project.comment.like.removed.v1",
   PROJECT_SHARE_CREATED: "project.share.created.v1",
   PROJECT_REPORT_CREATED: "project.report.created.v1",
+  
+  // Send Project events (LinkedIn-style)
+  PROJECT_SENT: "project.sent.v1",
+  PROJECT_SENT_DLQ: "project.sent.v1-dlq",
   
   // Mention events
   USER_MENTIONED: "user.mentioned.v1",

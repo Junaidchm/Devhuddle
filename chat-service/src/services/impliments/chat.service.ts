@@ -675,13 +675,38 @@ export class ChatService implements IChatService {
                 throw new Error("Unauthorized: Only the group owner can delete the group");
             }
 
-            // 4. Delete
+            // 4. Capture participant IDs BEFORE deletion so we can notify them
+            const participantIds = conversation.participants.map(p => p.userId);
+
+            // 5. Broadcast group_deleted to all connected members via Redis pub/sub
+            //    Each socket-gateway subscriber will emit the event to connected clients
+            await redisPublisher.publish(
+                `chat:${conversationId}`,
+                JSON.stringify({
+                    type: 'group_deleted',
+                    data: {
+                        conversationId,
+                        deletedBy: userId,
+                        groupName: conversation.name
+                    }
+                })
+            );
+
+            // 6. Hard delete the conversation and its messages/participants
             await this._chatRepository.deleteConversation(conversationId);
             
-            // 5. Invalidate cache
+            // 7. Invalidate conversation-level cache
             await RedisCacheService.invalidateConversationCache(conversationId);
+
+            // 8. Invalidate each member's conversation list cache so it refreshes
+            await Promise.allSettled(
+                participantIds.map(pid => Promise.all([
+                    RedisCacheService.invalidateUserConversationsCache(pid),
+                    RedisCacheService.invalidateUserConversationsMetadataCache(pid)
+                ]))
+            );
             
-            logger.info('Group deleted successfully', { conversationId, userId });
+            logger.info('Group deleted successfully', { conversationId, userId, notifiedMembers: participantIds.length });
         } catch (error) {
             logger.error('Error deleting group', { 
                 error: (error as Error).message, 

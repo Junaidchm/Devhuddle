@@ -41,63 +41,89 @@ export class GroupService implements IGroupService {
         throw new AppError("At least one participant is required", 400);
     }
     
-    // Ensure creator is in participant list if not already
-    const uniqueParticipants = Array.from(new Set([...participantIds, creatorId]));
+    try {
+      // Ensure creator is in participant list if not already
+      const uniqueParticipants = Array.from(new Set([...participantIds, creatorId]));
 
-    const conversation = await this._chatRepository.createGroupConversation(
-      creatorId, 
-      name, 
-      uniqueParticipants, 
-      icon,
-      onlyAdminsCanPost,
-      onlyAdminsCanEditInfo,
-      topics
-    );
+      const conversation = await this._chatRepository.createGroupConversation(
+        creatorId, 
+        name, 
+        uniqueParticipants, 
+        icon,
+        onlyAdminsCanPost,
+        onlyAdminsCanEditInfo,
+        topics
+      );
 
-    // ✅ Auto-assign creator as ADMIN to prevent owner/admin role confusion
-    await this._chatRepository.updateParticipantRole(conversation.id, creatorId, GroupRole.ADMIN);
+      // ✅ Auto-assign creator as ADMIN to prevent owner/admin role confusion
+      await this._chatRepository.updateParticipantRole(conversation.id, creatorId, GroupRole.ADMIN);
 
-    // Enrich with user profiles
-    const userProfilesMap = await authServiceClient.getUserProfiles(uniqueParticipants);
+      // Enrich with user profiles
+      const userProfilesMap = await authServiceClient.getUserProfiles(uniqueParticipants);
 
-    const enrichedConversation: ConversationWithMetadataDto = {
-        conversationId: conversation.id,
-        type: conversation.type as 'GROUP', 
-        name: conversation.name,
-        icon: conversation.icon,
-        description: conversation.description,
-        ownerId: conversation.ownerId,
-        onlyAdminsCanPost: conversation.onlyAdminsCanPost,
-        onlyAdminsCanEditInfo: conversation.onlyAdminsCanEditInfo,
-        memberCount: conversation.memberCount,
-        participantIds: uniqueParticipants,
-        participants: conversation.participants.map(p => {
-             const profile = userProfilesMap.get(p.userId);
-             return {
-                 userId: p.userId,
-                 username: profile?.username || 'unknown',
-                 name: profile?.name || 'Unknown User',
-                 profilePhoto: profile?.profilePhoto || null,
-                 role: p.role as 'ADMIN' | 'MEMBER'
-             };
-        }),
-        lastMessage: null,
-        lastMessageAt: conversation.createdAt,
-        unreadCount: 0,
-        createdAt: conversation.createdAt
-    };
+      const enrichedConversation: ConversationWithMetadataDto = {
+          conversationId: conversation.id,
+          type: conversation.type as 'GROUP', 
+          name: conversation.name,
+          icon: conversation.icon,
+          description: conversation.description,
+          ownerId: conversation.ownerId,
+          onlyAdminsCanPost: conversation.onlyAdminsCanPost,
+          onlyAdminsCanEditInfo: conversation.onlyAdminsCanEditInfo,
+          memberCount: conversation.memberCount,
+          participantIds: uniqueParticipants,
+          participants: conversation.participants.map(p => {
+               const profile = userProfilesMap.get(p.userId);
+               return {
+                   userId: p.userId,
+                   username: profile?.username || 'unknown',
+                   name: profile?.name || 'Unknown User',
+                   profilePhoto: profile?.profilePhoto || null,
+                   role: p.role as 'ADMIN' | 'MEMBER'
+               };
+          }),
+          lastMessage: null,
+          lastMessageAt: conversation.createdAt,
+          unreadCount: 0,
+          createdAt: conversation.createdAt
+      };
 
-    // ✅ Inject SYSTEM message for group creation via Saga
-    await this._messageSagaService.sendSystemMessage(
-        conversation.id,
-        "group_created",
-        creatorId
-    );
+      // ✅ Inject SYSTEM message for group creation via Saga (non-blocking - return HTTP response fast)
+      this._messageSagaService.sendSystemMessage(
+          conversation.id,
+          "group_created",
+          creatorId
+      ).catch(err => {
+          logger.error("Failed to send group_created system message", { error: err.message, conversationId: conversation.id });
+      });
 
-    // Emit event
-    this.publishEvent(conversation.id, 'group_created', enrichedConversation);
+      // Emit real-time event to all participants' sockets
+      this.publishEvent(conversation.id, 'group_created', enrichedConversation);
 
-    return enrichedConversation;
+      // ✅ Publish GroupCreated Kafka event so notification-service can notify members
+      const nonCreatorIds = uniqueParticipants.filter(id => id !== creatorId);
+      if (nonCreatorIds.length > 0) {
+          publishChatEvent({
+              eventType: 'GroupCreated',
+              conversationId: conversation.id,
+              creatorId,
+              groupName: name,
+              participantIds: nonCreatorIds
+          }).catch(err => {
+              logger.error("Failed to publish GroupCreated Kafka event", { error: err.message, conversationId: conversation.id });
+          });
+      }
+
+      return enrichedConversation;
+    } catch (error) {
+      logger.error("Failed to create group", { 
+        error: (error as Error).message,
+        stack: (error as Error).stack,
+        creatorId,
+        name
+      });
+      throw error;
+    }
   }
 
   async getAllGroups(
@@ -239,7 +265,7 @@ export class GroupService implements IGroupService {
 
         const snapshottedAdded = addedParticipants.map(ap => ({ id: ap.userId, name: ap.name }));
 
-        // ✅ Inject SYSTEM message for added participants via Saga
+        // ✅ Inject SYSTEM message for added participants via Saga (Blocking)
         await this._messageSagaService.sendSystemMessage(
             groupId,
             `added_participant:${JSON.stringify(snapshottedAdded)}`,
@@ -285,7 +311,7 @@ export class GroupService implements IGroupService {
     await RedisCacheService.invalidateConversationCache(groupId);
     await RedisCacheService.invalidateUserConversationsMetadataCache(targetUserId);
 
-    // ✅ Inject SYSTEM message via Saga
+    // ✅ Inject SYSTEM message via Saga (Blocking)
     await this._messageSagaService.sendSystemMessage(
         groupId,
         `removed_participant:${JSON.stringify({ id: targetUserId, name: snapshotName })}`,
@@ -328,7 +354,7 @@ export class GroupService implements IGroupService {
     // This allows findConversationById to see the new role in subsequent authorization checks
     await RedisCacheService.invalidateConversationCache(groupId);
 
-    // ✅ Inject SYSTEM message via Saga for reliable broadcasting
+    // ✅ Inject SYSTEM message via Saga for reliable broadcasting (Blocking)
     await this._messageSagaService.sendSystemMessage(
         groupId,
         `promoted_admin:${JSON.stringify({ id: targetUserId, name: snapshotName })}`,
@@ -364,7 +390,7 @@ export class GroupService implements IGroupService {
     // ✅ Invalidate cache for immediate privilege revocation
     await RedisCacheService.invalidateConversationCache(groupId);
 
-    // ✅ Inject SYSTEM message via Saga
+    // ✅ Inject SYSTEM message via Saga (Blocking)
     await this._messageSagaService.sendSystemMessage(
         groupId,
         `demoted_admin:${JSON.stringify({ id: targetUserId, name: snapshotName })}`,
@@ -444,7 +470,7 @@ export class GroupService implements IGroupService {
                 const newAdminProfileMap = await authServiceClient.getUserProfiles([newAdmin.userId]);
                 const newAdminName = newAdminProfileMap.get(newAdmin.userId)?.name || newAdminProfileMap.get(newAdmin.userId)?.username || 'Unknown User';
 
-                // ✅ Inject SYSTEM message for auto-promotion via Saga
+                // ✅ Inject SYSTEM message for auto-promotion via Saga (Blocking)
                 await this._messageSagaService.sendSystemMessage(
                     groupId,
                     `promoted_admin:${JSON.stringify({ id: newAdmin.userId, name: newAdminName })}`,
@@ -465,7 +491,7 @@ export class GroupService implements IGroupService {
     const userProfileMap = await authServiceClient.getUserProfiles([userId]);
     const snapshotName = userProfileMap.get(userId)?.name || userProfileMap.get(userId)?.username || 'Unknown User';
 
-    // ✅ Inject SYSTEM message via Saga
+    // ✅ Inject SYSTEM message via Saga (Blocking)
     await this._messageSagaService.sendSystemMessage(
         groupId,
         `left_group:${JSON.stringify({ id: userId, name: snapshotName })}`,

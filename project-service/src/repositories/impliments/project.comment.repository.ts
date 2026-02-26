@@ -180,4 +180,41 @@ export class ProjectCommentRepository
       logger.error("Error decrementing comment likes count", { error });
     }
   }
+
+  async getUserLikesForComments(
+    userId: string,
+    commentIds: string[]
+  ): Promise<Record<string, boolean>> {
+    try {
+      if (!userId || commentIds.length === 0) {
+        return {};
+      }
+
+      const reactions = await prisma.projectCommentReaction.findMany({
+        where: {
+          userId,
+          deletedAt: null,
+          commentId: {
+            in: commentIds,
+          },
+          type: "LIKE",
+        },
+        select: {
+          commentId: true,
+        },
+      });
+
+      return reactions.reduce<Record<string, boolean>>((acc, reaction) => {
+        acc[reaction.commentId] = true;
+        return acc;
+      }, {});
+    } catch (error: unknown) {
+      logger.error("Error getting user likes for comments", {
+        error: (error as Error).message,
+        userId,
+        commentIdsCount: commentIds.length,
+      });
+      return {};
+    }
+  }
 }

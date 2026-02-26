@@ -22,15 +22,19 @@ import { IdempotencyRepository } from "./repositories/impliments/idempotency.rep
 import { ProjectService } from "./services/impliments/project.service";
 import { ProjectLikeService } from "./services/impliments/project.like.service";
 import { ProjectShareService } from "./services/impliments/project.share.service";
+import { ProjectSendService } from "./services/impliments/project.send.service";
 import { ProjectReportService } from "./services/impliments/project.report.service";
 import { ProjectMediaService } from "./services/impliments/project.media.service";
 import { ProjectCommentService } from "./services/impliments/project.comment.service";
 import { OutboxService } from "./services/impliments/outbox.service";
+import { MentionRepository } from "./repositories/impliments/mention.repository";
+import { MentionService } from "./services/impliments/mention.service";
 
 // Import controllers
 import { ProjectController } from "./controllers/impliments/project.controller";
 import { ProjectLikeController } from "./controllers/impliments/project.like.controller";
 import { ProjectShareController } from "./controllers/impliments/project.share.controller";
+import { ProjectSendController } from "./controllers/impliments/project.send.controller";
 import { ProjectReportController } from "./controllers/impliments/project.report.controller";
 import { ProjectMediaController } from "./controllers/impliments/project.media.controller";
 import { ProjectCommentController } from "./controllers/impliments/project.comment.controller";
@@ -73,10 +77,13 @@ const mediaRepository = new ProjectMediaRepository();
 const commentRepository = new ProjectCommentRepository();
 const outboxRepository = new OutboxRepository();
 const idempotencyRepository = new IdempotencyRepository();
+const mentionRepository = new MentionRepository();
 
 // Initialize services
 const outboxService = new OutboxService(outboxRepository);
 const outboxProcessor = new OutboxProcessor(outboxRepository);
+const mentionService = new MentionService(mentionRepository, outboxService);
+
 const projectService = new ProjectService(
   projectRepository,
   likeRepository,
@@ -93,6 +100,10 @@ const shareService = new ProjectShareService(
   projectRepository,
   outboxService
 );
+const sendService = new ProjectSendService(
+  projectRepository,
+  outboxService
+);
 const reportService = new ProjectReportService(
   reportRepository,
   projectRepository,
@@ -102,6 +113,7 @@ const mediaService = new ProjectMediaService(mediaRepository);
 const commentService = new ProjectCommentService(
   commentRepository,
   projectRepository,
+  mentionService,
   outboxService
 );
 const adminService = new AdminService(
@@ -113,6 +125,7 @@ const adminService = new AdminService(
 const projectController = new ProjectController(projectService);
 const likeController = new ProjectLikeController(likeService);
 const shareController = new ProjectShareController(shareService);
+const sendController = new ProjectSendController(sendService);
 const reportController = new ProjectReportController(reportService);
 const mediaController = new ProjectMediaController(mediaService);
 const commentController = new ProjectCommentController(commentService);
@@ -124,6 +137,7 @@ const projectRouter = setupProjectRoutes(
   likeController,
   commentController,
   shareController,
+  sendController,
   reportController,
   mediaController,
   idempotencyRepository

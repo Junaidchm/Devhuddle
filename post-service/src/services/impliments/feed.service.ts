@@ -80,6 +80,13 @@ export class FeedService implements IFeedService {
 
         // Batch insert into UserFeed table
         await this._feedRepository.batchInsertFeedEntries(feedEntries);
+
+        // Invalidate the 'latest' cache for followers so new posts reflect immediately
+        await Promise.all(
+          batch.map((follower) =>
+            RedisCacheService.delete(`feed:${follower.id}:latest`)
+          )
+        );
       }
 
       logger.info("Fan-out completed", {

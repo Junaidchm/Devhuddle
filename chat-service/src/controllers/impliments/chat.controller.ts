@@ -273,7 +273,7 @@ export class ChatController implements IChatController {
     async deleteGroup(req: Request, res: Response): Promise<void> {
     try {
       const userId = JSON.parse(req.headers["x-user-data"] as string).id;
-      const conversationId = req.params.conversationId as string;
+      const conversationId = req.params.id as string; // Route: DELETE /groups/:id
 
       if (!userId) {
         res.status(401).json({

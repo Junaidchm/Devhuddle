@@ -153,3 +153,14 @@ export class ReportProjectDto {
   @IsOptional()
   metadata?: Record<string, unknown>;
 }
+
+export class SendProjectDto {
+  @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty({ message: "At least one recipient is required" })
+  recipientIds!: string[];
+
+  @IsOptional()
+  @IsString()
+  message?: string;
+}

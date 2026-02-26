@@ -46,6 +46,13 @@ interface HubJoinRejectedPayload {
   resolvedBy: string;
 }
 
+interface GroupCreatedPayload {
+  conversationId: string;
+  creatorId: string;
+  groupName: string;
+  participantIds: string[]; // Non-creator participants who should be notified
+}
+
 export const startChatConsumer = async (wsService: WebSocketService) => {
   try {
     const consumer = await getConsumer('notification-service-chat-group');
@@ -83,6 +90,9 @@ export const startChatConsumer = async (wsService: WebSocketService) => {
               break;
             case 'HubJoinRejected':
               await handleHubJoinRejected(payload as HubJoinRejectedPayload, notificationService);
+              break;
+            case 'GroupCreated':
+              await handleGroupCreated(payload as GroupCreatedPayload, notificationService);
               break;
             default:
               logger.warn(`Unhandled chat event: ${event}`);
@@ -216,5 +226,33 @@ async function handleHubJoinRejected(
     );
   } catch (err) {
     logger.error(`Failed to create HubJoinRejected notification for user ${requesterId}`, { error: err });
+  }
+}
+
+async function handleGroupCreated(
+  payload: GroupCreatedPayload,
+  notificationService: NotificationService
+) {
+  const { conversationId, creatorId, groupName, participantIds } = payload;
+  
+  if (!participantIds || participantIds.length === 0) {
+    logger.warn('GroupCreated event has no participantIds, skipping notifications');
+    return;
+  }
+
+  logger.info(`Sending GroupCreated notifications for group "${groupName}" to ${participantIds.length} members`);
+
+  for (const recipientId of participantIds) {
+    try {
+      await notificationService.createGroupAddedNotification(
+        creatorId,
+        recipientId,
+        conversationId,
+        groupName,
+        1 // version
+      );
+    } catch (err) {
+      logger.error(`Failed to create GroupAdded notification for user ${recipientId}`, { error: err });
+    }
   }
 }

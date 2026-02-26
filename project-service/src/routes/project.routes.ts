@@ -2,13 +2,14 @@ import { Router } from "express";
 import { ProjectController } from "../controllers/impliments/project.controller";
 import { ProjectLikeController } from "../controllers/impliments/project.like.controller";
 import { ProjectShareController } from "../controllers/impliments/project.share.controller";
+import { ProjectSendController } from "../controllers/impliments/project.send.controller";
 import { ProjectReportController } from "../controllers/impliments/project.report.controller";
 import { ProjectMediaController } from "../controllers/impliments/project.media.controller";
 import { ProjectCommentController } from "../controllers/impliments/project.comment.controller";
 import { idempotencyMiddleware } from "../middlewares/idempotency.middleware";
 import { IIdempotencyRepository } from "../repositories/interface/IIdempotencyRepository";
 import { validateDto } from "../middlewares/validation.middleware";
-import { CreateProjectDto, UpdateProjectDto, UploadProjectMediaDto, ShareProjectDto, ReportProjectDto } from "../dtos/project.dto";
+import { CreateProjectDto, UpdateProjectDto, UploadProjectMediaDto, ShareProjectDto, ReportProjectDto, SendProjectDto } from "../dtos/project.dto";
 
 const router = Router();
 
@@ -17,6 +18,7 @@ export const setupProjectRoutes = (
   likeController: ProjectLikeController,
   commentController: ProjectCommentController,
   shareController: ProjectShareController,
+  sendController: ProjectSendController,
   reportController: ProjectReportController,
   mediaController: ProjectMediaController,
   idempotencyRepository: IIdempotencyRepository
@@ -99,6 +101,13 @@ export const setupProjectRoutes = (
   );
 
   router.post(
+    "/projects/:projectId/send",
+    idempotencyMiddleware(idempotencyRepository),
+    validateDto(SendProjectDto),
+    sendController.sendProject.bind(sendController)
+  );
+
+  router.post(
     "/projects/:projectId/report",
     idempotencyMiddleware(idempotencyRepository),
     validateDto(ReportProjectDto),
@@ -132,6 +141,24 @@ export const setupProjectRoutes = (
   router.get(
     "/comments/:commentId/replies",
     commentController.getReplies.bind(commentController)
+  );
+
+  router.post(
+    "/comments/:commentId/like",
+    idempotencyMiddleware(idempotencyRepository),
+    commentController.likeComment.bind(commentController)
+  );
+
+  router.delete(
+    "/comments/:commentId/like",
+    idempotencyMiddleware(idempotencyRepository),
+    commentController.unlikeComment.bind(commentController)
+  );
+
+  router.post(
+    "/comments/:commentId/report",
+    idempotencyMiddleware(idempotencyRepository),
+    commentController.reportComment.bind(commentController)
   );
 
   // Media upload route

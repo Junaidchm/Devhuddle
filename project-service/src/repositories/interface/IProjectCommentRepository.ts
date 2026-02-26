@@ -21,4 +21,5 @@ export interface IProjectCommentRepository {
   getReplyCount(commentId: string): Promise<number>;
   incrementLikesCount(commentId: string): Promise<void>;
   decrementLikesCount(commentId: string): Promise<void>;
+  getUserLikesForComments(userId: string, commentIds: string[]): Promise<Record<string, boolean>>;
 }

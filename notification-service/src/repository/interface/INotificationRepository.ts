@@ -129,6 +129,15 @@ export interface INotificationRepository {
     version: number
   ): Promise<void>;
 
+  // Group added notification (when user is added to a group)
+  createGroupAddedNotification(
+    creatorId: string,
+    recipientId: string,
+    conversationId: string,
+    groupName: string,
+    version: number
+  ): Promise<void>;
+
   // Cleanup
   deleteUserNotifications(userId: string): Promise<void>;
 

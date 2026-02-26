@@ -201,23 +201,38 @@ export class ProjectService implements IProjectService {
       try {
         mediaItems = await this._mediaBreaker.fire(req.projectId);
       } catch (mediaError: any) {
-        logger.warn("Failed to fetch media from Media Service for project, falling back to empty list", {
+        logger.warn("Failed to fetch media from Media Service for project, falling back to database media", {
           projectId: req.projectId,
           error: mediaError.message
         });
       }
 
-      const attachments = (mediaItems || []).map((media: any) => ({
-          id: media.id,
-          type: String(media.mediaType || "IMAGE").replace("PROJECT_", ""),
-          url: media.cdnUrl || media.originalUrl,
-          thumbnailUrl: media.thumbnailUrls?.[0] || media.cdnUrl || media.originalUrl,
-          order: 0,
-          isPreview: false,
-          processingStatus: (media.status || "COMPLETED") as any,
-          createdAt: media.createdAt ? new Date(media.createdAt).toISOString() : new Date().toISOString(),
-          updatedAt: media.updatedAt ? new Date(media.updatedAt).toISOString() : new Date().toISOString(),
-      }));
+      // If Media Service returns no items, fallback to what's in the DB
+      const hasMediaItems = mediaItems && mediaItems.length > 0;
+      
+      const attachments = hasMediaItems 
+        ? mediaItems.map((media: any) => ({
+            id: media.id,
+            type: String(media.mediaType || "IMAGE").replace("PROJECT_", ""),
+            url: media.cdnUrl || media.originalUrl,
+            thumbnailUrl: media.thumbnailUrls?.[0] || media.cdnUrl || media.originalUrl,
+            order: 0,
+            isPreview: false,
+            processingStatus: (media.status || "COMPLETED") as any,
+            createdAt: media.createdAt ? new Date(media.createdAt).toISOString() : new Date().toISOString(),
+            updatedAt: media.updatedAt ? new Date(media.updatedAt).toISOString() : new Date().toISOString(),
+          }))
+        : (project.media || []).map((m: any) => ({
+            id: m.id,
+            type: m.type,
+            url: m.url,
+            thumbnailUrl: m.thumbnailUrl,
+            order: m.order,
+            isPreview: m.isPreview,
+            processingStatus: "COMPLETED",
+            createdAt: m.createdAt.toISOString(),
+            updatedAt: m.updatedAt.toISOString(),
+          }));
 
       const projectProto = this.mapToProjectProto(project);
 

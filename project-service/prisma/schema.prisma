@@ -59,8 +59,10 @@ enum OutboxAggregateType {
   PROJECT
   PROJECT_LIKE
   PROJECT_COMMENT
+  PROJECT_COMMENT_LIKE
   PROJECT_SHARE
   PROJECT_REPORT
+  MENTION
 }
 
 enum OutboxEventType {
@@ -73,8 +75,12 @@ enum OutboxEventType {
   PROJECT_COMMENT_CREATED
   PROJECT_COMMENT_EDITED
   PROJECT_COMMENT_DELETED
+  PROJECT_COMMENT_LIKE_CREATED
+  PROJECT_COMMENT_LIKE_REMOVED
   PROJECT_SHARE_CREATED
   PROJECT_REPORT_CREATED
+  PROJECT_SENT
+  POST_MENTION_IN_COMMENT_CREATED
 }
 
 enum OutboxStatus {
@@ -230,12 +236,29 @@ model ProjectComment {
   Replies        ProjectComment[] @relation("CommentReplies")
   Reactions      ProjectCommentReaction[]
   Reports        ProjectReport[]
+  CommentMention ProjectCommentMention[]
   
   @@index([projectId])
   @@index([userId])
   @@index([parentCommentId])
   @@index([deletedAt])
   @@map("project_comments")
+}
+
+// Project comment mentions
+model ProjectCommentMention {
+  id              String   @id @default(uuid())
+  commentId       String
+  mentionedUserId String
+  actorId         String
+  createdAt       DateTime @default(now())
+  Comment         ProjectComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, mentionedUserId])
+  @@index([actorId])
+  @@index([commentId])
+  @@index([mentionedUserId])
+  @@map("project_comment_mentions")
 }
 
 // Comment reactions

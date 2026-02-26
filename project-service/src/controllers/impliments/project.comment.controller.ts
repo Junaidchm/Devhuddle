@@ -131,4 +131,67 @@ export class ProjectCommentController {
       next(error);
     }
   }
+
+  async likeComment(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const commentId = req.params.commentId as string;
+      const userId = getUserIdFromRequest(req);
+
+      await this._commentService.likeComment(commentId, userId);
+
+      res.status(HttpStatus.OK).json({
+        success: true,
+        message: "Comment liked successfully",
+        data: { isLiked: true },
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  async unlikeComment(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const commentId = req.params.commentId as string;
+      const userId = getUserIdFromRequest(req);
+
+      await this._commentService.unlikeComment(commentId, userId);
+
+      res.status(HttpStatus.OK).json({
+        success: true,
+        message: "Comment unliked successfully",
+        data: { isLiked: false },
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  async reportComment(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const commentId = req.params.commentId as string;
+      const { reason } = req.body;
+      const userId = getUserIdFromRequest(req);
+
+      await this._commentService.reportComment(commentId, userId, reason);
+
+      res.status(HttpStatus.OK).json({
+        success: true,
+        message: "Comment reported successfully",
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
 }

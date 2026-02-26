@@ -1,6 +1,7 @@
 import { IProjectCommentService } from "../interfaces/IProjectCommentService";
 import { IProjectCommentRepository } from "../../repositories/interface/IProjectCommentRepository";
 import { IProjectRepository } from "../../repositories/interface/IProjectRepository";
+import { IMentionService } from "../interfaces/IMentionService";
 import { IOutboxService } from "../interfaces/IOutboxService";
 import { CustomError } from "../../utils/error.util";
 import logger from "../../utils/logger.util";
@@ -11,6 +12,7 @@ import {
   ProjectComment,
   OutboxAggregateType,
   OutboxEventType,
+  ReportReason,
 } from "@prisma/client";
 import { userClient } from "../../config/grpc.client";
 import { grpcs } from "../../utils/grpc.client.util";
@@ -23,8 +25,16 @@ export class ProjectCommentService implements IProjectCommentService {
   constructor(
     private _commentRepository: IProjectCommentRepository,
     private _projectRepository: IProjectRepository,
+    private _mentionService: IMentionService,
     private _outboxService: IOutboxService
   ) {}
+
+  /**
+   * Get event version for ordering and conflict resolution
+   */
+  private _getEventVersion(): number {
+    return Date.now();
+  }
 
   async createComment(
     projectId: string,
@@ -39,17 +49,16 @@ export class ProjectCommentService implements IProjectCommentService {
         throw new CustomError(HttpStatus.NOT_FOUND, "Project not found");
       }
 
-      // LinkedIn-style: Flat structure for replies
-      let actualParentCommentId: string | undefined;
+      // LinkedIn-style: If replying to a reply, find the main comment and use that instead
       let parentCommentAuthorId: string | undefined;
-
+      let actualParentCommentId: string | undefined;
+      
       if (parentCommentId) {
         const parentComment = await this._commentRepository.findComment(parentCommentId);
         if (!parentComment || parentComment.projectId !== projectId) {
           throw new CustomError(HttpStatus.NOT_FOUND, "Parent comment not found");
         }
-
-        // If replying to a reply, use the main comment instead
+        
         if (parentComment.parentCommentId) {
           actualParentCommentId = parentComment.parentCommentId;
           const mainComment = await this._commentRepository.findComment(actualParentCommentId);
@@ -80,10 +89,21 @@ export class ProjectCommentService implements IProjectCommentService {
         parentCommentId: actualParentCommentId,
       });
 
-      // Update project comment counter
+      // Update counter
       await this._projectRepository.incrementCommentsCount(projectId);
 
-      // Create outbox event for notification
+      // Process mentions
+      const mentionedUserIds = await this._mentionService.processMentions(
+        sanitizedContent,
+        projectId,
+        comment.id,
+        userId
+      );
+
+      const version = this._getEventVersion();
+      const eventTimestamp = new Date().toISOString();
+
+      // Create outbox event for comment created
       await this._outboxService.createOutboxEvent({
         aggregateType: OutboxAggregateType.PROJECT_COMMENT,
         aggregateId: comment.id,
@@ -96,12 +116,13 @@ export class ProjectCommentService implements IProjectCommentService {
           projectId,
           userId,
           projectAuthorId: project.userId,
-          parentCommentId: actualParentCommentId,
+          parentCommentId,
           parentCommentAuthorId,
           content: sanitizedContent,
+          mentionedUserIds,
+          eventTimestamp,
+          version,
           action: "PROJECT_COMMENT_CREATED",
-          version: Date.now(),
-          eventTimestamp: new Date().toISOString(),
         },
       });
 
@@ -140,6 +161,17 @@ export class ProjectCommentService implements IProjectCommentService {
         version: { increment: 1 },
       });
 
+      // Process mentions in updated content
+      await this._mentionService.processMentions(
+        sanitizedContent,
+        comment.projectId,
+        commentId,
+        userId
+      );
+
+      const version = this._getEventVersion();
+      const eventTimestamp = new Date().toISOString();
+
       // Create outbox event
       await this._outboxService.createOutboxEvent({
         aggregateType: OutboxAggregateType.PROJECT_COMMENT,
@@ -152,10 +184,10 @@ export class ProjectCommentService implements IProjectCommentService {
           commentId,
           projectId: comment.projectId,
           userId,
-          content: sanitizedContent,
+          eventTimestamp,
+          version,
           action: "PROJECT_COMMENT_EDITED",
-          version: Date.now(),
-          eventTimestamp: new Date().toISOString(),
+          content: sanitizedContent,
         },
       });
 
@@ -174,14 +206,25 @@ export class ProjectCommentService implements IProjectCommentService {
         throw new CustomError(HttpStatus.NOT_FOUND, "Comment not found");
       }
 
-      if (comment.userId !== userId) {
+      const project = await this._projectRepository.findProject(comment.projectId);
+      if (!project) {
+        throw new CustomError(HttpStatus.NOT_FOUND, "Project not found");
+      }
+
+      const isCommentOwner = comment.userId === userId;
+      const isProjectAuthor = project.userId === userId;
+
+      if (!isCommentOwner && !isProjectAuthor) {
         throw new CustomError(HttpStatus.FORBIDDEN, "Not authorized to delete this comment");
       }
 
       await this._commentRepository.deleteComment(commentId);
 
-      // Update project comment counter
+      // Update counter
       await this._projectRepository.decrementCommentsCount(comment.projectId);
+
+      const version = this._getEventVersion();
+      const eventTimestamp = new Date().toISOString();
 
       // Create outbox event
       await this._outboxService.createOutboxEvent({
@@ -195,16 +238,68 @@ export class ProjectCommentService implements IProjectCommentService {
           commentId,
           projectId: comment.projectId,
           userId,
+          eventTimestamp,
+          version,
           action: "PROJECT_COMMENT_DELETED",
-          version: Date.now(),
-          eventTimestamp: new Date().toISOString(),
         },
       });
+
+      logger.info(`Project comment deleted: ${commentId}`);
     } catch (err: any) {
       logger.error("Error deleting project comment", { error: err.message, commentId, userId });
       if (err instanceof CustomError) throw err;
       throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to delete comment");
     }
+  }
+
+  private async _enrichCommentWithUser(
+    comment: any,
+    projectAuthorId?: string,
+    userLikesMap?: Record<string, boolean>
+  ): Promise<any> {
+    try {
+      const userResponse = await grpcs<typeof userClient, getUserForFeedListingRequest, getUserForFeedListingResponse>(
+        userClient,
+        "getUserForFeedListing",
+        { userId: comment.userId }
+      );
+
+      return {
+        ...comment,
+        user: {
+          id: comment.userId,
+          name: userResponse.name,
+          username: userResponse.username,
+          avatar: userResponse.avatar,
+        },
+        isAuthor: projectAuthorId ? comment.userId === projectAuthorId : false,
+        isLiked: userLikesMap ? userLikesMap[comment.id] || false : false,
+        replies: comment.Replies && comment.Replies.length > 0
+          ? await Promise.all(
+              comment.Replies.map((reply: any) => this._enrichCommentWithUser(reply, projectAuthorId, userLikesMap))
+            )
+          : undefined,
+      };
+    } catch (error: any) {
+      logger.error("Error enriching project comment with user data", { error: error.message, commentId: comment.id, userId: comment.userId });
+      return {
+        ...comment,
+        user: { id: comment.userId, name: "Unknown User", username: "unknown", avatar: "" },
+        isAuthor: projectAuthorId ? comment.userId === projectAuthorId : false,
+        isLiked: userLikesMap ? userLikesMap[comment.id] || false : false,
+        replies: comment.Replies || undefined,
+      };
+    }
+  }
+
+  private async _enrichCommentsWithUsers(
+    comments: any[],
+    projectAuthorId?: string,
+    userLikesMap?: Record<string, boolean>
+  ): Promise<any[]> {
+    return Promise.all(
+      comments.map((comment) => this._enrichCommentWithUser(comment, projectAuthorId, userLikesMap))
+    );
   }
 
   async getComments(
@@ -214,11 +309,23 @@ export class ProjectCommentService implements IProjectCommentService {
     userId?: string
   ): Promise<any[]> {
     try {
-      const comments = await this._commentRepository.getCommentsByProject(projectId, limit, offset);
-      return await this._enrichCommentsWithUsers(comments);
+      const project = await this._projectRepository.findProject(projectId);
+      const projectAuthorId = project?.userId;
+
+      const comments = await this._commentRepository.getCommentsByProject(projectId, limit, offset, true);
+
+      // Extract all comment IDs for batch like lookup
+      const allCommentIds = this._extractCommentIds(comments);
+
+      let userLikesMap: Record<string, boolean> = {};
+      if (userId && allCommentIds.length > 0) {
+        userLikesMap = await this._commentRepository.getUserLikesForComments(userId, allCommentIds);
+      }
+
+      return await this._enrichCommentsWithUsers(comments, projectAuthorId, userLikesMap);
     } catch (err: any) {
-      logger.error("Error fetching project comments", { error: err.message, projectId });
-      throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to fetch comments");
+      logger.error("Error getting project comments", { error: err.message, projectId });
+      throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get comments");
     }
   }
 
@@ -232,49 +339,177 @@ export class ProjectCommentService implements IProjectCommentService {
     userId?: string
   ): Promise<any[]> {
     try {
+      const mainComment = await this._commentRepository.findComment(commentId);
+      if (!mainComment) {
+        throw new CustomError(HttpStatus.NOT_FOUND, "Comment not found");
+      }
+
+      const project = await this._projectRepository.findProject(mainComment.projectId);
+      const projectAuthorId = project?.userId;
+
       const replies = await this._commentRepository.getReplies(commentId, limit);
-      return await this._enrichCommentsWithUsers(replies);
+      const replyIds = replies.map((reply) => reply.id);
+
+      let userLikesMap: Record<string, boolean> = {};
+      if (userId && replyIds.length > 0) {
+        userLikesMap = await this._commentRepository.getUserLikesForComments(userId, replyIds);
+      }
+
+      return await this._enrichCommentsWithUsers(replies, projectAuthorId, userLikesMap);
     } catch (err: any) {
-      logger.error("Error fetching project comment replies", { error: err.message, commentId });
-      throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to fetch replies");
+      logger.error("Error getting project replies", { error: err.message, commentId });
+      throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get replies");
     }
   }
 
-  private async _enrichCommentsWithUsers(comments: ProjectComment[]): Promise<any[]> {
-    if (comments.length === 0) return [];
+  async likeComment(commentId: string, userId: string): Promise<void> {
+    try {
+      const comment = await this._commentRepository.findComment(commentId);
+      if (!comment) {
+        throw new CustomError(HttpStatus.NOT_FOUND, "Comment not found");
+      }
 
-    const userIds = Array.from(new Set(comments.map((c) => c.userId)));
-    const usersMap = new Map<string, any>();
+      const prisma = (await import("../../config/prisma.config")).prisma;
 
-    await Promise.all(
-      userIds.map(async (uid) => {
-        try {
-          const user = await grpcs<typeof userClient, getUserForFeedListingRequest, getUserForFeedListingResponse>(
-            userClient,
-            "getUserForFeedListing",
-            { userId: uid }
-          );
-          usersMap.set(uid, {
-            id: uid,
-            name: user.name,
-            username: user.username,
-            avatar: user.avatar,
-          });
-        } catch (error) {
-          logger.error(`Error fetching user ${uid} for enrichment`, { error });
-          usersMap.set(uid, {
-            id: uid,
-            name: "Unknown User",
-            username: "unknown",
-            avatar: "",
-          });
-        }
-      })
-    );
+      // Check if already liked (idempotent)
+      const existing = await prisma.projectCommentReaction.findFirst({
+        where: { commentId, userId, type: "LIKE", deletedAt: null },
+      });
+      if (existing) {
+        logger.info(`Project comment ${commentId} already liked by ${userId}`);
+        return;
+      }
 
-    return comments.map((c) => ({
-      ...c,
-      user: usersMap.get(c.userId),
-    }));
+      // Upsert the reaction (handles soft-deleted likes)
+      await prisma.projectCommentReaction.upsert({
+        where: { commentId_userId_type: { commentId, userId, type: "LIKE" } },
+        update: { deletedAt: null },
+        create: { commentId, userId, type: "LIKE" },
+      });
+
+      // Increment counter
+      await this._commentRepository.incrementLikesCount(commentId);
+
+      // Emit outbox event for notification
+      const version = this._getEventVersion();
+      await this._outboxService.createOutboxEvent({
+        aggregateType: OutboxAggregateType.PROJECT_COMMENT_LIKE,
+        aggregateId: commentId,
+        type: OutboxEventType.PROJECT_COMMENT_LIKE_CREATED,
+        topic: KAFKA_TOPICS.PROJECT_COMMENT_LIKE_CREATED,
+        key: commentId,
+        payload: {
+          dedupeId: `comment-like-${commentId}-${userId}-${Date.now()}`,
+          commentId,
+          userId,
+          commentAuthorId: comment.userId,
+          projectId: comment.projectId,
+          eventTimestamp: new Date().toISOString(),
+          version,
+          action: "LIKE",
+        },
+      });
+
+      logger.info(`Project comment liked: ${commentId} by ${userId}`);
+    } catch (err: any) {
+      if (err instanceof CustomError) throw err;
+      throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to like comment");
+    }
+  }
+
+  async unlikeComment(commentId: string, userId: string): Promise<void> {
+    try {
+      const comment = await this._commentRepository.findComment(commentId);
+      if (!comment) {
+        throw new CustomError(HttpStatus.NOT_FOUND, "Comment not found");
+      }
+
+      const prisma = (await import("../../config/prisma.config")).prisma;
+
+      // Soft-delete the reaction
+      const deleted = await prisma.projectCommentReaction.updateMany({
+        where: { commentId, userId, type: "LIKE", deletedAt: null },
+        data: { deletedAt: new Date() },
+      });
+
+      if (deleted.count === 0) {
+        // Not liked - return silently (idempotent)
+        logger.info(`Project comment ${commentId} not liked by ${userId}, skipping unlike`);
+        return;
+      }
+
+      // Decrement counter
+      await this._commentRepository.decrementLikesCount(commentId);
+
+      // Emit outbox event for notification removal
+      const version = this._getEventVersion();
+      await this._outboxService.createOutboxEvent({
+        aggregateType: OutboxAggregateType.PROJECT_COMMENT_LIKE,
+        aggregateId: commentId,
+        type: OutboxEventType.PROJECT_COMMENT_LIKE_REMOVED,
+        topic: KAFKA_TOPICS.PROJECT_COMMENT_LIKE_REMOVED,
+        key: commentId,
+        payload: {
+          dedupeId: `comment-unlike-${commentId}-${userId}-${Date.now()}`,
+          commentId,
+          userId,
+          commentAuthorId: comment.userId,
+          projectId: comment.projectId,
+          eventTimestamp: new Date().toISOString(),
+          version,
+          action: "UNLIKE",
+        },
+      });
+
+      logger.info(`Project comment unliked: ${commentId} by ${userId}`);
+    } catch (err: any) {
+      if (err instanceof CustomError) throw err;
+      throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to unlike comment");
+    }
+  }
+
+  async reportComment(commentId: string, userId: string, reason: string): Promise<void> {
+    try {
+      const comment = await this._commentRepository.findComment(commentId);
+      if (!comment) {
+        throw new CustomError(HttpStatus.NOT_FOUND, "Comment not found");
+      }
+
+      // Upsert a project report for the comment
+      const prisma = (await import("../../config/prisma.config")).prisma;
+      const reportReason = reason as ReportReason;
+      await prisma.projectReport.upsert({
+        where: {
+          reporterId_projectId_commentId: {
+            reporterId: userId,
+            projectId: comment.projectId,
+            commentId,
+          },
+        },
+        update: { reason: reportReason },
+        create: {
+          reporterId: userId,
+          projectId: comment.projectId,
+          commentId,
+          reason: reportReason,
+        },
+      });
+      logger.info(`Project comment reported: ${commentId} by ${userId}`);
+    } catch (err: any) {
+      if (err instanceof CustomError) throw err;
+      throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to report comment");
+    }
+  }
+
+  private _extractCommentIds(comments: any[]): string[] {
+    const ids: string[] = [];
+    const extract = (comment: any) => {
+      ids.push(comment.id);
+      if (comment.Replies && comment.Replies.length > 0) {
+        comment.Replies.forEach((reply: any) => extract(reply));
+      }
+    };
+    comments.forEach((comment) => extract(comment));
+    return ids;
   }
 }

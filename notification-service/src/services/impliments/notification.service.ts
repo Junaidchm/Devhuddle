@@ -284,6 +284,35 @@ export class NotificationService implements INotificationService {
     }
   }
 
+  async createGroupAddedNotification(
+    creatorId: string,
+    recipientId: string,
+    conversationId: string,
+    groupName: string,
+    version: number
+  ): Promise<void> {
+    try {
+      await this._notificationRepository.createGroupAddedNotification(
+        creatorId,
+        recipientId,
+        conversationId,
+        groupName,
+        version
+      );
+      logger.info(
+        `GroupAdded notification created for user ${recipientId} by ${creatorId} in group ${conversationId}`
+      );
+    } catch (error: unknown) {
+      logger.error("Error in notification service - createGroupAddedNotification", {
+        error: (error as Error).message,
+        creatorId,
+        recipientId,
+        conversationId,
+      });
+      throw error;
+    }
+  }
+
   async createHubJoinRequestNotification(
     requesterId: string,
     recipientId: string,

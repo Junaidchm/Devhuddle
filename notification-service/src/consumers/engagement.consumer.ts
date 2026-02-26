@@ -132,6 +132,7 @@ interface ProjectCommentCreatedEvent extends BaseEngagementEvent {
   parentCommentId?: string;
   parentCommentAuthorId?: string;
   content: string;
+  mentionedUserIds: string[];
   action: "PROJECT_COMMENT_CREATED";
 }
 
@@ -167,6 +168,31 @@ interface ProjectReportedEvent extends BaseEngagementEvent {
   reason: string;
 }
 
+interface ProjectSentEvent extends BaseEngagementEvent {
+  projectId: string;
+  senderId: string;
+  recipientId: string;
+  projectAuthorId: string;
+  message?: string;
+  action: "PROJECT_SENT" | "PROJECT_SHARED";
+}
+
+interface ProjectCommentLikeCreatedEvent extends BaseEngagementEvent {
+  commentId: string;
+  userId: string;
+  commentAuthorId: string;
+  projectId: string;
+  action: "LIKE" | "LIKE_RESTORED";
+}
+
+interface ProjectCommentLikeRemovedEvent extends BaseEngagementEvent {
+  commentId: string;
+  userId: string;
+  commentAuthorId: string;
+  projectId: string;
+  action: "UNLIKE";
+}
+
 export async function startEngagementConsumer(
   wsService: WebSocketService
 ): Promise<void> {
@@ -194,6 +220,9 @@ export async function startEngagementConsumer(
       KAFKA_TOPICS.PROJECT_COMMENT_DELETED,
       KAFKA_TOPICS.PROJECT_SHARE_CREATED,
       KAFKA_TOPICS.PROJECT_REPORT_CREATED,
+      KAFKA_TOPICS.PROJECT_SENT,
+      KAFKA_TOPICS.PROJECT_COMMENT_LIKE_CREATED,
+      KAFKA_TOPICS.PROJECT_COMMENT_LIKE_REMOVED,
     ],
     fromBeginning: false,
   });
@@ -287,8 +316,17 @@ export async function startEngagementConsumer(
           case KAFKA_TOPICS.PROJECT_SHARE_CREATED:
             await handleProjectShareCreated(event as ProjectShareCreatedEvent, repo);
             break;
+          case KAFKA_TOPICS.PROJECT_SENT:
+            await handleProjectSent(event as ProjectSentEvent, repo);
+            break;
           case KAFKA_TOPICS.PROJECT_REPORT_CREATED:
             await handleProjectReported(event as ProjectReportedEvent, repo);
+            break;
+          case KAFKA_TOPICS.PROJECT_COMMENT_LIKE_CREATED:
+            await handleProjectCommentLikeCreated(event as ProjectCommentLikeCreatedEvent, repo);
+            break;
+          case KAFKA_TOPICS.PROJECT_COMMENT_LIKE_REMOVED:
+            await handleProjectCommentLikeRemoved(event as ProjectCommentLikeRemovedEvent, repo);
             break;
           default:
             logger.warn(`Unhandled topic: ${topic}`);
@@ -665,6 +703,7 @@ async function handleProjectCommentCreated(
     projectAuthorId,
     parentCommentId,
     parentCommentAuthorId,
+    mentionedUserIds,
     version,
   } = event;
 
@@ -692,6 +731,27 @@ async function handleProjectCommentCreated(
       version
     );
     logger.info(`Comment reply notification created for parent comment author ${parentCommentAuthorId}`);
+  }
+
+  // Notify mentioned users
+  if (
+    mentionedUserIds &&
+    Array.isArray(mentionedUserIds) &&
+    mentionedUserIds.length > 0
+  ) {
+    for (const mentionedUserId of mentionedUserIds) {
+      if (userId !== mentionedUserId) {
+        await repo.createMentionNotification(
+          userId,
+          mentionedUserId,
+          projectId,
+          commentId,
+          "COMMENT" as any, // Project comment mentions are still comments
+          version
+        );
+        logger.info(`Project mention notification created for user ${mentionedUserId}`);
+      }
+    }
   }
 }
 
@@ -741,4 +801,93 @@ async function handleProjectReported(
   );
 
   logger.info(`Project report notification sent to author ${projectAuthorId}`, { reportId, reason });
+}
+
+async function handleProjectSent(
+  event: ProjectSentEvent,
+  repo: NotificationsRepository
+): Promise<void> {
+  const { projectId, senderId, recipientId, action, version } = event;
+
+  if (senderId === recipientId) return;
+
+  const versionNumber = version || Date.now();
+
+  if (action === "PROJECT_SHARED") {
+    await repo.createShareNotification(senderId, recipientId, projectId, versionNumber, "PROJECT");
+    logger.info(`Project share notification created for author ${recipientId} triggered by ${senderId}`, {
+      projectId,
+      authorId: recipientId,
+      sharerId: senderId,
+      version: versionNumber
+    });
+  } else {
+    await repo.createProjectSentNotification(
+      senderId,
+      recipientId,
+      projectId,
+      event.message,
+      versionNumber
+    );
+    logger.info(`Project sent notification created for recipient ${recipientId} from ${senderId}`, {
+      projectId,
+      recipientId,
+      senderId,
+      version: versionNumber
+    });
+  }
+}
+
+async function handleProjectCommentLikeCreated(
+  event: ProjectCommentLikeCreatedEvent,
+  repo: NotificationsRepository
+): Promise<void> {
+  const { commentId, userId, commentAuthorId, projectId, version } = event;
+
+  // Don't notify if user liked their own comment
+  if (userId === commentAuthorId) return;
+
+  const versionNumber = version || Date.now();
+
+  await repo.createLikeNotification(
+    userId,
+    commentAuthorId,
+    commentId,
+    "COMMENT",
+    versionNumber,
+    projectId,                        // contextId = projectId
+    { projectId, commentId }          // metadata
+  );
+
+  logger.info(`Project comment like notification created for ${commentAuthorId}`, {
+    commentId,
+    projectId,
+    likerId: userId,
+    version: versionNumber,
+  });
+}
+
+async function handleProjectCommentLikeRemoved(
+  event: ProjectCommentLikeRemovedEvent,
+  repo: NotificationsRepository
+): Promise<void> {
+  const { commentId, userId, commentAuthorId, version } = event;
+
+  // Don't process if user unliked their own comment
+  if (userId === commentAuthorId) return;
+
+  const versionNumber = version || Date.now();
+
+  await repo.deleteLikeNotification(
+    userId,
+    commentAuthorId,
+    commentId,
+    "COMMENT",
+    versionNumber
+  );
+
+  logger.info(`Project comment like notification removed for ${commentAuthorId}`, {
+    commentId,
+    version: versionNumber,
+  });
 }

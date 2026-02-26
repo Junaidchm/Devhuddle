@@ -45,7 +45,7 @@ export async function validateMediaOwnership(
   userId: string
 ): Promise<MediaValidationResponse> {
   try {
-    const response = await fetch(`${MEDIA_SERVICE_URL}/api/v1/media/validate`, {
+    const response = await fetch(`${MEDIA_SERVICE_URL}/media/validate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -85,7 +85,7 @@ export async function linkMediaToPost(
   userId: string
 ): Promise<void> {
   try {
-    const response = await fetch(`${MEDIA_SERVICE_URL}/api/v1/media/link-to-post`, {
+    const response = await fetch(`${MEDIA_SERVICE_URL}/media/link-to-post`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

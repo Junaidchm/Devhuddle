@@ -35,9 +35,18 @@ export const KAFKA_TOPICS = {
   PROJECT_COMMENT_EDITED_DLQ: "project.comment.edited.v1-dlq",
   PROJECT_COMMENT_DELETED_DLQ: "project.comment.deleted.v1-dlq",
   
+  // Project comment like events
+  PROJECT_COMMENT_LIKE_CREATED: "project.comment.like.created.v1",
+  PROJECT_COMMENT_LIKE_REMOVED: "project.comment.like.removed.v1",
+  PROJECT_COMMENT_LIKE_CREATED_DLQ: "project.comment.like.created.v1-dlq",
+  PROJECT_COMMENT_LIKE_REMOVED_DLQ: "project.comment.like.removed.v1-dlq",
   // Project share events
   PROJECT_SHARE_CREATED: "project.share.created.v1",
   PROJECT_SHARE_CREATED_DLQ: "project.share.created.v1-dlq",
+  
+  // Project send events
+  PROJECT_SENT: "project.sent.v1",
+  PROJECT_SENT_DLQ: "project.sent.v1-dlq",
   
   // Project report events
   PROJECT_REPORT_CREATED: "project.report.created.v1",
@@ -53,5 +62,8 @@ export const KAFKA_TOPICS = {
   ADMIN_ACTION_ENFORCED: "admin-action-enforced",
   USER_STATE_TOGGLED: "user-state-toggled",
   USER_DELETED: "user-events",
+
+  // Mention events
+  USER_MENTIONED: "user-mentioned",
 } as const;
 

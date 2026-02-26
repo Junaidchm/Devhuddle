@@ -213,6 +213,26 @@ export class NotificationsRepository
     );
   }
 
+  async createProjectSentNotification(
+    senderId: string,
+    recipientId: string,
+    projectId: string,
+    message: string | undefined,
+    version: number
+  ): Promise<void> {
+    await this._createOrUpdateNotification(
+      NotificationType.NEW_MESSAGE,
+      EntityType.PROJECT,
+      projectId,
+      senderId,
+      recipientId,
+      version,
+      message ? "sent you a project with a message" : "sent you a project",
+      undefined,
+      { projectId, message }
+    );
+  }
+
   /**
    * Create chat notification
    * Uses NEW_MESSAGE type and MESSAGE entity type
@@ -1498,6 +1518,26 @@ export class NotificationsRepository
       default:
         return "interacted with your content";
     }
+  }
+
+  async createGroupAddedNotification(
+    creatorId: string,
+    recipientId: string,
+    conversationId: string,
+    groupName: string,
+    version: number
+  ): Promise<void> {
+    await this._createOrUpdateNotification(
+      NotificationType.NEW_MESSAGE,
+      EntityType.HUB,
+      conversationId, // entityId = the group/conversation id
+      creatorId,      // actor = the creator who added the recipient
+      recipientId,
+      version,
+      `added you to a group: "${groupName}"`,
+      undefined,
+      { conversationId, groupName }
+    );
   }
 
   async createHubJoinRequestNotification(

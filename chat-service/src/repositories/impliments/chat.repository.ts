@@ -132,9 +132,10 @@ export class ChatRepository extends BaseRepository<
             const participantHash = participantIds.sort().join(',');
 
             // Attempt to find by hash (fast & unique)
-            const existingConversation = await prisma.conversation.findUnique({
+            const existingConversation = await prisma.conversation.findFirst({
                 where: {
-                    participantHash
+                    participantHash,
+                    type: 'DIRECT'
                 },
                 include: {
                     participants: true
@@ -237,6 +238,7 @@ export class ChatRepository extends BaseRepository<
             const conversations = await prisma.conversation.findMany({
                 where: {
                     isSuspended: false,
+                    deletedAt: null, // ✅ Exclude admin-deleted groups/conversations
                     participants: {
                         some: {
                             userId,
@@ -625,7 +627,10 @@ export class ChatRepository extends BaseRepository<
                 onlyAdminsCanEditInfo,
                 topics,
                 memberCount: allParticipants.length,
-                participantHash, // Groups also get hash for easier debugging/consistency
+                // ✅ FIX: Groups should NOT have participantHash to avoid collision with direct chats
+                // Direct chats use participantHash to prevent duplicate 1-1 conversations.
+                // Groups can have identical members but must be distinct entities.
+                participantHash: null, 
                 participants: {
                     create: [
                         { userId: creatorId, role: 'ADMIN' },
@@ -686,7 +691,7 @@ export class ChatRepository extends BaseRepository<
             isSuspended: false,
             deletedAt: null,
             participants: {
-                some: { userId }
+                some: { userId, deletedAt: null } // ✅ Also exclude if user has left (participant.deletedAt set)
             },
             ...(query ? {
                 OR: [
@@ -755,6 +760,8 @@ export class ChatRepository extends BaseRepository<
                 SELECT unnest(topics) as topic, count(*)::int as count 
                 FROM "Conversation" 
                 WHERE type = 'GROUP' 
+                  AND "deletedAt" IS NULL
+                  AND "isSuspended" = false
                 GROUP BY topic 
                 ORDER BY count DESC 
                 LIMIT ${limit}
