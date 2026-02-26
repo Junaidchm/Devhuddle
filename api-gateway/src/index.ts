@@ -23,10 +23,14 @@ import { checkUserBlockBlackList } from "./utils/redis.actions";
 
 import cookieParser from "cookie-parser";
 
+import { headerSanitizer } from "./middleware/header-sanitizer.middleware";
+import { handleWebSocketUpgrade } from "./handlers/websocket.handler";
+
 dotenv.config();
 
 // create app
 const app = express();
+app.use(headerSanitizer); // Register first to strip spoofed headers
 app.use(cookieParser());
 const server = createServer(app);
 
@@ -141,73 +145,16 @@ app.get("/favicon.ico", (req: Request, res: Response) => {
   res.status(204).end();
 });
 
-// WebSocket upgrade handler (Manual handling for Async Auth)
-server.on("upgrade", async (req, socket, head) => {
-  const urlPath = req.url || "";
-  logger.info(`WebSocket upgrade request: ${urlPath}`);
+// WebSocket upgrade handler (Delegated to specialized handler for Async Auth)
+server.on("upgrade", handleWebSocketUpgrade);
 
-  // 1. Route to correct proxy
-  let proxy: any = null;
-  if (urlPath.startsWith("/api/v1/chat")) {
-    proxy = chatServiceProxy;
-  } else if (urlPath.startsWith("/api/v1/notifications")) {
-    proxy = notificationServiceProxy;
-  } else {
-    logger.warn(`Unknown WebSocket path: ${urlPath}`);
-    socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
-    socket.destroy();
-    return;
-  }
-
-  // 2. Extract Token
-  // req.url is relative, construct full URL for parsing
-  let token: string | null = null;
-  try {
-    const urlObj = new URL(urlPath, `http://${req.headers.host || "localhost"}`);
-    token = urlObj.searchParams.get("token");
-  } catch (e) {
-    logger.error("Failed to parse WebSocket URL", { error: e });
-  }
-
-  if (!token) {
-    logger.warn("WebSocket connection rejected: Missing token");
-    socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
-    socket.destroy();
-    return;
-  }
-
-  // 3. Authenticate (Async)
-  try {
-    const decoded = await verifyAccessToken(token);
-    
-    if (!decoded || !decoded.id) {
-      throw new Error("Invalid token or signature");
-    }
-
-    // 3b. Check if user is blocked
-    const isBlocked = await checkUserBlockBlackList(decoded.id);
-    if (isBlocked) {
-      logger.warn(`WebSocket connection rejected: user ${decoded.id} is blocked`);
-      socket.write("HTTP/1.1 403 Forbidden\r\n\r\n");
-      socket.destroy();
-      return;
-    }
-
-    // 4. Inject Identity Headers
-    // Modify the request headers before passing to proxy
-    req.headers["x-user-id"] = decoded.id;
-    req.headers["x-user-data"] = JSON.stringify(decoded);
-
-    // 5. Upgrade
-    proxy.upgrade(req, socket, head);
-
-    logger.info(`WebSocket authenticated and upgraded for user ${decoded.id}`);
-
-  } catch (error) {
-    logger.warn(`WebSocket authentication failed: ${error}`);
-    socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
-    socket.destroy();
-  }
+// Handle 404 - Not Found
+app.use((req: Request, res: Response) => {
+  res.status(HttpStatus.NOT_FOUND).json({
+    success: false,
+    status: HttpStatus.NOT_FOUND,
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
+  });
 });
 
 // Error handling middleware

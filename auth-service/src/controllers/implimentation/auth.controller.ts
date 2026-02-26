@@ -559,15 +559,15 @@ export class AuthController implements IAuthController {
       const response = await this.verifyRefreshToken({ email: decoded.email });
       
       if (response.jwtpayload) {
-        const jti = generateUuid4();
-        // Set access token cookie and get token for response
-        const tokenResult = await setAccesToken(res, response.jwtpayload, jti);
+        // Generate new tokens (rotating both)
+        const tokenResult = await setAuthToken(response.jwtpayload, res);
         
         res.status(HttpStatus.OK).json({
           message: response.message,
           user: {
             ...response.jwtpayload,
-            accessToken: tokenResult?.accessToken, // Include in response for NextAuth
+            accessToken: tokenResult?.accessToken,
+            refreshToken: tokenResult?.refreshToken,
           },
         });
       } else {

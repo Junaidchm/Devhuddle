@@ -681,9 +681,11 @@ export class ChatService implements IChatService {
             // 5. Broadcast group_deleted to all connected members via Redis pub/sub
             //    Each socket-gateway subscriber will emit the event to connected clients
             await redisPublisher.publish(
-                `chat:${conversationId}`,
+                'conversation_event', // Use conversation_event for reliable targeted delivery
                 JSON.stringify({
+                    conversationId,
                     type: 'group_deleted',
+                    targetUserIds: participantIds, // Explicit targeting for multi-pod consistency
                     data: {
                         conversationId,
                         deletedBy: userId,

@@ -58,7 +58,7 @@ router
   // Update profile - userId comes from x-user-data header (API Gateway)
   .patch("/profile", validateDto(UpdateProfileDto), authController.updateProfileHttp.bind(authController))
   
-  // Refresh token - email comes from x-user-data header (API Gateway)
+  // Refresh token - uses refresh token from cookies or body
   .post("/refresh", validateDto(RefreshTokenDto), authController.refreshTokenHttp.bind(authController))
   
   // Generate presigned URL - userId comes from x-user-data header (API Gateway)
