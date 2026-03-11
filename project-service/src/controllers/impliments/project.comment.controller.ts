@@ -89,8 +89,7 @@ export class ProjectCommentController {
       const { projectId } = req.params;
       const limit = parseInt(req.query.limit as string) || 20;
       const offset = parseInt(req.query.offset as string) || 0;
-      const userId = req.headers["x-user-id"] as string;
-
+      const userId = req.headers["x-user-data"] ? getUserIdFromRequest(req) : undefined;
       const comments = await this._commentService.getComments(
         projectId as string,
         limit,
@@ -115,8 +114,7 @@ export class ProjectCommentController {
     try {
       const { commentId } = req.params;
       const limit = parseInt(req.query.limit as string) || 10;
-      const userId = req.headers["x-user-id"] as string;
-
+      const userId = req.headers["x-user-data"] ? getUserIdFromRequest(req) : undefined;
       const replies = await this._commentService.getReplies(
         commentId as string,
         limit,
@@ -126,6 +124,69 @@ export class ProjectCommentController {
       res.status(HttpStatus.OK).json({
         success: true,
         data: replies,
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  async likeComment(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { commentId } = req.params;
+      const userId = getUserIdFromRequest(req);
+      await this._commentService.likeComment(commentId as string, userId);
+
+      res.status(HttpStatus.OK).json({
+        success: true,
+        message: "Comment liked successfully",
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  async unlikeComment(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { commentId } = req.params;
+      const userId = getUserIdFromRequest(req);
+      await this._commentService.unlikeComment(commentId as string, userId);
+
+      res.status(HttpStatus.OK).json({
+        success: true,
+        message: "Comment unliked successfully",
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  async reportComment(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { commentId } = req.params;
+      const { reason } = req.body;
+      const userId = req.headers["x-user-id"] as string;
+
+      await this._commentService.reportComment(
+        commentId as string,
+        userId,
+        reason
+      );
+
+      res.status(HttpStatus.OK).json({
+        success: true,
+        message: "Comment reported successfully",
       });
     } catch (error: unknown) {
       next(error);

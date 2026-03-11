@@ -17,6 +17,7 @@ import {
   OutboxEventType,
 } from "@prisma/client";
 import { userClient } from "../../config/grpc.client";
+import { IFeedService } from "../interfaces/IFeedService";
 import { grpcs } from "../../utils/grpc.client.call.util";
 import {
   CheckFollowRequest,
@@ -32,7 +33,8 @@ export class CommentService implements ICommentService {
     private _postRepository: IPostRepository,
     private _mentionService: IMentionService,
     private _outboxService: IOutboxService,
-    private likeRepository?: ILikeRepository
+    private likeRepository?: ILikeRepository,
+    private _feedService?: IFeedService
   ) {}
 
   /**
@@ -163,6 +165,11 @@ export class CommentService implements ICommentService {
       // Invalidate cache
       await RedisCacheService.invalidatePostCounter(postId, "comments");
       await RedisCacheService.invalidateCommentList(postId);
+
+      // Invalidate feed cache
+      if (this._feedService) {
+        await this._feedService.recalculatePostScores(postId);
+      }
 
       // Process mentions
       const mentionedUserIds = await this._mentionService.processMentions(
@@ -337,6 +344,11 @@ export class CommentService implements ICommentService {
       // Invalidate cache
       await RedisCacheService.invalidatePostCounter(comment.postId, "comments");
       await RedisCacheService.invalidateCommentList(comment.postId);
+
+      // Invalidate feed cache
+      if (this._feedService) {
+        await this._feedService.recalculatePostScores(comment.postId);
+      }
 
       // Get event version and timestamp for ordering
       const version = this._getEventVersion();

@@ -34,6 +34,8 @@ export const KAFKA_TOPICS = {
   PROJECT_COMMENT_CREATED_DLQ: "project.comment.created.v1-dlq",
   PROJECT_COMMENT_EDITED_DLQ: "project.comment.edited.v1-dlq",
   PROJECT_COMMENT_DELETED_DLQ: "project.comment.deleted.v1-dlq",
+  PROJECT_COMMENT_LIKE_CREATED: "project.comment.like.created.v1",
+  PROJECT_COMMENT_LIKE_REMOVED: "project.comment.like.removed.v1",
   
   // Project share events
   PROJECT_SHARE_CREATED: "project.share.created.v1",

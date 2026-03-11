@@ -1,104 +1,30 @@
-import { Response } from "express";
 import { generateAccessToken, GenerateRefreshToken } from "./jwt.util";
-import { jwtPayload, jwtUserFilter } from "../types/auth";
+import { jwtUserFilter } from "../types/auth";
 import { generateUuid4 } from "./uuid.util";
 
-const generateAccessTTL = (minute: number): Date => {
-  return new Date(new Date().getTime() + minute * 60 * 1000);
-};
-
-const generateRefresTTL = (days: number): Date => {
-  return new Date(new Date().getTime() + days * 24 * 60 * 60 * 1000);
-};
-
-
-
-export const setCookies = (
-  accessToken: string,
-  refreshToken: string,
-  res: Response
-) => {
-  res.clearCookie("access_token", {
-    domain: "localhost",
-    httpOnly: true,
-    path: "/",
-  });
-
-  res.clearCookie("refresh_token", {
-    domain: "localhost",
-    httpOnly: true,
-    path: "/",
-  });
-  const expiryAccessToken = generateAccessTTL(15);
-  const expiryRefreshToken = generateRefresTTL(7);
-
-  res.cookie("access_token", accessToken, {
-    domain: "localhost",
-    httpOnly: true,
-    path: "/",
-    expires: expiryAccessToken,
-    sameSite: "lax",
-  });
-
-  res.cookie("refresh_token", refreshToken, {
-    domain: "localhost",
-    httpOnly: true,
-    path: "/",
-    expires: expiryRefreshToken,
-    sameSite: "lax",
-  });
-
-  return;
-};
-
+/**
+ * Generates an access token and returns it.
+ * (No longer mutates Express Response cookies)
+ */
 export const setAccesToken = async (
-  res: Response,
   user: jwtUserFilter,
   jti: string
 ) => {
-  const expiryAccessToken = generateAccessTTL(15);
   const accessToken = generateAccessToken(user, jti);
-  res.cookie("access_token", accessToken, {
-    domain: "localhost",
-    httpOnly: true,
-    path: "/",
-    expires: expiryAccessToken,
-    sameSite: "lax",
-  });
-  // Return token so it can be included in response body (for NextAuth)
   return { accessToken };
 };
 
-export const setAuthToken = async (userData: jwtUserFilter, res: Response) => {
+/**
+ * Generates both access and refresh tokens and returns them.
+ * (No longer mutates Express Response cookies)
+ */
+export const setAuthToken = async (userData: jwtUserFilter) => {
   try {
     const accessToken = generateAccessToken(userData, generateUuid4());
     const refreshToken = GenerateRefreshToken(userData, generateUuid4());
-    setCookies(accessToken, refreshToken, res);
-    // Return tokens so they can be included in response body (for NextAuth)
     return { accessToken, refreshToken };
   } catch (error) {
     console.log("Error while setting auth tokens");
-    throw error;
-  }
-};
-
-export const clearCookies = (res: Response): void => {
-  try {
-    res.clearCookie("access_token", {
-      domain: "localhost",
-      httpOnly: true,
-      path: "/",
-      sameSite: "lax",
-    });
-
-    res.clearCookie("refresh_token", {
-      domain: "localhost",
-      httpOnly: true,
-      path: "/",
-      sameSite: "lax",
-    });
-  } catch (error) {
-    console.log("error  while clearing cookie");
     throw error;
   }
 };

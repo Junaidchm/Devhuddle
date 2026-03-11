@@ -19,12 +19,12 @@ export const checkIsRevoked = async (jti: string): Promise<boolean> => {
   }
 };
 
-// Extract jti values from cookies object
-const extractRefreshAndAccess = (
-  cookies: Record<string, any>
-): { jtiAccess?: string; jtiRefresh?: string } => {
-  const accessToken = cookies.access_token;
-  const refreshToken = cookies.refresh_token;
+// Extract jti values from tokens object
+const extractRefreshAndAccess = (tokens: {
+  accessToken?: string;
+  refreshToken?: string;
+}): { jtiAccess?: string; jtiRefresh?: string } => {
+  const { accessToken, refreshToken } = tokens;
 
   const jtiAccess = accessToken
     ? (jwt.decode(accessToken) as any)?.jti
@@ -36,12 +36,13 @@ const extractRefreshAndAccess = (
   return { jtiAccess, jtiRefresh };
 };
 
-//  Blacklist access and refresh tokens using jti values from cookies
-export const setJtiAsBlackListed = async (
-  cookies: Record<string, any>
-): Promise<void> => {
+// Blacklist access and refresh tokens using jti values from explicit tokens
+export const setJtiAsBlackListed = async (tokens: {
+  accessToken?: string;
+  refreshToken?: string;
+}): Promise<void> => {
   try {
-    const { jtiAccess, jtiRefresh } = extractRefreshAndAccess(cookies);
+    const { jtiAccess, jtiRefresh } = extractRefreshAndAccess(tokens);
 
     if (!jtiAccess && !jtiRefresh) {
       logger.warn("No valid jti found in provided cookies.");

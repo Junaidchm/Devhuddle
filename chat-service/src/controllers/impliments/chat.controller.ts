@@ -273,7 +273,7 @@ export class ChatController implements IChatController {
     async deleteGroup(req: Request, res: Response): Promise<void> {
     try {
       const userId = JSON.parse(req.headers["x-user-data"] as string).id;
-      const conversationId = req.params.conversationId as string;
+      const conversationId = req.params.id as string; // ✅ Fixed: match route param name ':id' from chat.routes.ts
 
       if (!userId) {
         res.status(401).json({
@@ -286,7 +286,7 @@ export class ChatController implements IChatController {
       if (!conversationId) {
         res.status(400).json({
           success: false,
-          message: 'Conversation ID is required'
+          message: 'Group ID is required'
         });
         return;
       }

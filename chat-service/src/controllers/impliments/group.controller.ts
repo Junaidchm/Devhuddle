@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { IGroupService } from "../../services/interfaces/IGroupService";
+import logger from "../../utils/logger.util";
 
 export class GroupController {
     constructor(private _groupService: IGroupService) {}
@@ -9,6 +10,8 @@ export class GroupController {
             const userId = JSON.parse(req.headers["x-user-data"] as string).id;
             const { name, participantIds, icon, onlyAdminsCanPost, onlyAdminsCanEditInfo, topics } = req.body;
             
+            logger.info("Creating group", { userId, name, participantsCount: participantIds?.length });
+
             const group = await this._groupService.createGroup(
                 userId, 
                 name, 
@@ -20,6 +23,11 @@ export class GroupController {
             );
             res.status(201).json(group);
         } catch (error) {
+            logger.error("Failed to create group", { 
+                error: (error as Error).message,
+                stack: (error as Error).stack,
+                body: req.body 
+            });
             res.status(400).json({ error: (error as Error).message });
         }
     }

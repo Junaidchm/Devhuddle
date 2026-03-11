@@ -220,11 +220,14 @@ export class ProjectService implements IProjectService {
       }));
 
       const projectProto = this.mapToProjectProto(project);
+      
+      // Fallback to database media if media service returns nothing
+      const finalMedia = attachments.length > 0 ? attachments : projectProto.media;
 
       return {
         project: {
           ...projectProto,
-          media: attachments,
+          media: finalMedia,
         }
       };
     } catch (err: unknown) {

@@ -17,6 +17,9 @@ export const ROUTES = {
     LIKE_COMMENT: (commentId: string) => `${API_VERSION}/engagement/comments/${commentId}/likes`,
     UNLIKE_COMMENT: (commentId: string) => `${API_VERSION}/engagement/comments/${commentId}/likes`,
   },
+  COMMENTS: {
+    BASE: `${API_VERSION}/comments`,
+  },
   // Auth Service Routes
   AUTH: {
     BASE: `${API_VERSION}/auth`,

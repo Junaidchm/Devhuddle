@@ -18,4 +18,5 @@ export interface INotificationService {
     createHubJoinRequestNotification(requesterId: string, recipientId: string, hubId: string, requestId: string, version: number): Promise<void>;
     createHubJoinApprovedNotification(adminId: string, recipientId: string, hubId: string, requestId: string, version: number): Promise<void>;
     createHubJoinRejectedNotification(adminId: string, recipientId: string, hubId: string, requestId: string, version: number): Promise<void>;
+    createGroupAddedNotification(issuerId: string, recipientId: string, conversationId: string, version: number): Promise<void>;
 }

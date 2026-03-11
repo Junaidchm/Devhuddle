@@ -54,13 +54,11 @@ export class GroupService implements IGroupService {
       topics
     );
 
-    // ✅ Auto-assign creator as ADMIN to prevent owner/admin role confusion
-    await this._chatRepository.updateParticipantRole(conversation.id, creatorId, GroupRole.ADMIN);
-
     // Enrich with user profiles
     const userProfilesMap = await authServiceClient.getUserProfiles(uniqueParticipants);
 
-    const enrichedConversation: ConversationWithMetadataDto = {
+    const enrichedConversation: ConversationWithMetadataDto & { id: string } = {
+        id: conversation.id, // ✅ Add id for compatibility with some frontend mapping
         conversationId: conversation.id,
         type: conversation.type as 'GROUP', 
         name: conversation.name,
@@ -87,15 +85,20 @@ export class GroupService implements IGroupService {
         createdAt: conversation.createdAt
     };
 
-    // ✅ Inject SYSTEM message for group creation via Saga
-    await this._messageSagaService.sendSystemMessage(
+    // ✅ Inject SYSTEM message for group creation via Saga (Non-blocking)
+    this._messageSagaService.sendSystemMessage(
         conversation.id,
         "group_created",
         creatorId
-    );
+    ).catch(err => {
+        logger.error("Failed to send system message for group creation", { 
+            conversationId: conversation.id, 
+            error: err.message 
+        });
+    });
 
-    // Emit event
-    this.publishEvent(conversation.id, 'group_created', enrichedConversation);
+    // Emit event with targeted participants for instant sidebar update
+    this.publishEvent(conversation.id, 'group_created', enrichedConversation, uniqueParticipants);
 
     return enrichedConversation;
   }
@@ -182,7 +185,7 @@ export class GroupService implements IGroupService {
       icon: group.icon,
       memberCount: (group as any).memberCount || group.participants.length,
       topics: group.topics,
-      isMember: false, // Always false for discover groups
+      isMember: group.participants.some(p => p.userId === userId && p.deletedAt === null),
       isRequestPending: pendingHubIds.has(group.id),
       createdAt: group.createdAt
     }));
@@ -249,12 +252,16 @@ export class GroupService implements IGroupService {
         // Update member count atomically
         const newMemberCount = await this._chatRepository.updateMemberCount(groupId, addedUserIds.length);
 
+        // Efficiently find all current participant IDs for targeted broadcast
+        const currentParticipants = await this._chatRepository.findConversationById(groupId);
+        const allTargetIds = currentParticipants?.participants.map(p => p.userId) || [];
+
         this.publishEvent(groupId, 'participants_added', {
             conversationId: groupId,
             addedBy: adminId,
             participants: addedParticipants,
             memberCount: newMemberCount
-        });
+        }, allTargetIds);
     }
   }
 
@@ -295,12 +302,16 @@ export class GroupService implements IGroupService {
     // Update member count atomically
     const newMemberCount = await this._chatRepository.updateMemberCount(groupId, -1);
 
+    // Efficiently find all current participant IDs for targeted broadcast (before removal)
+    const currentParticipants = await this._chatRepository.findConversationById(groupId);
+    const allTargetIds = currentParticipants?.participants.map(p => p.userId) || [];
+
     this.publishEvent(groupId, 'participant_removed', {
       conversationId: groupId,
       removedUserId: targetUserId,
       removedBy: adminId,
       memberCount: newMemberCount
-    });
+    }, allTargetIds);
   }
 
   async promoteToAdmin(groupId: string, adminId: string, targetUserId: string): Promise<void> {
@@ -335,11 +346,12 @@ export class GroupService implements IGroupService {
         adminId
     );
 
-    await this.publishEvent(groupId, 'role_updated', {
+    const conversation = await this._chatRepository.findConversationById(groupId);
+    this.publishEvent(groupId, 'role_updated', {
         conversationId: groupId,
         userId: targetUserId,
         role: 'ADMIN'
-    });
+    }, conversation?.participants.map(p => p.userId) || []);
   }
 
   async demoteToMember(groupId: string, adminId: string, targetUserId: string): Promise<void> {
@@ -371,11 +383,11 @@ export class GroupService implements IGroupService {
         adminId
     );
 
-    await this.publishEvent(groupId, 'role_updated', {
+    this.publishEvent(groupId, 'role_updated', {
         conversationId: groupId,
         userId: targetUserId,
         role: 'MEMBER'
-    });
+    }, conversation?.participants.map(p => p.userId) || []);
   }
 
   async updateGroupInfo(
@@ -417,7 +429,7 @@ export class GroupService implements IGroupService {
         conversationId: groupId,
         updates: data,
         updatedBy: adminId
-    });
+    }, conversation.participants.map(p => p.userId));
 
     return updated;
   }
@@ -455,7 +467,7 @@ export class GroupService implements IGroupService {
                     conversationId: groupId,
                     userId: newAdmin.userId,
                     role: 'ADMIN'
-                });
+                }, conversation.participants.map(p => p.userId));
             }
         }
     }
@@ -479,18 +491,19 @@ export class GroupService implements IGroupService {
       conversationId: groupId,
       userId: userId,
       memberCount: newMemberCount
-    });
+    }, conversation?.participants.map(p => p.userId) || []);
   }
 
 
-  private async publishEvent(conversationId: string, type: string, data: any) {
+  private async publishEvent(conversationId: string, type: string, data: any, targetUserIds?: string[]) {
       try {
           const payload = JSON.stringify({
               type,
-              data
+              data,
+              targetUserIds // Include targets for direct WebSocket delivery
           });
           await redisPublisher.publish(`chat:${conversationId}`, payload);
-          logger.info(`Published group event: ${type}`, { conversationId });
+          logger.info(`Published group event: ${type}`, { conversationId, targets: targetUserIds?.length });
       } catch (error) {
           logger.error(`Failed to publish group event: ${type}`, { error: (error as Error).message });
       }

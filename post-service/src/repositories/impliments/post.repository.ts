@@ -225,10 +225,20 @@ export class PostRepository
               userClient.getUserForFeedListing(
                 { userId: post.userId },
                 (err, response) => {
-                  // if (err) {
-                  //   console.error("gRPC error fetching user:", err);
-                  //   return resolve({ ...post, user: undefined });
-                  // }
+                  if (err || !response) {
+                    logger.error("gRPC error fetching user:", {
+                      error: err?.message,
+                      userId: post.userId
+                    });
+                    return resolve({
+                      ...post,
+                      user: {
+                        avatar: "",
+                        name: "Unknown",
+                        username: "Unknown",
+                      }
+                    });
+                  }
                   resolve({
                     ...post,
                     user: {

@@ -10,6 +10,7 @@ import { chatStatsClient } from "../../clients/chat-stats.client";
 import { getCachedChatSuggestions, cacheChatSuggestions } from "../../utils/redis.util";
 import logger from "../../utils/logger.util";
 import prisma from "../../config/prisma.config";
+import redisClient from "../../config/redis.config";
 import { createCircuitBreaker } from "../../utils/circuit.breaker.util";
 
 export class UserService implements IUserService {
@@ -248,10 +249,17 @@ export class UserService implements IUserService {
   private async deleteAccountCore(userId: string): Promise<void> {
     try {
       await prisma.$transaction(async (tx) => {
-        // 1. Delete user (Cascading deletes handle relations in DB)
+        // 1. Revoke all sessions in Redis first (Safety first)
+        // We use a pattern to delete all keys related to this user if possible, 
+        // or we rely on the fact that the user is deleted and any subsequent token use will fail
+        // However, NextAuth might still have a valid JWT. So we should ideally blacklist the JTI.
+        // Since we don't have a list of all JTIs here, we can set a "global block" for this user ID in Redis.
+        await redisClient.setEx(`block:${userId}`, 30 * 24 * 60 * 60, "DELETED");
+
+        // 2. Delete user (Cascading deletes handle relations in DB)
         await this.userRepository.deleteUser(userId, tx);
 
-        // 2. Create Outbox event for other services (Saga)
+        // 3. Create Outbox event for other services (Saga)
         await this.userRepository.createOutboxEvent({
           aggregateType: "USER",
           aggregateId: userId,

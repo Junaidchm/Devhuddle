@@ -675,10 +675,41 @@ export class ChatService implements IChatService {
                 throw new Error("Unauthorized: Only the group owner can delete the group");
             }
 
-            // 4. Delete
+            // 4. Capture participants for broadcast before deletion
+            const participantIds = conversation.participants.map(p => p.userId);
+
+            // 5. Delete from DB
             await this._chatRepository.deleteConversation(conversationId);
+
+            // 5b. Invalidate per-user conversation caches for ALL participants (including owner)
+            // Without this, the owner's stale cache keeps showing the deleted group
+            for (const participantId of participantIds) {
+                await RedisCacheService.invalidateUserConversationsCache(participantId);
+                await RedisCacheService.invalidateUserConversationsMetadataCache(participantId);
+            }
             
-            // 5. Invalidate cache
+            // 6. Broadcast group_deleted to all connected members via Redis pub/sub
+            // Each socket-gateway subscriber will emit the event to connected clients
+            // Using a shared channel for reliable multi-pod delivery
+            const { redisPublisher } = await import('../../config/redis.config');
+            
+            if (redisPublisher) {
+                await redisPublisher.publish(
+                    'conversation_event',
+                    JSON.stringify({
+                        conversationId,
+                        type: 'group_deleted',
+                        targetUserIds: participantIds,
+                        data: {
+                            conversationId,
+                            deletedBy: userId,
+                            groupName: conversation.name
+                        }
+                    })
+                );
+            }
+
+            // 7. Invalidate cache
             await RedisCacheService.invalidateConversationCache(conversationId);
             
             logger.info('Group deleted successfully', { conversationId, userId });

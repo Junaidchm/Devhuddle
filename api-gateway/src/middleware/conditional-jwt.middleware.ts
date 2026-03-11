@@ -13,6 +13,7 @@ const PUBLIC_ROUTES = [
   // OAuth routes
   '/api/v1/auth/google',
   '/api/v1/auth/google/callback',
+  '/api/v1/auth/google-login',
   // Authentication routes (public)
   '/api/v1/auth/login',
   '/api/v1/auth/signup',
@@ -83,12 +84,7 @@ async function optionalJwtMiddleware(
     const authHeader = req.headers["authorization"];
     let token = authHeader?.startsWith("Bearer ")
       ? authHeader.split(" ")[1]
-      : null;
-
-    // Check cookies if header token is missing
-    if (!token && req.cookies && req.cookies["access_token"]) {
-      token = req.cookies["access_token"];
-    }
+      : req.query.token as string || null;
 
     if (token) {
       // If token is present, try to validate it

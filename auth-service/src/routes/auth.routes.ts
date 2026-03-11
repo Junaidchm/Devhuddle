@@ -25,8 +25,7 @@ const authController: AuthController = new AuthController(authService);
 // Note: Authentication is handled by API Gateway, so no jwtMiddleware needed here
 router
   // User authentication
-  .get("/google", authController.googleAuth.bind(authController))
-  .get("/google/callback", authController.googleCallback.bind(authController))
+  .post("/google-login", authController.googleLoginHttp.bind(authController))
 
   // Signup
   .post("/signup", validateDto(RegisterDto), authController.signupHttp.bind(authController))

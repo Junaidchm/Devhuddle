@@ -624,8 +624,9 @@ export class ChatRepository extends BaseRepository<
                 onlyAdminsCanPost,
                 onlyAdminsCanEditInfo,
                 topics,
+                lastMessageAt: new Date(), // Initialize for correct sorting in conversion list
                 memberCount: allParticipants.length,
-                participantHash, // Groups also get hash for easier debugging/consistency
+                // participantHash is NOT set for groups to allow multiple groups with same members
                 participants: {
                     create: [
                         { userId: creatorId, role: 'ADMIN' },
@@ -686,7 +687,10 @@ export class ChatRepository extends BaseRepository<
             isSuspended: false,
             deletedAt: null,
             participants: {
-                some: { userId }
+                some: { 
+                    userId,
+                    deletedAt: null // Fix: Ensure user is an active participant
+                }
             },
             ...(query ? {
                 OR: [
@@ -720,9 +724,7 @@ export class ChatRepository extends BaseRepository<
             type: 'GROUP',
             isSuspended: false,
             deletedAt: null,
-            participants: {
-                none: { userId }
-            },
+            // Removed participants: { none: { userId } } to allow discovery of all public hubs
             ...(query ? {
                 OR: [
                     { name: { contains: query, mode: 'insensitive' } },

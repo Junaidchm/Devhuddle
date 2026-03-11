@@ -111,50 +111,32 @@ async function handleMessageSent(
       return;
   }
 
-  // Create notifications for each recipient
-  for (const recipientId of recipientIds) {
+  // Create notifications for each recipient in parallel for speed
+  const notificationPromises = recipientIds.map(async (recipientId) => {
       try {
-          await notificationService.createChatNotification(
-            senderId,
-            recipientId,
-            conversationId,
-            messageId,
-            content,
-            1 // version
-          );
-
-          // We don't need to manually broadcast here because NotificationsRepository 
-          // might handle it if it has WebSocketService injected?
-          // Let's check NotificationsRepository.ts.
-          // It has `private wsService`.
-          // But `_createOrUpdateNotification` (which `createChatNotification` calls) 
-          // usually calls `_sendRealTimeNotification`?
-          // I should verify this to avoid double sending.
-          // But looking at my edit to NotificationsRepository, I didn't see `_createOrUpdateNotification` implementation.
-          // Assuming `_createOrUpdateNotification` handles DB creation.
-          // Does it handle WS? 
-          // In `NotificationsRepository.ts` view (Step 218), line 26 has `private wsService`.
-          // But I didn't see `_createOrUpdateNotification` implementation body in the view (it inherits from `BaseRepository`?).
-          // `_createOrUpdateNotification` seems to be in `NotificationsRepository` (lines 38 call it, so it's likely defined there or in Base).
-          
-          // If `NotificationsRepository` handles WS broadcast, then I shouldn't broadcast here.
-          // However, `NotificationsRepository`constructor takes `wsService`.
-          // Let's assume it DOES broadcast if `wsService` is provided.
-          // But let's check `BaseRepository` or `NotificationsRepository` again to be sure.
-          // I only saw the top of `NotificationsRepository`.
-          
-          // I will assume for now I should NOT manually broadcast if repository does it.
-          // BUT previous consumers (like `follow.consumer.ts` if I saw it) might give a clue.
-          // Or I can just check if `wsService.broadcastNotification` was used in `NotificationsRepository`.
-          // I'll leave the manual broadcast OUT for now to avoid duplicates, 
-          // assuming `NotificationsRepository` uses `wsService` if injecting it. 
-          // Wait, `NotificationsRepository` constructor takes `wsService`!
-          // So it MUST be using it.
-          
+          if (content === 'group_created') {
+            await notificationService.createGroupAddedNotification(
+              senderId,
+              recipientId,
+              conversationId,
+              1 // version
+            );
+          } else {
+            await notificationService.createChatNotification(
+              senderId,
+              recipientId,
+              conversationId,
+              messageId,
+              content,
+              1 // version
+            );
+          }
       } catch (err) {
           logger.error(`Failed to create notification for user ${recipientId}`, { error: err });
       }
-  }
+  });
+
+  await Promise.all(notificationPromises);
 }
 
 async function handleMessageReported(

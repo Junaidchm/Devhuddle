@@ -64,6 +64,18 @@ export class ProjectReportService implements IProjectReportService {
         projectId: req.projectId 
       });
 
+      // Safely parse metadata if it's a string, or use as is if it's already an object
+      let parsedMetadata = {};
+      try {
+        if (req.metadata) {
+          parsedMetadata = typeof req.metadata === "string" 
+            ? JSON.parse(req.metadata) 
+            : req.metadata;
+        }
+      } catch (e) {
+        logger.warn("Failed to parse report metadata", { error: e, metadata: req.metadata });
+      }
+
       const adminHubResponse = await this._submitReportBreaker.fire({
         reporterId: req.reporterId,
         targetId: req.projectId,
@@ -71,7 +83,7 @@ export class ProjectReportService implements IProjectReportService {
         reason: req.reason,
         description: "", // Description could be from metadata if needed
         metadata: JSON.stringify({
-          ...(req.metadata ? JSON.parse(req.metadata) : {}),
+          ...parsedMetadata,
           ownerId: project.userId,
           contentSnippet: project.description?.substring(0, 100),
         }),
@@ -87,7 +99,7 @@ export class ProjectReportService implements IProjectReportService {
         reporterId: req.reporterId,
         projectId: req.projectId,
         reason: req.reason as ReportReason,
-        metadata: req.metadata ? JSON.parse(req.metadata) : null,
+        metadata: parsedMetadata,
       });
 
       // 5. Publish local event for counters/analytics fan-out

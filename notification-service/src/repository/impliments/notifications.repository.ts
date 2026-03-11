@@ -127,19 +127,22 @@ export class NotificationsRepository
     recipientId: string,
     postId: string,
     commentId: string,
-    notificationType: "POST" | "COMMENT" | "PROJECT",
+    notificationType: "POST" | "COMMENT" | "PROJECT" | "PROJECT_COMMENT",
     version: number
   ): Promise<void> {
+    const entityType = notificationType === "POST" ? EntityType.POST : notificationType === "PROJECT" ? EntityType.PROJECT : (notificationType === "PROJECT_COMMENT" ? EntityType.COMMENT : EntityType.COMMENT);
+    const metadataKey = (notificationType === "PROJECT" || notificationType === "PROJECT_COMMENT") ? "projectId" : "postId";
+
     await this._createOrUpdateNotification(
       NotificationType.COMMENT,
-      notificationType === "POST" ? EntityType.POST : notificationType === "PROJECT" ? EntityType.PROJECT : EntityType.COMMENT,
+      entityType,
       commentId, // Entity ID is the commentId
       issuerId,
       recipientId,
       version,
-      this._getActionVerbFromNotification(NotificationType.COMMENT, notificationType === "POST" ? EntityType.POST : notificationType === "PROJECT" ? EntityType.PROJECT : EntityType.COMMENT),
+      this._getActionVerbFromNotification(NotificationType.COMMENT, entityType),
       postId, // contextId is the postId/projectId
-      { [notificationType === "PROJECT" ? "projectId" : "postId"]: postId, commentId } // metadata for redirection
+      { [metadataKey]: postId, commentId } // metadata for redirection
     );
   }
 
@@ -235,6 +238,28 @@ export class NotificationsRepository
       "sent you a message",
       conversationId,
       { conversationId, content }
+    );
+  }
+
+  /**
+   * Create group added notification
+   */
+  async createGroupAddedNotification(
+    issuerId: string,
+    recipientId: string,
+    conversationId: string,
+    version: number
+  ): Promise<void> {
+    await this._createOrUpdateNotification(
+      NotificationType.CHAT_MESSAGE,
+      EntityType.MESSAGE,
+      conversationId, // Use conversationId as entityId for group addition
+      issuerId,
+      recipientId,
+      version,
+      "added you to a group",
+      conversationId,
+      { conversationId, action: 'group_added' }
     );
   }
 
@@ -605,7 +630,8 @@ export class NotificationsRepository
           const actionVerb = this._getActionVerbFromNotification(
             n.notificationObject.type,
             n.notificationObject.entityType,
-            n.notificationObject.contextId // contextId indicates if it's a reply
+            n.notificationObject.contextId,
+            n.notificationObject.metadata
           );
           
           // Regenerate summary text with actual actor names
@@ -1436,7 +1462,8 @@ export class NotificationsRepository
   private _getActionVerbFromNotification(
     type: NotificationType,
     entityType: EntityType,
-    contextId?: string | null
+    contextId?: string | null,
+    metadata?: any
   ): string {
     switch (type) {
       case NotificationType.LIKE:
@@ -1455,6 +1482,8 @@ export class NotificationsRepository
           return "replied to your comment";
         } else if (entityType === EntityType.POST) {
           return "commented on your post";
+        } else if (entityType === EntityType.PROJECT) {
+          return "commented on your project";
         } else {
           return "commented on";
         }
@@ -1469,6 +1498,9 @@ export class NotificationsRepository
         return "sent you a post";
 
       case NotificationType.CHAT_MESSAGE:
+        if (metadata?.action === 'group_added') {
+          return "added you to a group";
+        }
         return "sent you a message";
         
       case NotificationType.SHARE:

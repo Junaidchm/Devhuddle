@@ -5,6 +5,7 @@ import { IPostRepository } from "../../repositories/interface/IPostRepository";
 import logger from "../../utils/logger.util";
 import { RedisCacheService } from "../../utils/redis.util";
 
+
 export class FeedService implements IFeedService {
   private readonly FAN_OUT_THRESHOLD = 1000; // Switch to async if followers > 1000
   private readonly FEED_CACHE_TTL = 300; // 5 minutes
@@ -105,53 +106,57 @@ export class FeedService implements IFeedService {
   ): Promise<FeedResponse> {
     try {
       // Try Redis cache first
-      const cacheKey = `feed:${userId}:${cursor || "latest"}`;
+      const cacheKey = `feed:ids:${userId}:${cursor || "latest"}`;
       const cached = await RedisCacheService.get(cacheKey);
+      
+      let postIds: string[] = [];
+      let nextCursor: string | null = null;
+
       if (cached) {
-        logger.info("Feed cache hit", { userId, cursor });
-        return JSON.parse(cached);
+        logger.info("Feed ID cache hit", { userId, cursor });
+        const data = JSON.parse(cached);
+        postIds = data.postIds;
+        nextCursor = data.nextCursor;
+      } else {
+        // Query UserFeed table (ranked by relevance)
+        const feedEntries = await this._feedRepository.getFeedEntries({
+          userId,
+          cursor,
+          limit,
+          includeRead: false,
+        });
+
+        if (feedEntries.length === 0) {
+          return { posts: [], nextCursor: null };
+        }
+
+        postIds = feedEntries.map((entry) => entry.postId);
+        
+        const hasMore = feedEntries.length > limit;
+        nextCursor = hasMore
+          ? feedEntries[feedEntries.length - 1].postId
+          : null;
+
+        // Cache the IDs and order
+        await RedisCacheService.set(
+          cacheKey,
+          JSON.stringify({ postIds, nextCursor }),
+          this.FEED_CACHE_TTL
+        );
       }
 
-      // Query UserFeed table (ranked by relevance)
-      const feedEntries = await this._feedRepository.getFeedEntries({
-        userId,
-        cursor,
-        limit,
-        includeRead: false, // Only unread posts by default
-      });
-
-      if (feedEntries.length === 0) {
-        return { posts: [], nextCursor: null };
-      }
-
-      // Get full post data
-      const postIds = feedEntries.map((entry) => entry.postId);
+      // Get full, fresh post data for these IDs
       const posts = await this._postRepository.getPostsByIds(postIds);
 
-      // Maintain order from feed entries (ranked)
-      const orderedPosts = feedEntries
-        .map((entry) => posts.find((p) => p.id === entry.postId))
+      // Maintain original order from feed entries (ranking)
+      const orderedPosts = postIds
+        .map((id) => posts.find((p) => p.id === id))
         .filter((p): p is NonNullable<typeof p> => p !== undefined);
 
-      // Determine next cursor
-      const hasMore = feedEntries.length > limit;
-      const nextCursor = hasMore
-        ? feedEntries[feedEntries.length - 1].postId
-        : null;
-
-      const response: FeedResponse = {
+      return {
         posts: orderedPosts,
         nextCursor,
       };
-
-      // Cache results
-      await RedisCacheService.set(
-        cacheKey,
-        JSON.stringify(response),
-        this.FEED_CACHE_TTL
-      );
-
-      return response;
     } catch (error: unknown) {
       logger.error("Error getting feed", {
         error: (error as Error).message,
@@ -209,10 +214,9 @@ export class FeedService implements IFeedService {
       await this._feedRepository.batchUpdateScores(updates);
 
       // Invalidate cache for affected users (delete pattern-based keys)
-      // Note: Redis doesn't support wildcard deletes directly, so we track keys or delete specific ones
       const cacheKeysToDelete = feedEntries.flatMap((entry) => [
-        `feed:${entry.userId}:latest`,
-        `feed:${entry.userId}:${entry.postId}`,
+        `feed:ids:${entry.userId}:latest`,
+        `feed:ids:${entry.userId}:${entry.postId}`,
       ]);
       await Promise.all(cacheKeysToDelete.map((key) => RedisCacheService.delete(key)));
 

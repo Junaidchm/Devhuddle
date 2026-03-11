@@ -14,13 +14,15 @@ import {
   ReactionTargetType,
 } from "@prisma/client";
 import { userClient } from "../../config/grpc.client";
+import { IFeedService } from "../interfaces/IFeedService";
 
 export class LikeService implements ILikeService {
   constructor(
     private _likeRepository: ILikeRepository,
     private _postRepository: IPostRepository,
     private _commentRepository: ICommentRepository,
-    private _outboxService: IOutboxService
+    private _outboxService: IOutboxService,
+    private _feedService?: IFeedService
   ) {}
 
   // ========== PUBLIC METHODS - POST LIKES (Explicit API) ==========
@@ -197,6 +199,12 @@ export class LikeService implements ILikeService {
       if (targetType === ReactionTargetType.POST) {
         await this._postRepository.incrementLikesCount(targetId);
         await RedisCacheService.incrementPostLikes(targetId);
+
+        // Invalidate feed cache
+        if (this._feedService) {
+          await this._feedService.recalculatePostScores(targetId);
+        }
+
         eventType = OutboxEventType.POST_LIKE_CREATED;
         topic = KAFKA_TOPICS.POST_LIKE_CREATED;
         payload = {
@@ -321,6 +329,12 @@ export class LikeService implements ILikeService {
       if (targetType === ReactionTargetType.POST) {
         await this._postRepository.decrementLikesCount(targetId);
         await RedisCacheService.decrementPostLikes(targetId);
+
+        // Invalidate feed cache
+        if (this._feedService) {
+          await this._feedService.recalculatePostScores(targetId);
+        }
+
         eventType = OutboxEventType.POST_LIKE_REMOVED;
         topic = KAFKA_TOPICS.POST_LIKE_REMOVED;
         payload = {

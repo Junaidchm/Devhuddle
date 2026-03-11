@@ -25,4 +25,7 @@ export interface IProjectCommentService {
     limit?: number,
     userId?: string
   ): Promise<any[]>;
+  likeComment(commentId: string, userId: string): Promise<void>;
+  unlikeComment(commentId: string, userId: string): Promise<void>;
+  reportComment(commentId: string, userId: string, reason: string): Promise<void>;
 }

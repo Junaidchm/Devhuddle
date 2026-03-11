@@ -36,8 +36,7 @@ export interface IAuthController {
   verifyRefreshToken(req:VerifyRefreshTokenRequest): Promise<VerifyRefreshTokenResponse>;
   getProfile(req:GetProfileRequest): Promise<GetProfileResponse>;
   generatePresignedUrl(req:GeneratePresignedUrlRequest): Promise<GeneratePresignedUrlResponse>;
-  googleAuth(req: Request, res: Response, next: NextFunction): void;
-  googleCallback(req: Request, res: Response, next: NextFunction): void;
+  googleLoginHttp(req: Request, res: Response): Promise<void>;
   getUserForFeedPost(req:getUserForFeedListingRequest):Promise<getUserForFeedListingResponse>;
   searchUsers(req: Request, res: Response): Promise<void>;
 }

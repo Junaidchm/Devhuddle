@@ -13,7 +13,7 @@ import {
 import { CustomError, sendErrorResponse } from "../../utils/error.util";
 import logger from "../../utils/logger.util";
 import passport from "../../config/passport.config";
-import { setAuthToken, clearCookies, setAccesToken } from "../../utils/jwtHandler";
+import { setAuthToken, setAccesToken } from "../../utils/jwtHandler";
 import { Messages } from "../../constents/reqresMessages";
 import { setJtiAsBlackListed } from "../../utils/redis.actions";
 import { generateUuid4 } from "../../utils/uuid.util";
@@ -244,57 +244,32 @@ export class AuthController implements IAuthController {
     return { url: result.url, key: result.key!, expiresAt: result.expiresAt };
   }
 
-  // google authentication
-  googleAuth(req: Request, res: Response, next: NextFunction) {
-    logger.info("Initiating Google OAuth");
-    passport.authenticate("google", { scope: ["profile", "email"] }, (err) => {
-      if (err) {
-        logger.error("Google auth error", { error: err.message });
-        return sendErrorResponse(res, {
-          status: 500,
-          message: "Google authentication failed",
-        });
+  // google authentication via NextAuth native provider
+  async googleLoginHttp(req: Request, res: Response): Promise<void> {
+    try {
+      const oauthUser = req.body;
+      if (!oauthUser || !oauthUser.email) {
+        throw new CustomError(400, "Invalid OAuth data provided");
       }
-      next();
-    })(req, res, next);
-  }
+      
+      const user: GetJwtUserResponse = await this._authService.handleOAuthLogin(oauthUser, res);
+      const tokens = await setAuthToken(user);
 
-  googleCallback(req: Request, res: Response, next: NextFunction) {
-    passport.authenticate(
-      "google",
-      { session: false },
-      async (err, oauthUser) => {
-        try {
-          if (err) {
-            logger.error("Google callback error", { error: err.message });
-            throw new CustomError(500, "Google authentication failed");
-          }
-          if (!oauthUser) {
-            logger.error("No user returned from Google OAuth");
-            throw new CustomError(500, "No user data received");
-          }
-          logger.info("Google OAuth user", { email: oauthUser.email });
-          const user: GetJwtUserResponse = await this._authService.handleOAuthLogin(
-            oauthUser,
-            res
-          );
-          // Set auth tokens (return value not needed for redirect flow)
-          await setAuthToken(user, res);
-
-          res.redirect(`${process.env.FRONTEND_URL}/success`);
-        } catch (err: unknown) {
-          logger.error("Google callback processing error", {
-            error: (err as Error).message,
-          });
-          sendErrorResponse(
-            res,
-            err instanceof CustomError
-              ? err
-              : { status: 500, message: "Server error" }
-          );
-        }
-      }
-    )(req, res, next);
+      res.status(HttpStatus.OK).json({
+        message: "Google login successful",
+        jwtpayload: user,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      });
+    } catch (err: unknown) {
+      logger.error("Error in /auth/google-login", { error: (err as Error).message });
+      sendErrorResponse(
+        res,
+        err instanceof CustomError
+          ? err
+          : { status: 500, message: "Server error during Google login" }
+      );
+    }
   }
 
   async getUserForFeedPost(
@@ -335,7 +310,7 @@ export class AuthController implements IAuthController {
       const response = await this.verifyOTP(req.body);
       if (response.jwtpayload) {
         // Generate tokens and set cookies, also get tokens for response
-        const tokens = await setAuthToken(response.jwtpayload, res);
+        const tokens = await setAuthToken(response.jwtpayload);
         
         res.status(HttpStatus.OK).json({
           message: response.message,
@@ -408,7 +383,7 @@ export class AuthController implements IAuthController {
       const response = await this.login(req.body);
       if (response.jwtpayload) {
         // Generate tokens and set cookies, also get tokens for response
-        const tokens = await setAuthToken(response.jwtpayload, res);
+        const tokens = await setAuthToken(response.jwtpayload);
         
         res.status(HttpStatus.OK).json({
           message: response.message,
@@ -437,9 +412,12 @@ export class AuthController implements IAuthController {
   async logoutHttp(req: Request, res: Response): Promise<void> {
     try {
       logger.info("Received /auth/logout request");
-      const cookies = req.cookies || {};
-      setJtiAsBlackListed(cookies);
-      clearCookies(res);
+      const authHeader = req.headers.authorization;
+      const accessToken = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : undefined;
+      const refreshToken = req.body?.refreshToken;
+      
+      await setJtiAsBlackListed({ accessToken, refreshToken });
+      // No more cookies to clear via res.clearCookie
       res.status(HttpStatus.OK).json({ success: true, message: Messages.LOGOUT_SUCCESS });
     } catch (err: unknown) {
       logger.error("Error in /auth/logout", { error: (err as Error).message });
@@ -561,7 +539,7 @@ export class AuthController implements IAuthController {
       if (response.jwtpayload) {
         const jti = generateUuid4();
         // Set access token cookie and get token for response
-        const tokenResult = await setAccesToken(res, response.jwtpayload, jti);
+        const tokenResult = await setAccesToken(response.jwtpayload, jti);
         
         res.status(HttpStatus.OK).json({
           message: response.message,

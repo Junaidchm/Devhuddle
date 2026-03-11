@@ -134,6 +134,24 @@ export const setupProjectRoutes = (
     commentController.getReplies.bind(commentController)
   );
 
+  router.post(
+    "/comments/:commentId/like",
+    idempotencyMiddleware(idempotencyRepository),
+    commentController.likeComment.bind(commentController)
+  );
+
+  router.post(
+    "/comments/:commentId/unlike",
+    idempotencyMiddleware(idempotencyRepository),
+    commentController.unlikeComment.bind(commentController)
+  );
+
+  router.post(
+    "/comments/:commentId/report",
+    idempotencyMiddleware(idempotencyRepository),
+    commentController.reportComment.bind(commentController)
+  );
+
   // Media upload route
   router.post(
     "/projects/media",

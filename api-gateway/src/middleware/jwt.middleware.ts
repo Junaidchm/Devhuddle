@@ -5,7 +5,7 @@ import { HttpStatus } from "../utils/constents";
 import { Messages } from "../constants/reqresMessages";
 import { verifyAccessToken } from "../utils/jwt.util";
 import { checkUserBlockBlackList } from "../utils/redis.actions";
-import { clearCookies } from "../utils/jwtHandler";
+// No more clearCookies import
 import { jwtPayload } from "../types/auth";
 
 // Extend Express Request interface to include 'user'
@@ -27,14 +27,7 @@ export default async function jwtMiddleware(
     
     let token = authHeader?.startsWith("Bearer ")
       ? authHeader.split(" ")[1]
-      : null;
-
-    // Check cookies if header token is missing
-    if (!token && req.cookies && req.cookies["access_token"]) {
-      token = req.cookies["access_token"];
-    }
-
-   
+      : req.query.token as string; // Allow WebSocket connections to pass token via query string
     if (!token) {
       // logger.error("No JWT token provided");
       throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.TOKEN_NOT_FOUND);
@@ -45,7 +38,6 @@ export default async function jwtMiddleware(
     }
     const isBlackListed = await checkUserBlockBlackList(decoded.id);
     if (isBlackListed) {
-      clearCookies(res);
       throw new CustomError(HttpStatus.UNAUTHORIZED, Messages.USER_BLOCKED);
     }
     

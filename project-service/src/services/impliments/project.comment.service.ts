@@ -215,7 +215,7 @@ export class ProjectCommentService implements IProjectCommentService {
   ): Promise<any[]> {
     try {
       const comments = await this._commentRepository.getCommentsByProject(projectId, limit, offset);
-      return await this._enrichCommentsWithUsers(comments);
+      return await this._enrichCommentsWithUsers(comments, userId);
     } catch (err: any) {
       logger.error("Error fetching project comments", { error: err.message, projectId });
       throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to fetch comments");
@@ -233,14 +233,14 @@ export class ProjectCommentService implements IProjectCommentService {
   ): Promise<any[]> {
     try {
       const replies = await this._commentRepository.getReplies(commentId, limit);
-      return await this._enrichCommentsWithUsers(replies);
+      return await this._enrichCommentsWithUsers(replies, userId);
     } catch (err: any) {
       logger.error("Error fetching project comment replies", { error: err.message, commentId });
       throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to fetch replies");
     }
   }
 
-  private async _enrichCommentsWithUsers(comments: ProjectComment[]): Promise<any[]> {
+  private async _enrichCommentsWithUsers(comments: ProjectComment[], currentUserId?: string): Promise<any[]> {
     if (comments.length === 0) return [];
 
     const userIds = Array.from(new Set(comments.map((c) => c.userId)));
@@ -272,9 +272,210 @@ export class ProjectCommentService implements IProjectCommentService {
       })
     );
 
-    return comments.map((c) => ({
-      ...c,
-      user: usersMap.get(c.userId),
-    }));
+    let likedCommentIds: Set<string> = new Set();
+    if (currentUserId) {
+      const prisma = (await import("../../config/prisma.config")).prisma;
+      const commentIds = comments.map((c) => String(c.id));
+      const reactions = await prisma.projectCommentReaction.findMany({
+        where: {
+          commentId: { in: commentIds },
+          userId: currentUserId,
+          type: "LIKE",
+          deletedAt: null,
+        },
+        select: { commentId: true },
+      });
+      likedCommentIds = new Set(reactions.map((r) => r.commentId));
+    }
+
+    const enrichedComments = await Promise.all(
+      comments.map(async (c: any) => {
+        const commentData = {
+          ...c,
+          user: usersMap.get(c.userId),
+          isLiked: likedCommentIds.has(String(c.id)),
+        };
+
+        // Prisma returns "Replies" (uppercase), but frontend expects "replies" (lowercase)
+        // If nested Replies exist from getCommentsByProject, enrich them recursively
+        if (c.Replies && Array.isArray(c.Replies)) {
+          commentData.replies = await this._enrichCommentsWithUsers(c.Replies, currentUserId);
+          delete commentData.Replies;
+        }
+
+        return commentData;
+      })
+    );
+
+    return enrichedComments;
+  }
+
+  async likeComment(commentId: string, userId: string): Promise<void> {
+    try {
+      const comment = await this._commentRepository.findComment(commentId);
+      if (!comment) {
+        throw new CustomError(HttpStatus.NOT_FOUND, "Comment not found");
+      }
+
+      const prisma = (await import("../../config/prisma.config")).prisma;
+
+      // Check if already liked (idempotent)
+      const existing = await prisma.projectCommentReaction.findFirst({
+        where: { commentId: String(commentId), userId, type: "LIKE", deletedAt: null },
+      });
+      if (existing) {
+        logger.info(`Project comment ${commentId} already liked by ${userId}`);
+        return;
+      }
+
+      // Upsert the reaction (handles soft-deleted likes)
+      await prisma.projectCommentReaction.upsert({
+        where: { commentId_userId_type: { commentId: String(commentId), userId, type: "LIKE" } },
+        update: { deletedAt: null },
+        create: { commentId: String(commentId), userId, type: "LIKE" },
+      });
+
+      // Increment counter
+      await this._commentRepository.incrementLikesCount(String(commentId));
+
+      // Emit outbox event for notification
+      const version = this._getEventVersion();
+      await this._outboxService.createOutboxEvent({
+        aggregateType: OutboxAggregateType.PROJECT_COMMENT_LIKE,
+        aggregateId: String(commentId),
+        type: OutboxEventType.PROJECT_COMMENT_LIKE_CREATED,
+        topic: KAFKA_TOPICS.PROJECT_COMMENT_LIKE_CREATED,
+        key: String(commentId),
+        payload: {
+          dedupeId: `comment-like-${commentId}-${userId}-${Date.now()}`,
+          commentId: String(commentId),
+          userId,
+          commentAuthorId: comment.userId,
+          projectId: comment.projectId,
+          eventTimestamp: new Date().toISOString(),
+          version,
+          action: "LIKE",
+        },
+      });
+
+      logger.info(`Project comment liked: ${commentId} by ${userId}`);
+    } catch (err: any) {
+      if (err instanceof CustomError) throw err;
+      throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to like comment");
+    }
+  }
+
+  async unlikeComment(commentId: string, userId: string): Promise<void> {
+    try {
+      const comment = await this._commentRepository.findComment(commentId);
+      if (!comment) {
+        throw new CustomError(HttpStatus.NOT_FOUND, "Comment not found");
+      }
+
+      const prisma = (await import("../../config/prisma.config")).prisma;
+
+      // Soft-delete the reaction
+      const deleted = await prisma.projectCommentReaction.updateMany({
+        where: { commentId: String(commentId), userId, type: "LIKE", deletedAt: null },
+        data: { deletedAt: new Date() },
+      });
+
+      if (deleted.count === 0) {
+        // Not liked - return silently (idempotent)
+        logger.info(`Project comment ${commentId} not liked by ${userId}, skipping unlike`);
+        return;
+      }
+
+      // Decrement counter
+      await this._commentRepository.decrementLikesCount(String(commentId));
+
+      // Emit outbox event for notification removal
+      const version = this._getEventVersion();
+      await this._outboxService.createOutboxEvent({
+        aggregateType: OutboxAggregateType.PROJECT_COMMENT_LIKE,
+        aggregateId: String(commentId),
+        type: OutboxEventType.PROJECT_COMMENT_LIKE_REMOVED,
+        topic: KAFKA_TOPICS.PROJECT_COMMENT_LIKE_REMOVED,
+        key: String(commentId),
+        payload: {
+          dedupeId: `comment-unlike-${commentId}-${userId}-${Date.now()}`,
+          commentId: String(commentId),
+          userId,
+          commentAuthorId: comment.userId,
+          projectId: comment.projectId,
+          eventTimestamp: new Date().toISOString(),
+          version,
+          action: "UNLIKE",
+        },
+      });
+
+      logger.info(`Project comment unliked: ${commentId} by ${userId}`);
+    } catch (err: any) {
+      if (err instanceof CustomError) throw err;
+      throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to unlike comment");
+    }
+  }
+
+  async reportComment(commentId: string, userId: string, reason: string): Promise<void> {
+    try {
+      const comment = await this._commentRepository.findComment(commentId);
+      if (!comment) {
+        throw new CustomError(HttpStatus.NOT_FOUND, "Comment not found");
+      }
+
+      const prisma = (await import("../../config/prisma.config")).prisma;
+      
+      const { ReportReason } = await import("@prisma/client");
+      const reportReasonEnum = reason as keyof typeof ReportReason;
+
+      const existing = await prisma.projectReport.findFirst({
+        where: { commentId: String(commentId), reporterId: userId },
+      });
+
+      if (existing) {
+        throw new CustomError(HttpStatus.CONFLICT, "You have already reported this comment");
+      }
+
+      const report = await prisma.projectReport.create({
+        data: {
+          commentId: String(commentId),
+          projectId: comment.projectId,
+          reporterId: userId,
+          reason: reportReasonEnum,
+          status: "PENDING",
+        },
+      });
+
+      // Emit outbox event for notification/moderation
+      const { OutboxAggregateType, OutboxEventType } = await import("@prisma/client");
+      const { KAFKA_TOPICS } = await import("../../config/kafka.config");
+      
+      await this._outboxService.createOutboxEvent({
+        aggregateType: OutboxAggregateType.PROJECT_COMMENT, // Comment related
+        aggregateId: report.id,
+        type: OutboxEventType.PROJECT_REPORT_CREATED,
+        topic: KAFKA_TOPICS.PROJECT_REPORT_CREATED,
+        key: report.id,
+        payload: {
+          reportId: report.id,
+          projectId: comment.projectId,
+          commentId: String(commentId),
+          reporterId: userId,
+          projectAuthorId: comment.userId, // Backend will use this to find whom to notify
+          reason,
+          eventTimestamp: new Date().toISOString(),
+          version: this._getEventVersion(),
+        },
+      });
+
+      logger.info(`Project comment reported: ${commentId} by ${userId}`);
+    } catch (err: any) {
+      if (err instanceof CustomError) throw err;
+      throw new CustomError(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to report comment");
+    }
+  }
+
+  private _getEventVersion(): number {
+    return Date.now();
   }
 }

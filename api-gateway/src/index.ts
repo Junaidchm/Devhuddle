@@ -96,6 +96,7 @@ app.use(
 
 
 app.use(ROUTES.PROJECTS.BASE, conditionalJwtMiddleware, projectServiceProxy);
+app.use(ROUTES.COMMENTS.BASE, conditionalJwtMiddleware, projectServiceProxy);
 
 
 // ============================================

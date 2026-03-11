@@ -16,12 +16,14 @@ import {
   Visibility,
 } from "@prisma/client";
 import { sanitizeInput, validateContentLength } from "../../utils/xss.util";
+import { IFeedService } from "../interfaces/IFeedService";
 
 export class ShareService implements IShareService {
   constructor(
     private _shareRepository: IShareRepository,
     private _postRepository: IPostRepository,
-    private _outboxService: IOutboxService
+    private _outboxService: IOutboxService,
+    private _feedService?: IFeedService
   ) {}
 
   async sharePost(
@@ -111,6 +113,11 @@ export class ShareService implements IShareService {
 
       // 8. Invalidate cache
       await RedisCacheService.invalidatePostCounter(postId, "shares");
+      
+      // Invalidate feed cache
+      if (this._feedService) {
+        await this._feedService.recalculatePostScores(postId);
+      }
 
       // 9. Create outbox event
       await this._outboxService.createOutboxEvent({

@@ -1,0 +1,12 @@
+FROM node:20-alpine3.18
+WORKDIR /app
+
+# Copy dependencies and build output from host directly to avoid Docker network hangs on npm install
+COPY package*.json ./
+COPY node_modules ./node_modules
+COPY dist ./dist
+COPY protos ./protos
+COPY prisma ./prisma
+
+EXPOSE 3001
+CMD ["npm", "run", "start"]

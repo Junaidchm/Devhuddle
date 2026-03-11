@@ -164,7 +164,8 @@ export class MessageSagaService {
                 data: {
                     ...messageDto,
                     dedupeId: command.dedupeId // Ensure dedupeId is present (though DTO has it)
-                }
+                },
+                targetUserIds: allParticipantIds // Include targets for direct WebSocket delivery
             });
 
             logger.info("👉 [DEBUG] Broadcasting to Redis", { 
@@ -246,19 +247,23 @@ export class MessageSagaService {
 
             await this._chatRepository.updateLastMessageAt(conversationId, new Date());
 
-            // Invalidate Caches
-            await RedisCacheService.invalidateConversationCache(conversationId);
-            await Promise.all(
-                participantIds.map(userId => 
-                    RedisCacheService.invalidateUserConversationsMetadataCache(userId)
-                )
-            );
+            // Invalidate Caches (Non-blocking)
+            RedisCacheService.invalidateConversationCache(conversationId).catch(err => {
+                logger.warn("Failed to invalidate conversation cache", { error: err.message });
+            });
+            
+            participantIds.forEach(userId => {
+                 RedisCacheService.invalidateUserConversationsMetadataCache(userId).catch(err => {
+                     logger.debug("Failed to invalidate user metadata cache", { userId, error: err.message });
+                 });
+            });
 
             // Redis Broadcast
             const messageDto = MessageMapper.toResponseDto(message);
             const redisPayload = JSON.stringify({
                 type: 'new_message',
-                data: messageDto
+                data: messageDto,
+                targetUserIds: participantIds // Include targets for direct WebSocket delivery
             });
 
             this._redisBreaker.fire(`chat:${conversationId}`, redisPayload).catch(err => {

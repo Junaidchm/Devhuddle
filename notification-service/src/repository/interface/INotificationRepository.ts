@@ -166,4 +166,12 @@ export interface INotificationRepository {
     reason: string,
     version: number
   ): Promise<void>;
+  
+  // Group notifications
+  createGroupAddedNotification(
+    issuerId: string,
+    recipientId: string,
+    conversationId: string,
+    version: number
+  ): Promise<void>;
 }

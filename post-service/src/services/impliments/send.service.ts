@@ -7,6 +7,7 @@ import { HttpStatus } from "../../constands/http.status";
 import logger from "../../utils/logger.util";
 import { KAFKA_TOPICS } from "../../config/kafka.config";
 import { OutboxAggregateType, OutboxEventType } from "@prisma/client";
+import { IFeedService } from "../interfaces/IFeedService";
 
 /**
  * Send Service
@@ -16,7 +17,8 @@ import { OutboxAggregateType, OutboxEventType } from "@prisma/client";
 export class SendService implements ISendService {
   constructor(
     private _postRepository: IPostRepository,
-    private _outboxService: IOutboxService
+    private _outboxService: IOutboxService,
+    private _feedService?: IFeedService
   ) {}
 
   async sendPost(
@@ -122,6 +124,11 @@ export class SendService implements ISendService {
             error: error.message,
           });
         }
+      }
+
+      // 8. Invalidate feed cache
+      if (this._feedService) {
+        await this._feedService.recalculatePostScores(postId);
       }
 
       logger.info(`Post ${postId} sent to ${validRecipients.length} recipients`, {
