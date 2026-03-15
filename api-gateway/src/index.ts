@@ -30,6 +30,11 @@ const app = express();
 app.use(cookieParser());
 const server = createServer(app);
 
+// Health check (at the top to avoid conflicts)
+app.get(["/health", "/api/health", API_VERSION + "/health"], (req: Request, res: Response) => {
+  res.status(HttpStatus.OK).json({ status: "API Gateway is running" });
+});
+
 const allowedOrigins = [
   app_config.frontend_URL,
   app_config.frontend_production_url,
@@ -45,13 +50,14 @@ app.use(
       
       const isAllowed = allowedOrigins.some(o => o === origin) || 
                        origin.endsWith(".vercel.app") ||
-                       origin.includes("sslip.io");
+                       origin.includes("sslip.io") ||
+                       origin.includes("localhost");
                        
       if (isAllowed) {
-        callback(null, true);
+        callback(null, origin); // Echo the origin back explicitly
       } else {
-        logger.warn(`Origin ${origin} not allowed by CORS`);
-        callback(null, true); // Allow for now to unblock, but log it
+        logger.warn(`Origin ${origin} not allowed by CORS (allowed: ${allowedOrigins.join(', ')})`);
+        callback(null, origin); // Still echo to unblock troubleshooting
       }
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -159,11 +165,6 @@ app.use(
   conditionalJwtMiddleware,
   chatServiceProxy
 );
-
-// Health check
-app.get([ROUTES.HEALTH, "/api/health"], (req: Request, res: Response) => {
-  res.status(HttpStatus.OK).json({ status: "API Gateway is running" });
-});
 
 // Handle favicon to prevent unhandled requests
 app.get("/favicon.ico", (req: Request, res: Response) => {
