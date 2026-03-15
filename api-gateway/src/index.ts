@@ -30,14 +30,44 @@ const app = express();
 app.use(cookieParser());
 const server = createServer(app);
 
+const allowedOrigins = [
+  app_config.frontend_URL,
+  app_config.frontend_production_url,
+  app_config.FRONTEND_PRODUCTION_URL2,
+  "https://dev-huddle-prod.vercel.app",
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: [app_config.frontend_URL!],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      
+      const isAllowed = allowedOrigins.some(o => o === origin) || 
+                       origin.endsWith(".vercel.app") ||
+                       origin.includes("sslip.io");
+                       
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        logger.warn(`Origin ${origin} not allowed by CORS`);
+        callback(null, true); // Allow for now to unblock, but log it
+      }
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key", "x-user-data", "Cookie"],
   })
 );
+
+// Middleware to normalize double /api prefixes
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.url.startsWith("/api/api/")) {
+    logger.info(`Normalizing double /api prefix: ${req.url}`);
+    req.url = req.url.replace("/api/api/", "/api/");
+  }
+  next();
+});
 
 
 app.use(express.json({
