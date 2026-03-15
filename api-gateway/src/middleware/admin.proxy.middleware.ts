@@ -38,8 +38,8 @@ export const adminServiceProxy = app_config.authServiceUrl
       target: app_config.authServiceUrl,
       changeOrigin: true,
       // Remove /api/v1 prefix, forward the rest (/admin/...)
-      pathRewrite: (path, req) => {
-        return "/admin" + path;
+      pathRewrite: {
+        "^/api(/api)?/v1/admin": "/admin",
       },
       onProxyReq: (proxyReq, req: any, res) => {
         logger.info(

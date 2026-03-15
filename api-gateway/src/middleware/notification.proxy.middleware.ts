@@ -13,7 +13,7 @@ export const notificationServiceProxy = createProxyMiddleware({
   target: app_config.notificationServiceUrl,
   changeOrigin: true,
   pathRewrite: {
-    "^/": "/notifications/",
+    "^/api(/api)?/v1/notification": "/notifications",
   },
   ws: false, // Disable auto-upgrade to handle manually
   

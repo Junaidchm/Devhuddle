@@ -34,11 +34,10 @@ export const projectServiceProxy = app_config.projectServiceUrl
   ? createProxyMiddleware({
       target: app_config.projectServiceUrl,
       changeOrigin: true,
-      pathRewrite: (path, req) => {
-        if (req.originalUrl.includes("/projects")) return "/projects" + path;
-        if (req.originalUrl.includes("/comments")) return "/comments" + path;
-        if (req.originalUrl.includes("/admin")) return "/admin" + path;
-        return "/projects" + path;
+      pathRewrite: {
+        "^/api(/api)?/v1/projects": "/projects",
+        "^/api(/api)?/v1/comments": "/comments",
+        "^/api(/api)?/v1/admin": "/admin",
       },
       timeout: 30000, // 30 second timeout
       // Forward path: /api/v1/projects/* -> /projects/*

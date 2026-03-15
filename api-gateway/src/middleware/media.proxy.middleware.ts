@@ -10,8 +10,8 @@ import { Request, Response } from "express";
 export const mediaServiceProxy = createProxyMiddleware({
   target: process.env.MEDIA_SERVICE_URL!,
   changeOrigin: true,
-  pathRewrite: (path, req) => {
-    return "/media" + path;
+  pathRewrite: {
+    "^/api(/api)?/v1/media": "/media",
   },
   onProxyReq: (proxyReq, req: any, res: Response) => {
     // Forward user data from JWT middleware if available

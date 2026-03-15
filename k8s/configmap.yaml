@@ -42,3 +42,5 @@ data:
   CDN_URL: "https://pub-218123fc00c5474f8c3b9ec5e5772d3a.r2.dev"
   # UploadThing
   NEXT_PUBLIC_UPLOADTHING_APP_ID: "vkszksqfmg"
+  # Frontend CORS (Will update this once Vercel URL is known)
+  frontend_URL: "https://dev-huddle-prod-git-ver-55bdfe-junuchammayil-gmailcoms-projects.vercel.app"

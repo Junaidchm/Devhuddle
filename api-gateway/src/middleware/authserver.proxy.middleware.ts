@@ -22,10 +22,9 @@ export const authServiceProxy = createProxyMiddleware({
   changeOrigin: true,
   // Remove /api/v1 prefix, keep the rest (/auth, /users, etc.)
   // Map correctly based on original URL
-  pathRewrite: (path, req) => {
-    if (req.originalUrl.includes("/auth")) return "/auth" + path;
-    if (req.originalUrl.includes("/users")) return "/users" + path;
-    return path;
+  pathRewrite: {
+    "^/api(/api)?/v1/auth": "/auth",
+    "^/api(/api)?/v1/users": "/users",
   },
   // Add timeout to prevent hanging
   timeout: 30000, // 30 seconds
