@@ -30,7 +30,17 @@ const app = express();
 app.use(cookieParser());
 const server = createServer(app);
 
-// Health check (at the top to avoid conflicts)
+// 1. Log all requests (at the VERY TOP)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    logger.info(`${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`);
+  });
+  next();
+});
+
+// 2. Health check
 app.get(["/health", "/api/health", API_VERSION + "/health"], (req: Request, res: Response) => {
   res.status(HttpStatus.OK).json({ status: "API Gateway is running" });
 });
@@ -66,20 +76,9 @@ app.use(
   })
 );
 
-// Middleware to normalize double /api prefixes
-app.use((req: Request, res: Response, next: NextFunction) => {
-  if (req.url.startsWith("/api/api/")) {
-    logger.info(`Normalizing double /api prefix: ${req.url}`);
-    req.url = req.url.replace("/api/api/", "/api/");
-  }
-  next();
-});
-
-
 app.use(express.json({
-  limit: '10mb', // 10MB limit for JSON payloads (sufficient for UploadThing callbacks)
+  limit: '10mb',
   verify: (req: Request, res, buf) => {
-    // Store raw body for potential signature verification
     (req as any).rawBody = buf;
   },
 }));
@@ -88,17 +87,6 @@ app.use(express.urlencoded({
   extended: true,
   limit: '10mb',
 }));
-
-
-// Log all requests
-app.use((req: Request, res: Response, next: NextFunction) => {
-  const start = Date.now();
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    logger.info(`${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`);
-  });
-  next();
-});
 
 // ============================================
 // HTTP Proxy Routes (forwarded to microservices)
@@ -245,6 +233,13 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   const status = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
   const message = err.message || "Internal server error";
   
+  logger.error(`[Gateway Error] ${err.message}`, {
+    status,
+    url: req.originalUrl,
+    method: req.method,
+    stack: err.stack,
+  });
+
   const error: ApiError = {
     status,
     message,

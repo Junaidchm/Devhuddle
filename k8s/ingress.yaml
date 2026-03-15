@@ -3,7 +3,7 @@ kind: Ingress
 metadata:
   name: devhuddle-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /api$1
+    nginx.ingress.kubernetes.io/rewrite-target: /api$2
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: nginx
@@ -15,7 +15,7 @@ spec:
   - host: 34.93.251.99.sslip.io
     http:
       paths:
-      - path: /api(.*)
+      - path: /api(/api)?(.*)
         pathType: ImplementationSpecific
         backend:
           service:
