@@ -30,8 +30,23 @@ const app = express();
 app.use(cookieParser());
 const server = createServer(app);
 
-// 1. Log all requests (at the VERY TOP)
+// 1. Normalize and Log all requests (at the VERY TOP)
 app.use((req: Request, res: Response, next: NextFunction) => {
+  const originalPath = req.url;
+  
+  // Aggressive normalization: collapse any doubled /api or /v1
+  // Handles /api/api/v1, /api/v1/v1, /api/api/v1/v1, etc.
+  if (req.url.includes("/api/api") || req.url.includes("/v1/v1")) {
+    req.url = req.url
+      .replace(/\/api(\/api)+/g, "/api")
+      .replace(/\/v1(\/v1)+/g, "/v1");
+      
+    // Also sync originalUrl to ensure middlewares see the "pure" path
+    (req as any).originalUrl = req.url;
+    
+    logger.info(`Aggressive path normalization: ${originalPath} -> ${req.url}`);
+  }
+
   const start = Date.now();
   res.on('finish', () => {
     const duration = Date.now() - start;

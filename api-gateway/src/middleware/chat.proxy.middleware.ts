@@ -15,8 +15,10 @@ export const chatServiceProxy = createProxyMiddleware({
   target: CHAT_TARGET,
   changeOrigin: true,
   ws: false,
-  pathRewrite: {
-    "^/api(/api)?/v1/chat": "/chat",
+  pathRewrite: (path) => {
+    if (path.includes("/v1/chat")) return path.replace(/^.*\/v1\/chat/, "/chat");
+    if (path.startsWith("/chat")) return path;
+    return "/chat" + path;
   },
   
   onProxyReq: (proxyReq, req: any, res) => {

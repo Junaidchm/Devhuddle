@@ -12,9 +12,11 @@ export const postServiceProxy = createProxyMiddleware({
   target: app_config.postServiceUrl,
   changeOrigin: true,
   // Strip /api/v1 prefix
-  pathRewrite: {
-    "^/api(/api)?/v1/posts": "/posts",
-    "^/api(/api)?/v1/feed": "/posts",
+  pathRewrite: (path) => {
+    if (path.includes("/v1/posts")) return path.replace(/^.*\/v1\/posts/, "/posts");
+    if (path.includes("/v1/feed")) return path.replace(/^.*\/v1\/feed/, "/posts");
+    if (path.startsWith("/posts")) return path;
+    return "/posts" + path;
   },
   onProxyReq: (proxyReq, req: any, res: Response) => {
     // Forward user data from JWT middleware if available
