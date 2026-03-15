@@ -133,7 +133,7 @@ app.use(
 );
 
 // Health check
-app.get(ROUTES.HEALTH, (req: Request, res: Response) => {
+app.get([ROUTES.HEALTH, "/api/health"], (req: Request, res: Response) => {
   res.status(HttpStatus.OK).json({ status: "API Gateway is running" });
 });
 

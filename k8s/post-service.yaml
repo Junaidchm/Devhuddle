@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: post-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: post-service
+  template:
+    metadata:
+      labels:
+        app: post-service
+    spec:
+      imagePullSecrets:
+      - name: ghcr-secret
+      containers:
+      - name: post-service
+        image: ghcr.io/junaidchm/post-service:latest
+        ports:
+        - containerPort: 3002
+        - containerPort: 50051
+        envFrom:
+        - configMapRef:
+            name: devhuddle-config
+        - secretRef:
+            name: devhuddle-secrets
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: devhuddle-secrets
+              key: POST_DATABASE_URL
+        - name: UPLOADTHING_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: devhuddle-secrets
+              key: UPLOADTHING_SECRET
+        - name: UPLOADTHING_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: devhuddle-secrets
+              key: UPLOADTHING_TOKEN
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: post-service
+spec:
+  selector:
+    app: post-service
+  ports:
+  - name: http
+    port: 3002
+    targetPort: 3002
+  - name: grpc
+    port: 50051
+    targetPort: 50051

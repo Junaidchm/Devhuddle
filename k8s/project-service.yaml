@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: project-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: project-service
+  template:
+    metadata:
+      labels:
+        app: project-service
+    spec:
+      imagePullSecrets:
+      - name: ghcr-secret
+      containers:
+      - name: project-service
+        image: ghcr.io/junaidchm/project-service:latest
+        ports:
+        - containerPort: 3004
+        - containerPort: 50053
+        envFrom:
+        - configMapRef:
+            name: devhuddle-config
+        - secretRef:
+            name: devhuddle-secrets
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: devhuddle-secrets
+              key: PROJECT_DATABASE_URL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: project-service
+spec:
+  selector:
+    app: project-service
+  ports:
+  - name: http
+    port: 3004
+    targetPort: 3004
+  - name: grpc
+    port: 50053
+    targetPort: 50053

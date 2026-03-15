@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: devhuddle-config
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  # Service Ports
+  API_GATEWAY_PORT: "8080"
+  AUTH_PORT: "3001"
+  POST_PORT: "3002"
+  PROJECT_PORT: "3004"
+  MEDIA_PORT: "5003"
+  CHAT_PORT: "4004"
+  NOTIFICATION_PORT: "4001"
+  # Internal Service URLs
+  AUTH_SERVICE_URL: "http://auth-service:3001"
+  POST_SERVICE_URL: "http://post-service:3002"
+  PROJECT_SERVICE_URL: "http://project-service:3004"
+  MEDIA_SERVICE_URL: "http://media-service:5003"
+  CHAT_SERVICE_URL: "http://chat-service:4004"
+  NOTIFICATION_SERVICE_URL: "http://notification-service:4001"
+  API_GATEWAY_URL: "http://api-gateway:8080"
+  # gRPC URLs
+  AUTH_GRPC_URL: "auth-service:50051"
+  POST_GRPC_URL: "post-service:50051"
+  PROJECT_SERVICE_GRPC_URL: "project-service:50053"
+  CHAT_SERVICE_GRPC_URL: "chat-service:50054"
+  # Infrastructure
+  REDIS_URL: "redis://redis-service:6379"
+  KAFKA_BROKER: "kafka-service:9092"
+  # AWS/Cloud Settings
+  AWS_REGION: "ap-south-1"
+  AWS_S3_BUCKET: "devhuddle-bucket-junaid"
+  # Email Settings
+  EMAIL_HOST: "smtp.gmail.com"
+  EMAIL_PORT: "587"
+  EMAIL_USER: "junuchammayil@gmail.com"
+  # Media Settings
+  R2_ACCOUNT_ID: "88aedd500d612febd4222bb0d262664a"
+  R2_BUCKET_NAME: "devhuddle-media"
+  CDN_URL: "https://pub-218123fc00c5474f8c3b9ec5e5772d3a.r2.dev"
+  # UploadThing
+  NEXT_PUBLIC_UPLOADTHING_APP_ID: "vkszksqfmg"
