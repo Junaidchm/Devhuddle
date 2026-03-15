@@ -54,8 +54,7 @@ app.use(express.urlencoded({
 }));
 
 
-// Log all requests (Commented out for performance optimization)
-/*
+// Log all requests
 app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
   res.on('finish', () => {
@@ -64,7 +63,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   });
   next();
 });
-*/
 
 // ============================================
 // HTTP Proxy Routes (forwarded to microservices)
