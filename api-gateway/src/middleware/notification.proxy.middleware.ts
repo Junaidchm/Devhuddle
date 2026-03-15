@@ -12,7 +12,9 @@ import { verifyAccessToken } from "../utils/jwt.util";
 export const notificationServiceProxy = createProxyMiddleware({
   target: app_config.notificationServiceUrl,
   changeOrigin: true,
-  pathRewrite: { "^/api/v1": "" },
+  pathRewrite: {
+    "^/": "/notifications/",
+  },
   ws: false, // Disable auto-upgrade to handle manually
   
   onProxyReq: (proxyReq, req: any, res) => {
