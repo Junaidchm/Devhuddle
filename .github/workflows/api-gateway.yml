@@ -1,0 +1,62 @@
+name: API Gateway CI/CD
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'api-gateway/**'
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ secrets.GKE_PROJECT_ID }}
+  GKE_CLUSTER: ${{ secrets.GKE_CLUSTER_NAME }}
+  GKE_ZONE: ${{ secrets.GKE_ZONE }}
+  IMAGE: devhuddle-api-gateway
+
+jobs:
+  setup-build-publish-deploy:
+    name: Setup, Build, Publish, and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # 1. Login to GHCR
+    - name: Login to GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GHCR_TOKEN }}
+
+    # 2. Build multi-platform image (amd64 for GKE)
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: ./api-gateway
+        file: ./api-gateway/Dockerfile.prod
+        platforms: linux/amd64
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE }}:latest
+          ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE }}:${{ github.sha }}
+
+    # 3. Authenticate to Google Cloud
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GKE_SA_KEY }}'
+
+    # 4. Get GKE Credentials
+    - name: Get GKE Credentials
+      uses: google-github-actions/get-gke-credentials@v2
+      with:
+        cluster_name: ${{ env.GKE_CLUSTER }}
+        location: ${{ env.GKE_ZONE }}
+
+    # 5. Deploy to GKE
+    - name: Deploy
+      run: |
+        kubectl rollout restart deployment api-gateway
+        kubectl rollout status deployment api-gateway
