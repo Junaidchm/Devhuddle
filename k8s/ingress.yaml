@@ -9,10 +9,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - 34.93.251.99.sslip.io
+    - api.devhuddle.online
     secretName: devhuddle-tls
   rules:
-  - host: 34.93.251.99.sslip.io
+  - host: api.devhuddle.online
     http:
       paths:
       - path: /api(.*)

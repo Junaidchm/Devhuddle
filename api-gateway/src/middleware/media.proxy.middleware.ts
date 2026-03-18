@@ -12,9 +12,7 @@ export const mediaServiceProxy = createProxyMiddleware(
   {
     target: process.env.MEDIA_SERVICE_URL!,
     changeOrigin: true,
-    pathRewrite: {
-      "^/api/v1/media": "/media",
-    },
+    // No path rewrite - forward /api/v1/media/... or /media/... as is
   onProxyReq: (proxyReq, req: any, res: Response) => {
     // Forward user data from JWT middleware if available
     if (req.user) {

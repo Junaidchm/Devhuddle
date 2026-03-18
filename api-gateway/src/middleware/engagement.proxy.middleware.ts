@@ -40,11 +40,8 @@ export const engagementServiceProxy = app_config.postServiceUrl
       {
         target: app_config.postServiceUrl,
         changeOrigin: true,
-        pathRewrite: (path, req) => {
-          const newPath = req.originalUrl.replace(/^.*\/v1\/engagement/, "");
-          logger.info(`[Engagement Proxy] ${req.method} ${req.originalUrl} -> ${newPath}`);
-          return newPath;
-        },
+        // No path rewrite - forward /api/v1/engagement/... as is
+        // Microservice will handle the full path
       onProxyReq: (proxyReq, req: any, res) => {
         // Forward user data from JWT middleware if available
         if (req.user) {

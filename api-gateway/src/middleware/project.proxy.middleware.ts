@@ -36,11 +36,8 @@ export const projectServiceProxy = app_config.projectServiceUrl
       {
         target: app_config.projectServiceUrl,
         changeOrigin: true,
-        pathRewrite: {
-          "^/api/v1/projects": "/projects",
-          "^/api/v1/comments": "/comments",
-        },
-      timeout: 30000, // 30 second timeout
+        // No path rewrite - forward /api/v1/projects/... or /api/v1/comments/... as is
+        timeout: 30000, // 30 second timeout
       // Forward path: /api/v1/projects/* -> /projects/*
       onProxyReq: (proxyReq, req: any, res) => {
         // Forward user data from JWT middleware if available

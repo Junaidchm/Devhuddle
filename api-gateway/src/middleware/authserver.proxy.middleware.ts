@@ -22,16 +22,7 @@ export const authServiceProxy = createProxyMiddleware(
   {
     target: authServiceUrl,
     changeOrigin: true,
-    pathRewrite: (path, req) => {
-      let newPath = path;
-      if (req.originalUrl.includes("/api/v1/auth")) {
-        newPath = req.originalUrl.replace(/^.*\/v1\/auth/, "/auth");
-      } else if (req.originalUrl.includes("/api/v1/users")) {
-        newPath = req.originalUrl.replace(/^.*\/v1\/users/, "/users");
-      }
-      logger.info(`[Auth Proxy] ${req.method} ${req.originalUrl} -> ${newPath}`);
-      return newPath;
-    },
+    // No path rewrite - forward /api/v1/auth/... or /api/v1/users/... as is
   // Add timeout to prevent hanging
   timeout: 30000, // 30 seconds
   // CRITICAL: Don't let proxy consume the body stream automatically

@@ -58,7 +58,7 @@ app.get("/health", (req: Request, res: Response) => {
 // So service receives: /api/v1/notifications/*
 
 // Notification routes: receives /api/v1/notifications/* from gateway
-app.use(`/notifications`, notificationRoutes);
+app.use(["/api/v1/notifications", "/notifications"], notificationRoutes);
 app.use(`/admin/dlq`, dlqRoutes);
 
 // Error handling middleware
