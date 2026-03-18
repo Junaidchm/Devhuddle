@@ -13,10 +13,11 @@ export const postServiceProxy = createProxyMiddleware({
   changeOrigin: true,
   // Strip /api/v1 prefix
   pathRewrite: (path, req) => {
-    // Use originalUrl to bypass Express prefix stripping
-    if (req.originalUrl.includes("/v1/posts")) return req.originalUrl.replace(/^.*\/v1\/posts/, "/posts");
-    if (req.originalUrl.includes("/v1/feed")) return req.originalUrl.replace(/^.*\/v1\/feed/, "/posts");
-    return req.originalUrl.replace(/^\/api\/v1/, "/posts");
+    // Precise absolute rewriting: /api/v1/feed -> /posts
+    const url = req.originalUrl;
+    if (url.includes("/v1/posts")) return url.replace(/^.*\/api\/v1\/posts/, "/posts");
+    if (url.includes("/v1/feed"))  return url.replace(/^.*\/api\/v1\/feed/, "/posts");
+    return url.replace(/^.*\/api\/v1/, "/posts");
   },
   onProxyReq: (proxyReq, req: any, res: Response) => {
     // Forward user data from JWT middleware if available

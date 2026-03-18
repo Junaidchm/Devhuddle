@@ -23,10 +23,12 @@ export const authServiceProxy = createProxyMiddleware({
   // Remove /api/v1 prefix, keep the rest (/auth, /users, etc.)
   // Map correctly based on original URL
   pathRewrite: (path, req) => {
-    // Use originalUrl to bypass Express prefix stripping
-    if (req.originalUrl.includes("/v1/auth")) return req.originalUrl.replace(/^.*\/v1\/auth/, "/auth");
-    if (req.originalUrl.includes("/v1/users")) return req.originalUrl.replace(/^.*\/v1\/users/, "/users");
-    return req.originalUrl.replace(/^\/api\/v1/, "");
+    // Exact absolute rewriting using originalUrl
+    const url = req.originalUrl;
+    if (url.includes("/v1/auth")) return url.replace(/^.*\/api\/v1\/auth/, "/auth");
+    if (url.includes("/v1/users")) return url.replace(/^.*\/api\/v1\/users/, "/users");
+    // Default fallback: strip /api/v1 and prefix with /auth (most common for this service)
+    return url.replace(/^.*\/api\/v1/, "/auth");
   },
   // Add timeout to prevent hanging
   timeout: 30000, // 30 seconds
