@@ -13,9 +13,10 @@ export const postServiceProxy = createProxyMiddleware(
   {
     target: app_config.postServiceUrl,
     changeOrigin: true,
-    pathRewrite: {
-      "^/api/v1/feed": "/posts",
-      "^/api/v1/posts": "/posts",
+    pathRewrite: (path, req) => {
+      const newPath = req.originalUrl.replace(/^.*\/v1\/(feed|posts)/, "/posts");
+      logger.info(`[Post Proxy] ${req.method} ${req.originalUrl} -> ${newPath}`);
+      return newPath;
     },
   onProxyReq: (proxyReq, req: any, res: Response) => {
     // Forward user data from JWT middleware if available

@@ -15,8 +15,10 @@ export const notificationServiceProxy = createProxyMiddleware(
     target: app_config.notificationServiceUrl,
     changeOrigin: true,
     ws: true,
-    pathRewrite: {
-      "^/api/v1/notifications": "/notifications",
+    pathRewrite: (path, req) => {
+      const newPath = req.originalUrl.replace(/^.*\/v1\/notifications/, "/notifications");
+      logger.info(`[Notification Proxy] ${req.method} ${req.originalUrl} -> ${newPath}`);
+      return newPath;
     },
   
   onProxyReq: (proxyReq, req: any, res) => {

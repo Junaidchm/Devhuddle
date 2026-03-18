@@ -40,8 +40,10 @@ export const engagementServiceProxy = app_config.postServiceUrl
       {
         target: app_config.postServiceUrl,
         changeOrigin: true,
-        pathRewrite: {
-          "^/api/v1/engagement": "",
+        pathRewrite: (path, req) => {
+          const newPath = req.originalUrl.replace(/^.*\/v1\/engagement/, "");
+          logger.info(`[Engagement Proxy] ${req.method} ${req.originalUrl} -> ${newPath}`);
+          return newPath;
         },
       onProxyReq: (proxyReq, req: any, res) => {
         // Forward user data from JWT middleware if available
