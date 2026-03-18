@@ -134,6 +134,12 @@ const adminRouter = setupAdminRoutes(adminController);
 app.use(["/api/v1/projects", "/api/v1/comments", "/projects", "/comments"], projectRouter);
 app.use(["/api/v1/admin", "/admin"], adminRouter);
 
+app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log(`>>> PROJECT_BUILD_V13 <<<`);
+  console.log(`PROJECT_INBOUND: ${req.method} ${req.url}`);
+  next();
+});
+
 app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({ status: "Project service is running" });
 });

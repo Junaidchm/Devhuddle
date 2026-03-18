@@ -40,6 +40,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log(`>>> AUTH_BUILD_V13 <<<`);
+  console.log(`AUTH_INBOUND: ${req.method} ${req.url}`);
+  next();
+});
+
 app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({ status: "Auth Service is running" });
 });

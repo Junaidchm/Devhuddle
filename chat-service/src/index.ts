@@ -39,6 +39,12 @@ app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use((req, res, next) => {
+    console.log(`>>> CHAT_BUILD_V13 <<<`);
+    console.log(`CHAT_INBOUND: ${req.method} ${req.url}`);
+    next();
+});
+
 // Health check endpoint
 app.get("/health", (_req, res) => {
     res.status(200).json({
