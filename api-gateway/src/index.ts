@@ -32,6 +32,7 @@ const server = createServer(app);
 
 // 1. Normalize and Log all requests (at the VERY TOP)
 app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log(`GATEWAY_INBOUND: ${req.method} ${req.url}`);
   const originalPath = req.url;
   
   // Aggressive normalization: collapse any doubled /api or /v1
