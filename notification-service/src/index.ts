@@ -47,6 +47,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Health check route
 app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log(`>>> NOTIFICATION_BUILD_V13 <<<`);
   console.log(`NOTIFICATION_INBOUND: ${req.method} ${req.url}`);
   next();
 });

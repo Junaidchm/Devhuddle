@@ -151,6 +151,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log(`>>> POST_BUILD_V13 <<<`);
+  console.log(`POST_INBOUND: ${req.method} ${req.url}`);
+  next();
+});
+
 app.use("/api/v1/engagement", engagementRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use(["/api/v1/feed", "/api/v1/posts", "/posts"], feedRouter);
