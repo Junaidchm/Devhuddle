@@ -57,6 +57,14 @@ app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use((req: Request, res: Response, next: NextFunction) => {
+  logger.info(`Incoming ${req.method} ${req.url}`, {
+    headers: {
+      "x-user-data": req.headers["x-user-data"] ? "present" : "absent"
+    }
+  });
+  next();
+});
 
 // Initialize repositories
 const likeRepository = new LikeRepository();
