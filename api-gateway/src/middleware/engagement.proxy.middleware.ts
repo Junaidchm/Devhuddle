@@ -41,6 +41,7 @@ export const engagementServiceProxy = app_config.postServiceUrl
       // Remove /engagement prefix, keep the rest
       // /api/v1/engagement/posts/:id/likes -> /api/v1/posts/:id/likes
       pathRewrite: (path) => {
+        // Robust stripping: maps /api/v1/engagement/posts/... to /posts/...
         if (path.includes("/v1/engagement")) return path.replace(/^.*\/v1\/engagement/, "");
         return path;
       },
