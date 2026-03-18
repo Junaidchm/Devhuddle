@@ -18,6 +18,7 @@ const AUTH_TIMEOUT = 5000; // 5 seconds
 export class WebSocketService {
   private wss: Server;
   private connections: Map<string, Set<AuthenticatedWebSocket>> = new Map();
+  private rooms: Map<string, Set<AuthenticatedWebSocket>> = new Map();
   private pendingConnections: Map<AuthenticatedWebSocket, NodeJS.Timeout> = new Map(); 
 
     constructor(server: HttpServer) {
@@ -99,6 +100,23 @@ export class WebSocketService {
         try {
           const message = JSON.parse(data.toString());
           logger.debug(`Received message from user ${userId}`, { message });
+
+          // Handle room joining/leaving
+          if (message.type === "join_room" && message.roomId) {
+            const roomId = message.roomId;
+            if (!this.rooms.has(roomId)) {
+              this.rooms.set(roomId, new Set());
+            }
+            this.rooms.get(roomId)!.add(ws);
+            logger.info(`[WebSocket] User ${userId} joined room ${roomId}`);
+          } else if (message.type === "leave_room" && message.roomId) {
+            const roomId = message.roomId;
+            this.rooms.get(roomId)?.delete(ws);
+            if (this.rooms.get(roomId)?.size === 0) {
+              this.rooms.delete(roomId);
+            }
+            logger.info(`[WebSocket] User ${userId} left room ${roomId}`);
+          }
         } catch (error: any) {
           logger.warn(`Failed to parse message from user ${userId}`, {
             error: error.message
@@ -127,6 +145,16 @@ export class WebSocketService {
               this.connections.delete(ws.userId);
             }
           }
+
+          // Remove from all rooms
+          this.rooms.forEach((clients, roomId) => {
+            if (clients.has(ws)) {
+              clients.delete(ws);
+              if (clients.size === 0) {
+                this.rooms.delete(roomId);
+              }
+            }
+          });
         }
         
         logger.info(`WebSocket disconnected`, {
@@ -286,6 +314,46 @@ export class WebSocketService {
       logger.error("Error broadcasting unread count", {
         error: error.message,
         userId,
+      });
+    }
+  }
+
+  /**
+   * Broadcast message to a specific room (e.g., a post, project, or hub)
+   */
+  async broadcastToRoom(
+    roomId: string,
+    event: string,
+    data: any
+  ): Promise<void> {
+    try {
+      const roomConnections = this.rooms.get(roomId);
+      if (!roomConnections || roomConnections.size === 0) {
+        logger.debug(`No active connections in room ${roomId} for event ${event}`);
+        return;
+      }
+
+      const serializedData = this.serializeBigInt(data);
+      const message = JSON.stringify({
+        type: event,
+        data: serializedData,
+      });
+
+      let sentCount = 0;
+      roomConnections.forEach((ws) => {
+        if (ws.readyState === ws.OPEN) {
+          ws.send(message);
+          sentCount++;
+        }
+      });
+
+      logger.info(
+        `Event ${event} broadcasted to room ${roomId} on ${sentCount} connections`
+      );
+    } catch (error: any) {
+      logger.error(`Error broadcasting to room ${roomId}`, {
+        event,
+        error: error.message,
       });
     }
   }

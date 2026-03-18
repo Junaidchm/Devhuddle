@@ -242,28 +242,34 @@ export async function startEngagementConsumer(
 
         // Process based on topic with proper type casting
         switch (topic) {
+          case KAFKA_TOPICS.POST_SENT:
+            await handlePostSent(event as PostSentEvent, repo);
+            break;
           case KAFKA_TOPICS.POST_LIKE_CREATED:
-            await handlePostLikeCreated(event as PostLikeCreatedEvent, repo);
+            await handlePostLikeCreated(event as PostLikeCreatedEvent, repo, wsService);
             break;
           case KAFKA_TOPICS.POST_LIKE_REMOVED:
-            await handlePostLikeRemoved(event as PostLikeRemovedEvent, repo);
+            await handlePostLikeRemoved(event as PostLikeRemovedEvent, repo, wsService);
             break;
           case KAFKA_TOPICS.COMMENT_LIKE_CREATED:
             await handleCommentLikeCreated(
               event as CommentLikeCreatedEvent,
-              repo
+              repo,
+              wsService
             );
             break;
           case KAFKA_TOPICS.COMMENT_LIKE_REMOVED:
             await handleCommentLikeRemoved(
               event as CommentLikeRemovedEvent,
-              repo
+              repo,
+              wsService
             );
             break;
           case KAFKA_TOPICS.POST_COMMENT_CREATED:
             await handlePostCommentCreated(
               event as PostCommentCreatedEvent,
-              repo
+              repo,
+              wsService
             );
             break;
           case KAFKA_TOPICS.POST_COMMENT_EDITED:
@@ -275,11 +281,9 @@ export async function startEngagementConsumer(
           case KAFKA_TOPICS.POST_COMMENT_DELETED:
             await handlePostCommentDeleted(
               event as PostCommentDeletedEvent,
-              repo
+              repo,
+              wsService
             );
-            break;
-          case KAFKA_TOPICS.POST_SENT:
-            await handlePostSent(event as PostSentEvent, repo);
             break;
           case KAFKA_TOPICS.POST_CREATED:
             await handlePostCreated(event as PostCreatedEvent, repo, wsService);
@@ -288,19 +292,19 @@ export async function startEngagementConsumer(
             await handlePostReported(event as PostReportedEvent, repo);
             break;
           case KAFKA_TOPICS.PROJECT_LIKE_CREATED:
-            await handleProjectLikeCreated(event as ProjectLikeCreatedEvent, repo);
+            await handleProjectLikeCreated(event as ProjectLikeCreatedEvent, repo, wsService);
             break;
           case KAFKA_TOPICS.PROJECT_LIKE_REMOVED:
-            await handleProjectLikeRemoved(event as ProjectLikeRemovedEvent, repo);
+            await handleProjectLikeRemoved(event as ProjectLikeRemovedEvent, repo, wsService);
             break;
           case KAFKA_TOPICS.PROJECT_COMMENT_CREATED:
-            await handleProjectCommentCreated(event as ProjectCommentCreatedEvent, repo);
+            await handleProjectCommentCreated(event as ProjectCommentCreatedEvent, repo, wsService);
             break;
           case KAFKA_TOPICS.PROJECT_COMMENT_EDITED:
             await handleProjectCommentEdited(event as ProjectCommentEditedEvent, repo);
             break;
           case KAFKA_TOPICS.PROJECT_COMMENT_DELETED:
-            await handleProjectCommentDeleted(event as ProjectCommentDeletedEvent, repo);
+            await handleProjectCommentDeleted(event as ProjectCommentDeletedEvent, repo, wsService);
             break;
           case KAFKA_TOPICS.PROJECT_SHARE_CREATED:
             await handleProjectShareCreated(event as ProjectShareCreatedEvent, repo);
@@ -309,10 +313,10 @@ export async function startEngagementConsumer(
             await handleProjectReported(event as ProjectReportedEvent, repo);
             break;
           case KAFKA_TOPICS.PROJECT_COMMENT_LIKE_CREATED:
-            await handleProjectCommentLikeCreated(event as ProjectCommentLikeCreatedEvent, repo);
+            await handleProjectCommentLikeCreated(event as ProjectCommentLikeCreatedEvent, repo, wsService);
             break;
           case KAFKA_TOPICS.PROJECT_COMMENT_LIKE_REMOVED:
-            await handleProjectCommentLikeRemoved(event as ProjectCommentLikeRemovedEvent, repo);
+            await handleProjectCommentLikeRemoved(event as ProjectCommentLikeRemovedEvent, repo, wsService);
             break;
           default:
             logger.warn(`Unhandled topic: ${topic}`);
@@ -332,101 +336,102 @@ export async function startEngagementConsumer(
 
 async function handlePostLikeCreated(
   event: PostLikeCreatedEvent,
-  repo: NotificationsRepository
+  repo: NotificationsRepository,
+  wsService: WebSocketService
 ): Promise<void> {
   const { postId, userId, postAuthorId, version } = event;
 
-  console.log(
-    "the event is handlePostLikeCreated -------------------->",
-    event
-  );
-  // Don't notify if user liked their own post
+  // Broadcast to post room for real-time count update
+  wsService.broadcastToRoom(postId, "engagement_update", {
+    type: "POST_LIKE_UPDATE",
+    postId,
+    userId,
+    action: "LIKE"
+  });
+
   if (userId === postAuthorId) return;
 
   const versionNumber = version || Date.now();
-
-  // Repository handles broadcasting internally (no duplicate broadcast needed)
   await repo.createLikeNotification(
     userId,
     postAuthorId,
     postId,
     "POST",
     versionNumber,
-    undefined, // contextId
-    { postId } // metadata
+    undefined,
+    { postId }
   );
 
-  logger.info(`Post like notification created for ${postAuthorId}`);
+  logger.info(`Post like notification created and broadcasted to room ${postId}`);
 }
 
 async function handlePostLikeRemoved(
   event: PostLikeRemovedEvent,
-  repo: NotificationsRepository
+  repo: NotificationsRepository,
+  wsService: WebSocketService
 ): Promise<void> {
   const { postId, userId, postAuthorId, version } = event;
 
-  if (userId === postAuthorId) return;
-
-  const versionNumber = version || Date.now();
-
-  await repo.deleteLikeNotification(
-    userId,
-    postAuthorId,
+  // Broadcast to post room
+  wsService.broadcastToRoom(postId, "engagement_update", {
+    type: "POST_LIKE_UPDATE",
     postId,
-    "POST",
-    versionNumber
-  );
+    userId,
+    action: "UNLIKE"
+  });
 
-  logger.info(`Post like notification removed for ${postAuthorId}`);
+  if (userId === postAuthorId) return;
+  const versionNumber = version || Date.now();
+  await repo.deleteLikeNotification(userId, postAuthorId, postId, "POST", versionNumber);
+  logger.info(`Post unlike broadcasted to room ${postId}`);
 }
 
 async function handleCommentLikeCreated(
   event: CommentLikeCreatedEvent,
-  repo: NotificationsRepository
+  repo: NotificationsRepository,
+  wsService: WebSocketService
 ): Promise<void> {
   const { commentId, userId, commentAuthorId, postId, version } = event;
 
-  if (userId === commentAuthorId) return;
-
-  const versionNumber = version || Date.now();
-
-  await repo.createLikeNotification(
-    userId,
-    commentAuthorId,
+  // Broadcast to post room
+  wsService.broadcastToRoom(postId, "engagement_update", {
+    type: "COMMENT_LIKE_UPDATE",
+    postId,
     commentId,
-    "COMMENT",
-    versionNumber,
-    postId, // contextId
-    { postId, commentId } // metadata
-  );
+    userId,
+    action: "LIKE"
+  });
 
-  logger.info(`Comment like notification created for ${commentAuthorId}`);
+  if (userId === commentAuthorId) return;
+  const versionNumber = version || Date.now();
+  await repo.createLikeNotification(userId, commentAuthorId, commentId, "COMMENT", versionNumber, postId, { postId, commentId });
 }
 
 async function handleCommentLikeRemoved(
   event: CommentLikeRemovedEvent,
-  repo: NotificationsRepository
+  repo: NotificationsRepository,
+  wsService: WebSocketService
 ): Promise<void> {
-  const { commentId, userId, commentAuthorId, version } = event;
+  const { commentId, userId, commentAuthorId, postId, version } = event;
+
+  // Broadcast to post room
+  wsService.broadcastToRoom(postId, "engagement_update", {
+    type: "COMMENT_LIKE_UPDATE",
+    postId,
+    commentId,
+    userId,
+    action: "UNLIKE"
+  });
 
   if (userId === commentAuthorId) return;
-
   const versionNumber = version || Date.now();
-
-  await repo.deleteLikeNotification(
-    userId,
-    commentAuthorId,
-    commentId,
-    "COMMENT",
-    versionNumber
-  );
-
-  logger.info(`Comment like notification removed for ${commentAuthorId}`);
+  await repo.deleteLikeNotification(userId, commentAuthorId, commentId, "COMMENT", versionNumber);
 }
 
 async function handlePostCommentCreated(
   event: PostCommentCreatedEvent,
-  repo: NotificationsRepository
+  repo: NotificationsRepository,
+  wsService: WebSocketService
 ): Promise<void> {
   const {
     commentId,
@@ -437,59 +442,33 @@ async function handlePostCommentCreated(
     parentCommentAuthorId,
     mentionedUserIds,
     version,
+    content,
   } = event;
 
+  // Broadcast to post room for instant comment display
+  wsService.broadcastToRoom(postId, "engagement_update", {
+    type: "POST_COMMENT_CREATED",
+    postId,
+    commentId,
+    userId,
+    content,
+    parentCommentId,
+    createdAt: new Date().toISOString()
+  });
+
   const versionNumber = version || Date.now();
-
-  // Notify post author if commenter is not the post author
+  // ... notifications logic ...
   if (userId !== postAuthorId) {
-    await repo.createCommentNotification(
-      userId,
-      postAuthorId,
-      postId,
-      commentId,
-      "POST",
-      versionNumber
-    );
-    logger.info(`Comment notification created for post author ${postAuthorId}`);
+    await repo.createCommentNotification(userId, postAuthorId, postId, commentId, "POST", versionNumber);
   }
-
-  // Notify parent comment author if this is a reply
-  if (
-    parentCommentId &&
-    parentCommentAuthorId &&
-    userId !== parentCommentAuthorId
-  ) {
-    await repo.createCommentNotification(
-      userId,
-      parentCommentAuthorId,
-      postId,
-      commentId,
-      "COMMENT",
-      versionNumber
-    );
-    logger.info(
-      `Comment reply notification created for parent comment author ${parentCommentAuthorId}`
-    );
+  // ... rest of notifications (replies, mentions) ...
+  if (parentCommentId && parentCommentAuthorId && userId !== parentCommentAuthorId) {
+    await repo.createCommentNotification(userId, parentCommentAuthorId, postId, commentId, "COMMENT", versionNumber);
   }
-
-  // Notify mentioned users
-  if (
-    mentionedUserIds &&
-    Array.isArray(mentionedUserIds) &&
-    mentionedUserIds.length > 0
-  ) {
+  if (mentionedUserIds && Array.isArray(mentionedUserIds)) {
     for (const mentionedUserId of mentionedUserIds) {
       if (userId !== mentionedUserId) {
-        await repo.createMentionNotification(
-          userId,
-          mentionedUserId,
-          postId,
-          commentId,
-          "COMMENT",
-          versionNumber
-        );
-        logger.info(`Mention notification created for user ${mentionedUserId}`);
+        await repo.createMentionNotification(userId, mentionedUserId, postId, commentId, "COMMENT", versionNumber);
       }
     }
   }
@@ -512,16 +491,21 @@ async function handlePostCommentEdited(
 
 async function handlePostCommentDeleted(
   event: PostCommentDeletedEvent,
-  repo: NotificationsRepository
+  repo: NotificationsRepository,
+  wsService: WebSocketService
 ): Promise<void> {
   const { commentId, postId, userId, version } = event;
 
+  // Broadcast deletion
+  wsService.broadcastToRoom(postId, "engagement_update", {
+    type: "POST_COMMENT_DELETED",
+    postId,
+    commentId,
+    userId
+  });
+
   const versionNumber = version || Date.now();
-
-  // Delete all notifications related to this comment (for all recipients)
   await repo.deleteCommentNotification(commentId, versionNumber);
-
-  logger.info(`Comment notifications deleted for comment ${commentId}`);
 }
 
 // ✅ NEW: Handle post creation event (notify followers)
@@ -640,9 +624,18 @@ async function handlePostReported(
 
 async function handleProjectLikeCreated(
   event: ProjectLikeCreatedEvent,
-  repo: NotificationsRepository
+  repo: NotificationsRepository,
+  wsService: WebSocketService
 ): Promise<void> {
   const { projectId, userId, projectAuthorId, version } = event;
+
+  // Broadcast to project room
+  wsService.broadcastToRoom(projectId, "engagement_update", {
+    type: "PROJECT_LIKE_UPDATE",
+    projectId,
+    userId,
+    action: "LIKE"
+  });
 
   if (userId === projectAuthorId) return;
 
@@ -650,37 +643,36 @@ async function handleProjectLikeCreated(
     userId,
     projectAuthorId,
     projectId,
-    "PROJECT" as any, // We'll update the repository to handle this
+    "PROJECT" as any,
     version,
     undefined,
     { projectId }
   );
-
-  logger.info(`Project like notification created for ${projectAuthorId}`);
 }
 
 async function handleProjectLikeRemoved(
   event: ProjectLikeRemovedEvent,
-  repo: NotificationsRepository
+  repo: NotificationsRepository,
+  wsService: WebSocketService
 ): Promise<void> {
   const { projectId, userId, projectAuthorId, version } = event;
 
-  if (userId === projectAuthorId) return;
-
-  await repo.deleteLikeNotification(
-    userId,
-    projectAuthorId,
+  // Broadcast to project room
+  wsService.broadcastToRoom(projectId, "engagement_update", {
+    type: "PROJECT_LIKE_UPDATE",
     projectId,
-    "PROJECT" as any,
-    version
-  );
+    userId,
+    action: "UNLIKE"
+  });
 
-  logger.info(`Project like notification removed for ${projectAuthorId}`);
+  if (userId === projectAuthorId) return;
+  await repo.deleteLikeNotification(userId, projectAuthorId, projectId, "PROJECT" as any, version);
 }
 
 async function handleProjectCommentCreated(
   event: ProjectCommentCreatedEvent,
-  repo: NotificationsRepository
+  repo: NotificationsRepository,
+  wsService: WebSocketService
 ): Promise<void> {
   const {
     commentId,
@@ -690,32 +682,25 @@ async function handleProjectCommentCreated(
     parentCommentId,
     parentCommentAuthorId,
     version,
+    content
   } = event;
 
-  // Notify project author
-  if (userId !== projectAuthorId) {
-    await repo.createCommentNotification(
-      userId,
-      projectAuthorId,
-      projectId,
-      commentId,
-      "PROJECT" as any,
-      version
-    );
-    logger.info(`Comment notification created for project author ${projectAuthorId}`);
-  }
+  // Broadcast to project room
+  wsService.broadcastToRoom(projectId, "engagement_update", {
+    type: "PROJECT_COMMENT_CREATED",
+    projectId,
+    commentId,
+    userId,
+    content,
+    parentCommentId,
+    createdAt: new Date().toISOString()
+  });
 
-  // Notify parent comment author if reply
+  if (userId !== projectAuthorId) {
+    await repo.createCommentNotification(userId, projectAuthorId, projectId, commentId, "PROJECT" as any, version);
+  }
   if (parentCommentId && parentCommentAuthorId && userId !== parentCommentAuthorId) {
-    await repo.createCommentNotification(
-      userId,
-      parentCommentAuthorId,
-      projectId,
-      commentId,
-      "PROJECT_COMMENT" as any, // Comment replies for projects
-      version
-    );
-    logger.info(`Comment reply notification created for parent comment author ${parentCommentAuthorId}`);
+    await repo.createCommentNotification(userId, parentCommentAuthorId, projectId, commentId, "PROJECT_COMMENT" as any, version);
   }
 }
 
@@ -729,11 +714,19 @@ async function handleProjectCommentEdited(
 
 async function handleProjectCommentDeleted(
   event: ProjectCommentDeletedEvent,
-  repo: NotificationsRepository
+  repo: NotificationsRepository,
+  wsService: WebSocketService
 ): Promise<void> {
-  const { commentId, version } = event;
+  const { commentId, projectId, userId, version } = event;
+
+  wsService.broadcastToRoom(projectId, "engagement_update", {
+    type: "PROJECT_COMMENT_DELETED",
+    projectId,
+    commentId,
+    userId
+  });
+
   await repo.deleteCommentNotification(commentId, version);
-  logger.info(`Project comment notifications deleted for comment ${commentId}`);
 }
 
 async function handleProjectShareCreated(
@@ -769,44 +762,40 @@ async function handleProjectReported(
 
 async function handleProjectCommentLikeCreated(
   event: ProjectCommentLikeCreatedEvent,
-  repo: NotificationsRepository
+  repo: NotificationsRepository,
+  wsService: WebSocketService
 ): Promise<void> {
   const { commentId, userId, commentAuthorId, projectId, version } = event;
 
-  if (userId === commentAuthorId) return;
-
-  const versionNumber = version || Date.now();
-
-  await repo.createLikeNotification(
-    userId,
-    commentAuthorId,
-    commentId,
-    "COMMENT",
-    versionNumber,
+  wsService.broadcastToRoom(projectId, "engagement_update", {
+    type: "PROJECT_COMMENT_LIKE_UPDATE",
     projectId,
-    { projectId, commentId }
-  );
+    commentId,
+    userId,
+    action: "LIKE"
+  });
 
-  logger.info(`Project comment like notification created for ${commentAuthorId}`);
+  if (userId === commentAuthorId) return;
+  const versionNumber = version || Date.now();
+  await repo.createLikeNotification(userId, commentAuthorId, commentId, "COMMENT", versionNumber, projectId, { projectId, commentId });
 }
 
 async function handleProjectCommentLikeRemoved(
   event: ProjectCommentLikeRemovedEvent,
-  repo: NotificationsRepository
+  repo: NotificationsRepository,
+  wsService: WebSocketService
 ): Promise<void> {
-  const { commentId, userId, commentAuthorId, version } = event;
+  const { commentId, userId, commentAuthorId, projectId, version } = event;
+
+  wsService.broadcastToRoom(projectId, "engagement_update", {
+    type: "PROJECT_COMMENT_LIKE_UPDATE",
+    projectId,
+    commentId,
+    userId,
+    action: "UNLIKE"
+  });
 
   if (userId === commentAuthorId) return;
-
   const versionNumber = version || Date.now();
-
-  await repo.deleteLikeNotification(
-    userId,
-    commentAuthorId,
-    commentId,
-    "COMMENT",
-    versionNumber
-  );
-
-  logger.info(`Project comment like notification removed for ${commentAuthorId}`);
+  await repo.deleteLikeNotification(userId, commentAuthorId, commentId, "COMMENT", versionNumber);
 }
