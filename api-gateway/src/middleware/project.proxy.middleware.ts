@@ -31,16 +31,15 @@ const fallbackMiddleware = (req: Request, res: Response, next: NextFunction) => 
 
 // Only create proxy if URL is configured, otherwise use fallback
 export const projectServiceProxy = app_config.projectServiceUrl
-  ? createProxyMiddleware({
-      target: app_config.projectServiceUrl,
-      changeOrigin: true,
-      pathRewrite: (path) => {
-        if (path.includes("/v1/projects")) return path.replace(/^.*\/v1\/projects/, "/projects");
-        if (path.includes("/v1/comments")) return path.replace(/^.*\/v1\/comments/, "/comments");
-        if (path.includes("/v1/admin")) return path.replace(/^.*\/v1\/admin/, "/admin");
-        if (path.startsWith("/projects") || path.startsWith("/comments") || path.startsWith("/admin")) return path;
-        return "/projects" + path;
-      },
+  ? createProxyMiddleware(
+      (path) => path.startsWith("/api/v1/projects") || path.startsWith("/api/v1/comments"),
+      {
+        target: app_config.projectServiceUrl,
+        changeOrigin: true,
+        pathRewrite: {
+          "^/api/v1/projects": "/projects",
+          "^/api/v1/comments": "/comments",
+        },
       timeout: 30000, // 30 second timeout
       // Forward path: /api/v1/projects/* -> /projects/*
       onProxyReq: (proxyReq, req: any, res) => {

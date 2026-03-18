@@ -34,15 +34,14 @@ const fallbackMiddleware = (req: Request, res: Response, next: NextFunction) => 
 
 // Only create proxy if URL is configured, otherwise use fallback
 export const adminServiceProxy = app_config.authServiceUrl
-  ? createProxyMiddleware({
-      target: app_config.authServiceUrl,
-      changeOrigin: true,
-      // Remove /api/v1 prefix, forward the rest (/admin/...)
-      pathRewrite: (path) => {
-        if (path.includes("/v1/admin")) return path.replace(/^.*\/v1\/admin/, "/admin");
-        if (path.startsWith("/admin")) return path;
-        return "/admin" + path;
-      },
+  ? createProxyMiddleware(
+      (path) => path.startsWith("/api/v1/admin") || path.startsWith("/admin"),
+      {
+        target: app_config.authServiceUrl,
+        changeOrigin: true,
+        pathRewrite: {
+          "^/api/v1/admin": "/admin",
+        },
       onProxyReq: (proxyReq, req: any, res) => {
         logger.info(
           `[Admin Proxy] Forwarding ${req.method} ${req.originalUrl} to ${app_config.authServiceUrl}${req.url}`

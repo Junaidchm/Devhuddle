@@ -123,19 +123,8 @@ app.use("/", conditionalJwtMiddleware, projectServiceProxy);
 // Admin Routes (Domain-Specific Dispatching)
 // ============================================
 
-// User Management (Auth Service)
+// User Management (Auth Service) & Chat
 app.use("/", conditionalJwtMiddleware, adminServiceProxy);
-app.use("/", conditionalJwtMiddleware, chatServiceProxy);
-
-// Reports & Audit (Auth Service - Centralized)
-app.use(ROUTES.ADMIN.REPORTS, conditionalJwtMiddleware, adminServiceProxy);
-app.use(ROUTES.ADMIN.AUDIT_LOGS, conditionalJwtMiddleware, adminServiceProxy);
-app.use(ROUTES.ADMIN.BASE + "/analytics", conditionalJwtMiddleware, adminServiceProxy);
-
-// Fallback for any other admin routes
-app.use(ROUTES.ADMIN.BASE, conditionalJwtMiddleware, adminServiceProxy);
-
-// Chat Service Route
 app.use("/", conditionalJwtMiddleware, chatServiceProxy);
 
 // Handle favicon to prevent unhandled requests

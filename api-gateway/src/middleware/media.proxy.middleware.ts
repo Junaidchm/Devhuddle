@@ -7,14 +7,14 @@ import { Request, Response } from "express";
  * Handles all routes that should be forwarded to the Media Service:
  * - /api/v1/media/* -> Media Service
  */
-export const mediaServiceProxy = createProxyMiddleware({
-  target: process.env.MEDIA_SERVICE_URL!,
-  changeOrigin: true,
-  pathRewrite: (path) => {
-    if (path.includes("/v1/media")) return path.replace(/^.*\/v1\/media/, "/media");
-    if (path.startsWith("/media")) return path;
-    return "/media" + path;
-  },
+export const mediaServiceProxy = createProxyMiddleware(
+  (path) => path.startsWith("/api/v1/media") || path.startsWith("/media"),
+  {
+    target: process.env.MEDIA_SERVICE_URL!,
+    changeOrigin: true,
+    pathRewrite: {
+      "^/api/v1/media": "/media",
+    },
   onProxyReq: (proxyReq, req: any, res: Response) => {
     // Forward user data from JWT middleware if available
     if (req.user) {
