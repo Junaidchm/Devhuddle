@@ -54,5 +54,23 @@ export class ProjectLikeController {
       next(error);
     }
   }
+
+  async getLikeCount(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { projectId } = req.params;
+      const count = await this._likeService.getLikeCount(projectId as string);
+
+      res.status(HttpStatus.OK).json({
+        success: true,
+        count,
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
 }
 

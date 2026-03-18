@@ -192,4 +192,22 @@ export class ProjectCommentController {
       next(error);
     }
   }
+
+  async getCommentCount(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { projectId } = req.params;
+      const count = await this._commentService.getCommentCount(projectId as string);
+
+      res.status(HttpStatus.OK).json({
+        success: true,
+        count,
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
 }

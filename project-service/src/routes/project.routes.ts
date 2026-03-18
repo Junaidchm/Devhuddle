@@ -91,6 +91,11 @@ export const setupProjectRoutes = (
     likeController.unlikeProject.bind(likeController)
   );
 
+  router.get(
+    "/projects/:projectId/like/count",
+    likeController.getLikeCount.bind(likeController)
+  );
+
   router.post(
     "/projects/:projectId/share",
     idempotencyMiddleware(idempotencyRepository),
@@ -115,6 +120,11 @@ export const setupProjectRoutes = (
   router.get(
     "/projects/:projectId/comments",
     commentController.getComments.bind(commentController)
+  );
+
+  router.get(
+    "/projects/:projectId/comments/count",
+    commentController.getCommentCount.bind(commentController)
   );
 
   router.put(

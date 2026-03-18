@@ -137,5 +137,14 @@ export class ProjectLikeService implements IProjectLikeService {
       throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
+
+  async getLikeCount(projectId: string): Promise<number> {
+    try {
+      return await this._likeRepository.getLikeCount(projectId);
+    } catch (err: unknown) {
+      logger.error("getLikeCount error", { error: (err as Error).message });
+      throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
+    }
+  }
 }
 
