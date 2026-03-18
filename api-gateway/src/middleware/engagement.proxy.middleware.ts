@@ -40,10 +40,9 @@ export const engagementServiceProxy = app_config.postServiceUrl
       changeOrigin: true,
       // Remove /engagement prefix, keep the rest
       // /api/v1/engagement/posts/:id/likes -> /api/v1/posts/:id/likes
-      pathRewrite: (path) => {
-        // Robust stripping: maps /api/v1/engagement/posts/... to /posts/...
-        if (path.includes("/v1/engagement")) return path.replace(/^.*\/v1\/engagement/, "");
-        return path;
+      pathRewrite: (path, req) => {
+        // Use originalUrl to bypass Express prefix stripping
+        return req.originalUrl.replace(/^.*\/v1\/engagement/, "");
       },
       onProxyReq: (proxyReq, req: any, res) => {
         // Forward user data from JWT middleware if available

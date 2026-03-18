@@ -13,11 +13,12 @@ export const notificationServiceProxy = createProxyMiddleware({
   target: app_config.notificationServiceUrl,
   changeOrigin: true,
   ws: true,
-  pathRewrite: (path) => {
-    // Robust stripping: /api/v1/notifications -> /notifications
-    if (path.includes("/v1/notification")) return path.replace(/^.*\/v1\/notification/, "/notifications");
-    if (path.startsWith("/notifications")) return path;
-    return "/notifications" + path;
+  pathRewrite: (path, req) => {
+    // Use originalUrl to bypass Express prefix stripping
+    if (req.originalUrl.includes("/v1/notification")) {
+      return req.originalUrl.replace(/^.*\/v1\/notification/, "/notifications");
+    }
+    return req.originalUrl.replace(/^\/api\/v1/, "");
   },
   
   onProxyReq: (proxyReq, req: any, res) => {
