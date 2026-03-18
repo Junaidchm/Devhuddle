@@ -10,7 +10,6 @@ RUN apt-get update -y && apt-get install -y openssl
 COPY package*.json ./
 COPY tsconfig.json ./
 COPY prisma ./prisma
-COPY protos ./protos
 
 # Install all dependencies (including dev for building)
 RUN npm install --no-audit --no-fund
@@ -43,7 +42,6 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/protos ./protos
 
-EXPOSE 3001
+EXPOSE 5003
 CMD ["npm", "run", "start"]
