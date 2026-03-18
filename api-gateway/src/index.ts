@@ -107,24 +107,15 @@ app.use(express.urlencoded({
 // HTTP Proxy Routes (forwarded to microservices)
 // ============================================
 
-app.use("/api/v1/auth", conditionalJwtMiddleware, authServiceProxy);
-app.use("/api/v1/users", conditionalJwtMiddleware, authServiceProxy);
-app.use("/api/v1/posts", conditionalJwtMiddleware, postServiceProxy);
-app.use("/api/v1/feed", conditionalJwtMiddleware, postServiceProxy);
-app.use("/api/v1/media", conditionalJwtMiddleware, mediaServiceProxy);
-app.use("/api/v1/notifications", conditionalJwtMiddleware, notificationServiceProxy);
-app.use("/api/v1/engagement", conditionalJwtMiddleware, engagementServiceProxy);
-app.use("/api/v1/projects", conditionalJwtMiddleware, projectServiceProxy);
-app.use("/api/v1/comments", conditionalJwtMiddleware, projectServiceProxy);
+app.use("/", conditionalJwtMiddleware, authServiceProxy);
+app.use("/", conditionalJwtMiddleware, postServiceProxy);
+app.use("/", conditionalJwtMiddleware, mediaServiceProxy);
+app.use("/", conditionalJwtMiddleware, notificationServiceProxy);
+app.use("/", conditionalJwtMiddleware, engagementServiceProxy);
+app.use("/", conditionalJwtMiddleware, projectServiceProxy);
+app.use("/", conditionalJwtMiddleware, adminServiceProxy);
+app.use("/", conditionalJwtMiddleware, chatServiceProxy);
 
-
-// ============================================
-// Admin Routes (Domain-Specific Dispatching)
-// ============================================
-
-// User Management (Auth Service) & Chat
-app.use("/api/v1/admin", conditionalJwtMiddleware, adminServiceProxy);
-app.use("/api/v1/chat", conditionalJwtMiddleware, chatServiceProxy);
 
 // Handle favicon to prevent unhandled requests
 app.get("/favicon.ico", (req: Request, res: Response) => {
