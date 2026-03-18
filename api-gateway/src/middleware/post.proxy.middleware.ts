@@ -8,17 +8,15 @@ import { Request, Response } from "express";
  * Handles all routes that should be forwarded to the Post Service:
  * - /feed/* -> /api/v1/posts/* (after mapping)
  */
-export const postServiceProxy = createProxyMiddleware({
-  target: app_config.postServiceUrl,
-  changeOrigin: true,
-  // Strip /api/v1 prefix
-  pathRewrite: (path, req) => {
-    // Precise absolute rewriting: /api/v1/feed -> /posts
-    const url = req.originalUrl;
-    if (url.includes("/v1/posts")) return url.replace(/^.*\/api\/v1\/posts/, "/posts");
-    if (url.includes("/v1/feed"))  return url.replace(/^.*\/api\/v1\/feed/, "/posts");
-    return url.replace(/^.*\/api\/v1/, "/posts");
-  },
+export const postServiceProxy = createProxyMiddleware(
+  (path) => path.startsWith("/api/v1/feed") || path.startsWith("/api/v1/posts"),
+  {
+    target: app_config.postServiceUrl,
+    changeOrigin: true,
+    pathRewrite: {
+      "^/api/v1/feed": "/posts",
+      "^/api/v1/posts": "/posts",
+    },
   onProxyReq: (proxyReq, req: any, res: Response) => {
     // Forward user data from JWT middleware if available
     if (req.user) {

@@ -17,19 +17,15 @@ if (!process.env.AUTH_SERVICE_URL) {
   logger.info(`[Auth Proxy] Using AUTH_SERVICE_URL: ${authServiceUrl}`);
 }
 
-export const authServiceProxy = createProxyMiddleware({
-  target: authServiceUrl,
-  changeOrigin: true,
-  // Remove /api/v1 prefix, keep the rest (/auth, /users, etc.)
-  // Map correctly based on original URL
-  pathRewrite: (path, req) => {
-    // Exact absolute rewriting using originalUrl
-    const url = req.originalUrl;
-    if (url.includes("/v1/auth")) return url.replace(/^.*\/api\/v1\/auth/, "/auth");
-    if (url.includes("/v1/users")) return url.replace(/^.*\/api\/v1\/users/, "/users");
-    // Default fallback: strip /api/v1 and prefix with /auth (most common for this service)
-    return url.replace(/^.*\/api\/v1/, "/auth");
-  },
+export const authServiceProxy = createProxyMiddleware(
+  (path) => path.startsWith("/api/v1/auth") || path.startsWith("/api/v1/users"),
+  {
+    target: authServiceUrl,
+    changeOrigin: true,
+    pathRewrite: {
+      "^/api/v1/auth": "/auth",
+      "^/api/v1/users": "/users",
+    },
   // Add timeout to prevent hanging
   timeout: 30000, // 30 seconds
   // CRITICAL: Don't let proxy consume the body stream automatically

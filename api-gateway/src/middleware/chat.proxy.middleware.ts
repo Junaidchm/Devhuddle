@@ -11,16 +11,15 @@ import { logger } from "../utils/logger";
  */
 const CHAT_TARGET = app_config.chatServiceUrl || "http://chat-service:4004";
 
-export const chatServiceProxy = createProxyMiddleware({
-  target: CHAT_TARGET,
-  changeOrigin: true,
-  ws: true,
-  pathRewrite: (path, req) => {
-    // Precise absolute rewriting: /api/v1/chat -> /chat
-    const url = req.originalUrl;
-    if (url.includes("/v1/chat")) return url.replace(/^.*\/api\/v1\/chat/, "/chat");
-    return url.replace(/^.*\/api\/v1/, "/chat");
-  },
+export const chatServiceProxy = createProxyMiddleware(
+  (path) => path.startsWith("/api/v1/chat"),
+  {
+    target: CHAT_TARGET,
+    changeOrigin: true,
+    ws: true,
+    pathRewrite: {
+      "^/api/v1/chat": "/chat",
+    },
   
   onProxyReq: (proxyReq, req: any, res) => {
     // logger.info(

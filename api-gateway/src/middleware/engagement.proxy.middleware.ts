@@ -35,15 +35,14 @@ const fallbackMiddleware = (req: Request, res: Response, next: NextFunction) => 
 
 // Only create proxy if URL is configured, otherwise use fallback
 export const engagementServiceProxy = app_config.postServiceUrl
-  ? createProxyMiddleware({
-      target: app_config.postServiceUrl,
-      changeOrigin: true,
-      // Remove /engagement prefix, keep the rest
-      // /api/v1/engagement/posts/:id/likes -> /api/v1/posts/:id/likes
-      pathRewrite: (path, req) => {
-        // Precise absolute rewriting: /api/v1/engagement/posts -> /posts
-        return req.originalUrl.replace(/^.*\/api\/v1\/engagement/, "");
-      },
+  ? createProxyMiddleware(
+      (path) => path.startsWith("/api/v1/engagement"),
+      {
+        target: app_config.postServiceUrl,
+        changeOrigin: true,
+        pathRewrite: {
+          "^/api/v1/engagement": "",
+        },
       onProxyReq: (proxyReq, req: any, res) => {
         // Forward user data from JWT middleware if available
         if (req.user) {

@@ -107,33 +107,16 @@ app.use(express.urlencoded({
 // HTTP Proxy Routes (forwarded to microservices)
 // ============================================
 
-app.use(ROUTES.AUTH.BASE, conditionalJwtMiddleware, authServiceProxy);
-app.use(ROUTES.USERS.BASE, conditionalJwtMiddleware, authServiceProxy);
+app.use("/", conditionalJwtMiddleware, authServiceProxy);
 
 
-app.use(ROUTES.FEED.BASE, conditionalJwtMiddleware, postServiceProxy);
-
-app.use(
-  ROUTES.MEDIA.BASE,
-  conditionalJwtMiddleware,
-  mediaServiceProxy
-);
-
-app.use(
-  ROUTES.NOTIFICATIONS.BASE,
-  conditionalJwtMiddleware,
-  notificationServiceProxy
-);
-
-app.use(
-  ROUTES.ENGAGEMENT.BASE,
-  conditionalJwtMiddleware,
-  engagementServiceProxy
-);
+app.use("/", conditionalJwtMiddleware, postServiceProxy);
+app.use("/", conditionalJwtMiddleware, mediaServiceProxy);
+app.use("/", conditionalJwtMiddleware, notificationServiceProxy);
+app.use("/", conditionalJwtMiddleware, engagementServiceProxy);
 
 
-app.use(ROUTES.PROJECTS.BASE, conditionalJwtMiddleware, projectServiceProxy);
-app.use(ROUTES.COMMENTS.BASE, conditionalJwtMiddleware, projectServiceProxy);
+app.use("/", conditionalJwtMiddleware, projectServiceProxy);
 
 
 // ============================================
@@ -141,18 +124,8 @@ app.use(ROUTES.COMMENTS.BASE, conditionalJwtMiddleware, projectServiceProxy);
 // ============================================
 
 // User Management (Auth Service)
-app.use(ROUTES.ADMIN.USERS, conditionalJwtMiddleware, adminServiceProxy);
-app.use(`${API_VERSION}/admin/user`, conditionalJwtMiddleware, adminServiceProxy);
-
-// Content Moderation - Posts & Comments (Post Service)
-app.use(ROUTES.ADMIN.POSTS, conditionalJwtMiddleware, postServiceProxy);
-app.use(ROUTES.ADMIN.COMMENTS, conditionalJwtMiddleware, postServiceProxy);
-
-// Content Moderation - Projects (Project Service)
-app.use(ROUTES.ADMIN.PROJECTS, conditionalJwtMiddleware, projectServiceProxy);
-
-// Content Moderation - Hubs (Chat Service)
-app.use(ROUTES.ADMIN.HUBS, conditionalJwtMiddleware, chatServiceProxy);
+app.use("/", conditionalJwtMiddleware, adminServiceProxy);
+app.use("/", conditionalJwtMiddleware, chatServiceProxy);
 
 // Reports & Audit (Auth Service - Centralized)
 app.use(ROUTES.ADMIN.REPORTS, conditionalJwtMiddleware, adminServiceProxy);
@@ -163,11 +136,7 @@ app.use(ROUTES.ADMIN.BASE + "/analytics", conditionalJwtMiddleware, adminService
 app.use(ROUTES.ADMIN.BASE, conditionalJwtMiddleware, adminServiceProxy);
 
 // Chat Service Route
-app.use(
-  "/api/v1/chat",
-  conditionalJwtMiddleware,
-  chatServiceProxy
-);
+app.use("/", conditionalJwtMiddleware, chatServiceProxy);
 
 // Handle favicon to prevent unhandled requests
 app.get("/favicon.ico", (req: Request, res: Response) => {

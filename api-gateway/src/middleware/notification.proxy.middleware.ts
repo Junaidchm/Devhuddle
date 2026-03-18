@@ -9,18 +9,15 @@ import { verifyAccessToken } from "../utils/jwt.util";
  * Handles all routes that should be forwarded to the Notification Service:
  * - /api/v1/notifications/* -> /api/v1/notifications/* (notification service expects /api/v1 prefix)
  */
-export const notificationServiceProxy = createProxyMiddleware({
-  target: app_config.notificationServiceUrl,
-  changeOrigin: true,
-  ws: true,
-  pathRewrite: (path, req) => {
-    // Precise absolute rewriting: /api/v1/notifications -> /notifications
-    const url = req.originalUrl;
-    if (url.includes("/v1/notifications")) {
-      return url.replace(/^.*\/api\/v1\/notifications/, "/notifications");
-    }
-    return url.replace(/^.*\/api\/v1/, "/notifications");
-  },
+export const notificationServiceProxy = createProxyMiddleware(
+  (path) => path.startsWith("/api/v1/notifications"),
+  {
+    target: app_config.notificationServiceUrl,
+    changeOrigin: true,
+    ws: true,
+    pathRewrite: {
+      "^/api/v1/notifications": "/notifications",
+    },
   
   onProxyReq: (proxyReq, req: any, res) => {
     // logger.info(
