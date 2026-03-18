@@ -12,6 +12,16 @@ spec:
     - api.devhuddle.online
     secretName: devhuddle-tls
   rules:
+  - host: devhuddle.online
+    http:
+      paths:
+      - path: /(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: client
+            port:
+              number: 80
   - host: api.devhuddle.online
     http:
       paths:
