@@ -47,7 +47,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Health check route
 app.get("/", (req: Request, res: Response) => {
-  console.log(`>>> NOTIFICATION_BUILD_V13 <<<`);
+  console.log(`>>> NOTIFICATION_BUILD_V14 <<<`);
   console.log(`NOTIFICATION_INBOUND: ${req.method} ${req.url}`);
   res.status(HttpStatus.OK).json({
     status: "Notification service is running",

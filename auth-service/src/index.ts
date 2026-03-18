@@ -41,7 +41,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`>>> AUTH_BUILD_V13 <<<`);
+  console.log(`>>> AUTH_BUILD_V14 <<<`);
   console.log(`AUTH_INBOUND: ${req.method} ${req.url}`);
   next();
 });
