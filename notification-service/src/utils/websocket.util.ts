@@ -36,6 +36,7 @@ export class WebSocketService {
   private setupWebSocket(): void {
     this.wss.on("connection", async (ws: AuthenticatedWebSocket, req: any) => {
       // Get userId from request (verified by Gateway)
+      logger.info(`[WebSocket] New connection attempt. Headers: ${JSON.stringify(req.headers)}`);
       const userId = req.headers['x-user-id'] || req.userId;
 
       if (!userId) {
