@@ -969,10 +969,26 @@ export class NotificationsRepository
 
       // Update summary with actor info
       let summary = notification.summary;
-      if (summary && typeof summary === "object" && "json" in summary) {
-        const summaryData = (summary as Record<string, unknown>).json || summary;
+      if (summary && typeof summary === "object") {
+        const summaryData = (summary as any).json || summary;
+        
+        // ✅ NEW: Regenerate summary text with actual names for WebSocket broadcast
+        const actionVerb = this._getActionVerbFromNotification(
+          notification.type,
+          notification.entityType,
+          notification.contextId,
+          notification.metadata
+        );
+        
+        const summaryText = this._generateSummaryTextWithNames(
+          actors,
+          notification.aggregatedCount,
+          actionVerb
+        );
+
         summary = {
           ...summaryData,
+          text: summaryText, // ✅ Overwrite with real names
           actors: actors.map((a) => ({
             id: a.id,
             name: a.name,
