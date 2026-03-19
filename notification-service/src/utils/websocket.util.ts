@@ -37,7 +37,22 @@ export class WebSocketService {
     this.wss.on("connection", async (ws: AuthenticatedWebSocket, req: any) => {
       // Get userId from request (verified by Gateway)
       logger.info(`[WebSocket] New connection attempt. Headers: ${JSON.stringify(req.headers)}`);
-      const userId = req.headers['x-user-id'] || req.userId;
+      let userId = req.headers['x-user-id'] || req.userId;
+
+      // Fallback: manually parse token if headers are stripped by HTTP Proxy Middleware
+      if (!userId && req.url) {
+        try {
+           const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+           const token = urlObj.searchParams.get("token");
+           if (token) {
+              const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET || "") as { id: string };
+              userId = decoded.id;
+              logger.info(`[WebSocket] Successfully extracted userId ${userId} from query token fallback`);
+           }
+        } catch (e: any) {
+           logger.warn(`[WebSocket] Token fallback parse error: ${e.message}`);
+        }
+      }
 
       if (!userId) {
         logger.error("[WebSocket] Connection has no userId after verifyClient");
