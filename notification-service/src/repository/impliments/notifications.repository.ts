@@ -159,17 +159,18 @@ export class NotificationsRepository
     entityType: "POST" | "COMMENT",
     version: number
   ): Promise<void> {
+    const actionVerb = entityType === "POST" ? "tagged you in a post" : "mentioned you in a comment";
     await this._createOrUpdateNotification(
-      NotificationType.MENTION,
-      entityType === "POST" ? EntityType.POST : EntityType.COMMENT,
-      commentId || postId, 
-      issuerId,
-      recipientId,
-      version,
-      "mentioned you in a comment",
-      postId,
-      { postId, commentId }
-    );
+       NotificationType.MENTION,
+       entityType === "POST" ? EntityType.POST : EntityType.COMMENT,
+       commentId || postId, 
+       issuerId,
+       recipientId,
+       version,
+       actionVerb,
+       postId,
+       { postId, commentId }
+     );
   }
 
   /**

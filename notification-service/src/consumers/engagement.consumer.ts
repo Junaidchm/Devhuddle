@@ -109,6 +109,15 @@ interface PostReportedEvent extends BaseEngagementEvent {
   metadata?: any;
 }
 
+interface UserMentionedEvent extends BaseEngagementEvent {
+  postId: string;
+  mentionedUserId: string;
+  actorId: string;
+  type: "POST_TAG" | "COMMENT_MENTION";
+  commentId?: string;
+  action: "USER_MENTIONED";
+}
+
 // ✅ NEW: Project event types
 interface ProjectLikeCreatedEvent extends BaseEngagementEvent {
   projectId: string;
@@ -317,6 +326,9 @@ export async function startEngagementConsumer(
             break;
           case KAFKA_TOPICS.PROJECT_COMMENT_LIKE_REMOVED:
             await handleProjectCommentLikeRemoved(event as ProjectCommentLikeRemovedEvent, repo, wsService);
+            break;
+          case KAFKA_TOPICS.USER_MENTIONED:
+            await handleUserMentioned(event as UserMentionedEvent, repo, wsService);
             break;
           default:
             logger.warn(`Unhandled topic: ${topic}`);
@@ -799,3 +811,31 @@ async function handleProjectCommentLikeRemoved(
   const versionNumber = version || Date.now();
   await repo.deleteLikeNotification(userId, commentAuthorId, commentId, "COMMENT", versionNumber);
 }
+
+async function handleUserMentioned(
+  event: UserMentionedEvent,
+  repo: NotificationsRepository,
+  wsService: WebSocketService
+): Promise<void> {
+  const { postId, mentionedUserId, actorId, type, commentId, version } = event;
+
+  if (actorId === mentionedUserId) return;
+
+  const versionNumber = version || Date.now();
+  
+  await repo.createMentionNotification(
+    actorId,
+    mentionedUserId,
+    postId,
+    commentId || "",
+    type === "POST_TAG" ? "POST" : "COMMENT",
+    versionNumber
+  );
+
+  logger.info(`User mention notification created for ${mentionedUserId} by ${actorId}`, {
+    type,
+    postId,
+    commentId
+  });
+}
+

@@ -19,13 +19,13 @@ export interface IUserRepository {
   }): Promise<User>;
   updatePassword(email: string, password: string): Promise<User>;
   updateProfile(userId: string, data: Partial<User>): Promise<User>;
-  searchUsers(query: string, currentUserId: string): Promise<Partial<User>[]>;
+  searchUsers(query: string, currentUserId: string, limit?: number, offset?: number): Promise<Partial<User>[]>;
   findProfileByUsername(
     username: string,
     currentUserId: string
   ): Promise<any | null>;
-  findFollowers(userId: string, currentUserId: string): Promise<any[]>;
-  findFollowing(userId: string, currentUserId: string): Promise<any[]>;
+  findFollowers(userId: string, currentUserId: string, limit?: number, offset?: number): Promise<any[]>;
+  findFollowing(userId: string, currentUserId: string, limit?: number, offset?: number): Promise<any[]>;
   addExperience(userId: string, data: any): Promise<any>;
   deleteExperience(id: string): Promise<void>;
   addEducation(userId: string, data: any): Promise<any>;

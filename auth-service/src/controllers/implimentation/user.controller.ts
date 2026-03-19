@@ -60,10 +60,14 @@ export class UserController {
   async getFollowers(req: Request, res: Response): Promise<void> {
     try {
       const { username } = req.params;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
       const currentUserId = JSON.parse(req.headers["x-user-data"] as string).id;
       const followers = await this._userService.getFollowers(
         Array.isArray(username) ? username[0] : username,
-        currentUserId
+        currentUserId,
+        limit,
+        offset
       );
       res.status(HttpStatus.OK).json(followers);
     } catch (err: unknown) {
@@ -78,10 +82,14 @@ export class UserController {
   async getFollowing(req: Request, res: Response): Promise<void> {
     try {
       const { username } = req.params;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
       const currentUserId = JSON.parse(req.headers["x-user-data"] as string).id;
       const following = await this._userService.getFollowing(
         Array.isArray(username) ? username[0] : username,
-        currentUserId
+        currentUserId,
+        limit,
+        offset
       );
       res.status(HttpStatus.OK).json(following);
     } catch (err: unknown) {
@@ -100,6 +108,8 @@ export class UserController {
   async getMyFollowing(req: Request, res: Response): Promise<void> {
     try {
       const currentUserId = JSON.parse(req.headers["x-user-data"] as string).id;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
       const currentUser = await this._userService.getUserById(currentUserId);
       
       if (!currentUser) {
@@ -112,7 +122,9 @@ export class UserController {
 
       const following = await this._userService.getFollowing(
         currentUser.username,
-        currentUserId
+        currentUserId,
+        limit,
+        offset
       );
       res.status(HttpStatus.OK).json(following);
     } catch (err: unknown) {
@@ -127,6 +139,8 @@ export class UserController {
   async searchUsers(req: Request, res: Response): Promise<void> {
     try {
       const query = req.query.q as string;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const offset = parseInt(req.query.offset as string) || 0;
       const currentUserId = JSON.parse(req.headers["x-user-data"] as string).id;
 
       if (!query || query.trim().length < 2) {
@@ -136,7 +150,9 @@ export class UserController {
 
       const users: Partial<User>[] = await this._userService.searchUsers(
         query,
-        currentUserId
+        currentUserId,
+        limit,
+        offset
       );
       res.status(HttpStatus.OK).json(users);
     } catch (err: unknown) {

@@ -106,6 +106,28 @@ export class PostRepository
           }, 
         });
 
+        // Step 2.5: Create PostMentions from mediaTags
+        if (data.mediaTags && data.mediaTags.length > 0) {
+          const uniqueUserIds = new Set<string>();
+          data.mediaTags.forEach((tag: any) => {
+            tag.userIds.forEach((userId: string) => uniqueUserIds.add(userId));
+          });
+
+          if (uniqueUserIds.size > 0) {
+             const mentions = Array.from(uniqueUserIds).map(userId => ({
+               id: uuidv4(),
+               postId: newPost.id,
+               mentionedUserId: userId,
+               actorId: data.userId,
+             }));
+
+             await tx.postMention.createMany({
+               data: mentions,
+               skipDuplicates: true,
+             });
+          }
+        }
+
         // Step 3: Link media to post via Media Service
         // This updates the Media Service database (source of truth)
         if (data.mediaIds && data.mediaIds.length > 0) {

@@ -45,24 +45,28 @@ export class UserService implements IUserService {
 
   async getFollowers(
     username: string,
-    currentUserId: string
+    currentUserId: string,
+    limit?: number,
+    offset?: number
   ): Promise<Partial<User>[]> {
     const user = await this.userRepository.findByUsername(username);
     if (!user) {
       throw new CustomError(HttpStatus.NOT_FOUND, "User not found");
     }
-    return this.userRepository.findFollowers(user.id, currentUserId);
+    return this.userRepository.findFollowers(user.id, currentUserId, limit, offset);
   }
 
   async getFollowing(
     username: string,
-    currentUserId: string
+    currentUserId: string,
+    limit?: number,
+    offset?: number
   ): Promise<Partial<User>[]> {
     const user = await this.userRepository.findByUsername(username);
     if (!user) {
       throw new CustomError(HttpStatus.NOT_FOUND, "User not found");
     }
-    return this.userRepository.findFollowing(user.id, currentUserId);
+    return this.userRepository.findFollowing(user.id, currentUserId, limit, offset);
   }
 
   async followUser(followerId: string, followingId: string): Promise<any> {
@@ -73,8 +77,8 @@ export class UserService implements IUserService {
     return this.followsService.unfollow(followerId, followingId);
   }
 
-  async searchUsers(query: string, currentUserId: string): Promise<Partial<User>[]> {
-    return this.userRepository.searchUsers(query, currentUserId);
+  async searchUsers(query: string, currentUserId: string, limit?: number, offset?: number): Promise<Partial<User>[]> {
+    return this.userRepository.searchUsers(query, currentUserId, limit, offset);
   }
 
   async getUserById(userId: string): Promise<Partial<User> | null> {

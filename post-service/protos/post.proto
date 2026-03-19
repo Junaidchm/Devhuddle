@@ -154,12 +154,18 @@ message UploadMediaResponse {
   string mediaId = 1;
 }
 
+message MediaTag {
+  string mediaId = 1;
+  repeated string userIds = 2;
+}
+
 message SubmitPostRequest {
   string content = 1;
   string userId = 2;
   repeated string mediaIds = 3;
   string visibility = 4; // ✅ FIXED P0-2: Add visibility (PUBLIC, CONNECTIONS)
   string commentControl = 5; // ✅ FIXED P0-2: Add commentControl (ANYONE, CONNECTIONS, NOBODY)
+  repeated MediaTag media_tags = 6;
 }
 
 message SubmitPostResponse {

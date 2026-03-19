@@ -174,6 +174,42 @@ export class PostService implements IpostService {
         }
       }
 
+      // 3.5: Emit Mention events from mediaTags
+      if (this.outboxService && req.mediaTags && req.mediaTags.length > 0) {
+        const uniqueUserIds = new Set<string>();
+        req.mediaTags.forEach((tag: any) => {
+          tag.userIds.forEach((userId: string) => uniqueUserIds.add(userId));
+        });
+
+        for (const mentionedUserId of uniqueUserIds) {
+          try {
+            await this.outboxService.createOutboxEvent({
+              aggregateType: OutboxAggregateType.MENTION,
+              aggregateId: post.id,
+              type: OutboxEventType.POST_MENTION_IN_POST_CREATED,
+              topic: KAFKA_TOPICS.USER_MENTIONED,
+              key: mentionedUserId,
+              payload: {
+                postId: post.id,
+                mentionedUserId,
+                actorId: req.userId,
+                type: "POST_TAG",
+                action: "USER_MENTIONED",
+                createdAt: new Date().toISOString(),
+                dedupeId: `mention-${post.id}-${mentionedUserId}`,
+                version: Date.now(),
+              },
+            });
+          } catch (mentionError: unknown) {
+             logger.error("Failed to create mention outbox event", {
+               error: (mentionError as Error).message,
+               postId: post.id,
+               mentionedUserId,
+             });
+          }
+        }
+      }
+
       return post;
     } catch (err: unknown) {
       logger.error("CreatePost error", { error: (err as Error).message });

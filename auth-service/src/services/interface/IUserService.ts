@@ -6,9 +6,9 @@ export interface IUserService {
     username: string,
     currentUserId: string
   ): Promise<Partial<User>>;
-  getFollowers(username: string, currentUserId: string): Promise<Partial<User>[]>;
-  getFollowing(username: string, currentUserId: string): Promise<Partial<User>[]>;
-  searchUsers(query: string, currentUserId: string): Promise<Partial<User>[]>;
+  getFollowers(username: string, currentUserId: string, limit?: number, offset?: number): Promise<Partial<User>[]>;
+  getFollowing(username: string, currentUserId: string, limit?: number, offset?: number): Promise<Partial<User>[]>;
+  searchUsers(query: string, currentUserId: string, limit?: number, offset?: number): Promise<Partial<User>[]>;
   getUserById(userId: string): Promise<Partial<User> | null>;
   getChatSuggestions(userId: string, limit: number): Promise<ChatSuggestionUserDto[]>
   addExperience(userId: string, data: any): Promise<any>;

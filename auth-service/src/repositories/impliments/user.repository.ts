@@ -103,7 +103,9 @@ export class UserRepository
 
   async searchUsers(
     query: string,
-    currentUserId: string
+    currentUserId: string,
+    limit: number = 10,
+    offset: number = 0
   ): Promise<Partial<User>[]> {
     const users = await prisma.user.findMany({
       where: {
@@ -131,7 +133,8 @@ export class UserRepository
         username: true,
         profilePicture: true,
       },
-      take: 10, // Limit the number of results for performance
+      take: limit,
+      skip: offset,
     });
     return users;
   }
@@ -331,10 +334,12 @@ export class UserRepository
     }
   }
 
-  async findFollowers(userId: string, currentUserId: string): Promise<UserWithFollowStatus[]> {
+  async findFollowers(userId: string, currentUserId: string, limit: number = 20, offset: number = 0): Promise<UserWithFollowStatus[]> {
    
     const followerRelations = await prisma.follow.findMany({
       where: { followingId: userId, deletedAt: null },
+      take: limit,
+      skip: offset,
       include: {
         follower: {
           select: {
@@ -389,10 +394,12 @@ export class UserRepository
     return followers;
   }
 
-  async findFollowing(userId: string, currentUserId: string): Promise<UserWithFollowStatus[]> {
+  async findFollowing(userId: string, currentUserId: string, limit: number = 20, offset: number = 0): Promise<UserWithFollowStatus[]> {
 
     const followingRelations = await prisma.follow.findMany({
       where: { followerId: userId, deletedAt: null },
+      take: limit,
+      skip: offset,
       include: {
         following: {
           select: {
