@@ -60,6 +60,14 @@ export const chatServiceProxy = createProxyMiddleware(
   },
 
   // WebSocket handling is done manually in index.ts to support async auth
+  onProxyReqWs: (proxyReq: any, req: any, socket: any, options: any, head: any) => {
+    if (req.headers["x-user-id"]) {
+      proxyReq.setHeader("x-user-id", req.headers["x-user-id"]);
+    }
+    if (req.headers["x-user-data"]) {
+      proxyReq.setHeader("x-user-data", req.headers["x-user-data"]);
+    }
+  },
 
 
   onProxyRes: (proxyRes, req, res) => {
