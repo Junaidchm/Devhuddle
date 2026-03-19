@@ -99,7 +99,7 @@ export const verifyAccessToken = async (
     return decoded;
   } catch (err: unknown) {
     // Invalid or expired token
-    logger.error("Invalid refresh token", { error: (err as Error).message });
+    logger.error("Invalid access token", { error: (err as Error).message });
     return null;
   }
 };

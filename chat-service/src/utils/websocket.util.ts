@@ -27,7 +27,7 @@ import { ICallRepository } from "../repositories/interfaces/ICallRepository";
 // Configuration constants
 const MAX_CONNECTIONS_PER_USER = 5;
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
-const WEBSOCKET_PATH = '/chat';
+const WEBSOCKET_PATH = '/api/v1/chat';
 const AUTH_TIMEOUT = 5000; // 5 seconds
 
 

@@ -97,10 +97,11 @@ async function startServer() {
 
         // 4. Register REST API routes
         const chatRoutes = createChatRoutes(chatController, groupController, reportController, hubRequestController);
-        app.use('/chat', chatRoutes);
+        // Gateway forwards /api/v1/chat, while local/internal might use /chat
+        app.use(['/api/v1/chat', '/chat'], chatRoutes);
 
         const adminRoutes = setupAdminRoutes(adminController);
-        app.use('/admin', adminRoutes);
+        app.use(['/api/v1/admin', '/admin'], adminRoutes);
         
         logger.info("✅ REST API routes registered");
 
