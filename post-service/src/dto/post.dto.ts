@@ -29,6 +29,15 @@ export enum ReportReason {
   OTHER = 'OTHER',
 }
 
+export class MediaTagDto {
+  @IsString()
+  mediaId!: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  userIds!: string[];
+}
+
 export class CreatePostDto {
   @IsString()
   @MinLength(1, { message: "Post content is required" })
@@ -38,6 +47,11 @@ export class CreatePostDto {
   @IsArray()
   @IsString({ each: true })
   mediaIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @Type(() => MediaTagDto)
+  mediaTags?: MediaTagDto[];
 
   @IsOptional()
   @IsEnum(Visibility)

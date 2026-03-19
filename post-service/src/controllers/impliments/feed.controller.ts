@@ -88,6 +88,7 @@ export class PostController implements IfeedController {
         mediaIds: req.body.mediaIds || [],
         visibility: req.body.visibility || "PUBLIC",
         commentControl: req.body.commentControl || "ANYONE",
+        mediaTags: req.body.mediaTags || [],
       };
 
       // Validate required fields
@@ -270,6 +271,7 @@ export class PostController implements IfeedController {
         idempotencyKey,
         visibility: req.body.visibility,
         commentControl: req.body.commentControl,
+        mediaTags: req.body.mediaTags || [],
       });
 
       logger.info("Post edited successfully", {

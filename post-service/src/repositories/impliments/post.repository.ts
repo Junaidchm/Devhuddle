@@ -523,6 +523,7 @@ export class PostRepository
     addAttachmentIds?: string[];
     removeAttachmentIds?: string[];
     versionRepository?: any;
+    mediaTags?: any[];
   }): Promise<{ post: posts; versionNumber: number }> {
     try {
       const {
@@ -532,6 +533,7 @@ export class PostRepository
         addAttachmentIds,
         removeAttachmentIds,
         versionRepository,
+        mediaTags,
       } = params;
 
       return await prisma.$transaction(async (tx) => {
@@ -626,6 +628,34 @@ export class PostRepository
             where: { id: { in: addAttachmentIds } },
             data: { postId: postId },
           });
+        }
+
+        // Update mentions if mediaTags provided
+        if (mediaTags) {
+          // 1. Delete existing mentions for this post
+          await tx.postMention.deleteMany({
+            where: { postId: postId },
+          });
+
+          // 2. Create new mentions
+          const uniqueUserIds = new Set<string>();
+          mediaTags.forEach((tag: any) => {
+            tag.userIds.forEach((uId: string) => uniqueUserIds.add(uId));
+          });
+
+          if (uniqueUserIds.size > 0) {
+            const mentions = Array.from(uniqueUserIds).map((uId) => ({
+              id: uuidv4(),
+              postId: postId,
+              mentionedUserId: uId,
+              actorId: userId,
+            }));
+
+            await tx.postMention.createMany({
+              data: mentions,
+              skipDuplicates: true,
+            });
+          }
         }
 
         return { post: updatedPost, versionNumber: newVersionNumber };

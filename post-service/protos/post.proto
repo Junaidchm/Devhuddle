@@ -271,6 +271,7 @@ message EditPostRequest {
   string idempotency_key = 6;
   optional string visibility = 7;
   optional string comment_control = 8;
+  repeated MediaTag media_tags = 9;
 }
 
 message EditPostResponse {

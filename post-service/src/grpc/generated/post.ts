@@ -326,6 +326,7 @@ export interface EditPostRequest {
   idempotencyKey: string;
   visibility?: string | undefined;
   commentControl?: string | undefined;
+  mediaTags: MediaTag[];
 }
 
 export interface EditPostResponse {
@@ -4100,6 +4101,7 @@ function createBaseEditPostRequest(): EditPostRequest {
     idempotencyKey: "",
     visibility: undefined,
     commentControl: undefined,
+    mediaTags: [],
   };
 }
 
@@ -4128,6 +4130,9 @@ export const EditPostRequest: MessageFns<EditPostRequest> = {
     }
     if (message.commentControl !== undefined) {
       writer.uint32(66).string(message.commentControl);
+    }
+    for (const v of message.mediaTags) {
+      MediaTag.encode(v!, writer.uint32(74).fork()).join();
     }
     return writer;
   },
@@ -4203,6 +4208,14 @@ export const EditPostRequest: MessageFns<EditPostRequest> = {
           message.commentControl = reader.string();
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.mediaTags.push(MediaTag.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4226,6 +4239,9 @@ export const EditPostRequest: MessageFns<EditPostRequest> = {
       idempotencyKey: isSet(object.idempotencyKey) ? globalThis.String(object.idempotencyKey) : "",
       visibility: isSet(object.visibility) ? globalThis.String(object.visibility) : undefined,
       commentControl: isSet(object.commentControl) ? globalThis.String(object.commentControl) : undefined,
+      mediaTags: globalThis.Array.isArray(object?.mediaTags)
+        ? object.mediaTags.map((e: any) => MediaTag.fromJSON(e))
+        : [],
     };
   },
 
@@ -4255,6 +4271,9 @@ export const EditPostRequest: MessageFns<EditPostRequest> = {
     if (message.commentControl !== undefined) {
       obj.commentControl = message.commentControl;
     }
+    if (message.mediaTags?.length) {
+      obj.mediaTags = message.mediaTags.map((e) => MediaTag.toJSON(e));
+    }
     return obj;
   },
 
@@ -4271,6 +4290,7 @@ export const EditPostRequest: MessageFns<EditPostRequest> = {
     message.idempotencyKey = object.idempotencyKey ?? "";
     message.visibility = object.visibility ?? undefined;
     message.commentControl = object.commentControl ?? undefined;
+    message.mediaTags = object.mediaTags?.map((e) => MediaTag.fromPartial(e)) || [];
     return message;
   },
 };

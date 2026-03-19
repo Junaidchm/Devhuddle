@@ -45,6 +45,7 @@ export interface IPostRepository {
     addAttachmentIds?: string[];
     removeAttachmentIds?: string[];
     versionRepository?: any; // To avoid circular dependency type issues or strict IPostVersionRepository
+    mediaTags?: any[];
   }): Promise<{ post: posts; versionNumber: number }>;
   // Get Media Ids
   getMediaIds(postId: string): Promise<string[]>;

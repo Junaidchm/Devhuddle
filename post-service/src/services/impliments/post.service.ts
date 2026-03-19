@@ -175,39 +175,8 @@ export class PostService implements IpostService {
       }
 
       // 3.5: Emit Mention events from mediaTags
-      if (this.outboxService && req.mediaTags && req.mediaTags.length > 0) {
-        const uniqueUserIds = new Set<string>();
-        req.mediaTags.forEach((tag: any) => {
-          tag.userIds.forEach((userId: string) => uniqueUserIds.add(userId));
-        });
-
-        for (const mentionedUserId of uniqueUserIds) {
-          try {
-            await this.outboxService.createOutboxEvent({
-              aggregateType: OutboxAggregateType.MENTION,
-              aggregateId: post.id,
-              type: OutboxEventType.POST_MENTION_IN_POST_CREATED,
-              topic: KAFKA_TOPICS.USER_MENTIONED,
-              key: mentionedUserId,
-              payload: {
-                postId: post.id,
-                mentionedUserId,
-                actorId: req.userId,
-                type: "POST_TAG",
-                action: "USER_MENTIONED",
-                createdAt: new Date().toISOString(),
-                dedupeId: `mention-${post.id}-${mentionedUserId}`,
-                version: Date.now(),
-              },
-            });
-          } catch (mentionError: unknown) {
-             logger.error("Failed to create mention outbox event", {
-               error: (mentionError as Error).message,
-               postId: post.id,
-               mentionedUserId,
-             });
-          }
-        }
+      if (req.mediaTags && req.mediaTags.length > 0) {
+        await this._handleMentionNotifications(post.id, req.userId, req.mediaTags);
       }
 
       return post;
@@ -727,7 +696,8 @@ export class PostService implements IpostService {
             newContent: req.content ?? post.content, // Use new content if provided, otherwise keep existing
             addAttachmentIds: req.addAttachmentIds,
             removeAttachmentIds: req.removeAttachmentIds,
-            versionRepository: this.postVersionRepository
+            versionRepository: this.postVersionRepository,
+            mediaTags: req.mediaTags
         });
 
         // Then, update non-versioned fields (visibility, commentControl)
@@ -742,6 +712,11 @@ export class PostService implements IpostService {
         let updatedPost = post; // Start with the original post
         if (Object.keys(updateData).length > 0) {
           updatedPost = await this._postRepository.updatePost(req.postId, updateData);
+        }
+
+        // 6.5. Handle Mention Notifications
+        if (req.mediaTags && req.mediaTags.length > 0) {
+          await this._handleMentionNotifications(req.postId, req.userId, req.mediaTags);
         }
 
         // 7. Invalidate caches
@@ -854,6 +829,7 @@ export class PostService implements IpostService {
         // visibility and commentControl are not part of the version, so they are not passed here.
         // The editPost method will only update them if explicitly provided.
         idempotencyKey: `restore-${req.postId}-${req.versionNumber}`,
+        mediaTags: [],
       });
 
       return {
@@ -1004,5 +980,46 @@ export class PostService implements IpostService {
         }
       ]
     };
+  }
+
+  private async _handleMentionNotifications(
+    postId: string,
+    actorId: string,
+    mediaTags: any[]
+  ): Promise<void> {
+    if (!this.outboxService) return;
+
+    const uniqueUserIds = new Set<string>();
+    mediaTags.forEach((tag: any) => {
+      tag.userIds.forEach((userId: string) => uniqueUserIds.add(userId));
+    });
+
+    for (const mentionedUserId of uniqueUserIds) {
+      try {
+        await this.outboxService.createOutboxEvent({
+          aggregateType: OutboxAggregateType.MENTION,
+          aggregateId: postId,
+          type: OutboxEventType.POST_MENTION_IN_POST_CREATED,
+          topic: KAFKA_TOPICS.USER_MENTIONED,
+          key: mentionedUserId,
+          payload: {
+            postId: postId,
+            mentionedUserId,
+            actorId: actorId,
+            type: "POST_TAG",
+            action: "USER_MENTIONED",
+            createdAt: new Date().toISOString(),
+            dedupeId: `mention-${postId}-${mentionedUserId}`,
+            version: Date.now(),
+          },
+        });
+      } catch (mentionError: unknown) {
+        logger.error("Failed to create mention outbox event", {
+          error: (mentionError as Error).message,
+          postId: postId,
+          mentionedUserId,
+        });
+      }
+    }
   }
 }
