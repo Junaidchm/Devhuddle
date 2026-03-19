@@ -72,5 +72,25 @@ export class ProjectLikeController {
       next(error);
     }
   }
+
+  async getLikeStatus(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { projectId } = req.params;
+      const userId = getUserIdFromRequest(req);
+
+      const existingLike = await this._likeService.isLiked(projectId as string, userId);
+
+      res.status(HttpStatus.OK).json({
+        success: true,
+        isLiked: existingLike,
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
 }
 

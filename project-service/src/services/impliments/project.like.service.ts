@@ -146,5 +146,15 @@ export class ProjectLikeService implements IProjectLikeService {
       throw new CustomError(grpc.status.INTERNAL, (err as Error).message);
     }
   }
+
+  async isLiked(projectId: string, userId: string): Promise<boolean> {
+    try {
+      const like = await this._likeRepository.findLike(projectId, userId);
+      return !!like;
+    } catch (err: unknown) {
+      logger.error("isLiked error", { error: (err as Error).message });
+      return false;
+    }
+  }
 }
 

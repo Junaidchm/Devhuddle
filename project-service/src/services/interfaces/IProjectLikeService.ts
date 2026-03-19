@@ -9,5 +9,6 @@ export interface IProjectLikeService {
   likeProject(req: LikeProjectRequest): Promise<LikeProjectResponse>;
   unlikeProject(req: UnlikeProjectRequest): Promise<UnlikeProjectResponse>;
   getLikeCount(projectId: string): Promise<number>;
+  isLiked(projectId: string, userId: string): Promise<boolean>;
 }
 
