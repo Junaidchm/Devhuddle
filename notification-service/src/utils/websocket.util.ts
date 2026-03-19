@@ -25,20 +25,6 @@ export class WebSocketService {
     this.wss = new Server({
       server,
       path: WEBSOCKET_PATH,
-      verifyClient: (info, cb) => {
-        // TRUST THE GATEWAY
-        const req = info.req as any;
-        const userId = req.headers['x-user-id'];
-
-        if (!userId) {
-          logger.warn("[WebSocket] Connection rejected: Missing x-user-id header");
-          cb(false, 401, 'Unauthorized');
-          return;
-        }
-
-        req.userId = userId;
-        cb(true);
-      }
     });
 
     this.setupWebSocket();
@@ -50,7 +36,7 @@ export class WebSocketService {
   private setupWebSocket(): void {
     this.wss.on("connection", async (ws: AuthenticatedWebSocket, req: any) => {
       // Get userId from request (verified by Gateway)
-      const userId = req.userId;
+      const userId = req.headers['x-user-id'] || req.userId;
 
       if (!userId) {
         logger.error("[WebSocket] Connection has no userId after verifyClient");
