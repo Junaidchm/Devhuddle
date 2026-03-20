@@ -188,10 +188,14 @@ export class MessageSagaService {
                         senderId: message.senderId,
                         conversationId: conversation.id,
                         content: message.content, // Notification service needs this
+                        type: message.type, // ✅ For better notification text
                         timestamp: message.createdAt,
-                        recipientIds: recipientIds // ✅ Include recipients for notification service
+                        recipientIds: recipientIds, // ✅ Include recipients for notification service
+                        replyToId: message.replyToId, // ✅ Support for reply notifications
+                        replyToUserId: (message as any).replyTo?.senderId // ✅ Direct access to reply target
                     })
                 }]
+
             }).catch(err => {
                 logger.warn("Kafka Event Publish Failed (Circuit Breaker)", { error: err.message });
             });

@@ -1,7 +1,8 @@
 import { IChatRepository } from "../../repositories/interfaces/IChatRepository";
 import logger from "../../utils/logger.util";
 import { redisPublisher } from "../../config/redis.config";
-import { getProducer } from "../../utils/kafka.util";
+import { getProducer, publishChatEvent } from "../../utils/kafka.util";
+import { KAFKA_TOPICS } from "../../config/kafka.config";
 import { AppError } from "../../utils/AppError";
 import { Message, GroupRole, BlockedUser } from "@prisma/client";
 import { RedisCacheService } from "../../utils/redis-cache.util";
@@ -115,6 +116,22 @@ export class ChatActionService {
             conversationId: message.conversationId,
             data: { messageId, userId, emoji }
         });
+
+        // 5. Publish to Kafka for notifications
+        const recipientIds = message.conversation.participants
+            .filter(p => p.userId !== userId && !p.deletedAt)
+            .map(p => p.userId);
+
+        if (recipientIds.length > 0) {
+            await publishChatEvent({
+                eventType: 'ReactionAdded',
+                messageId,
+                senderId: userId,
+                conversationId: message.conversationId,
+                emoji,
+                recipientIds
+            });
+        }
     }
 
     async removeReaction(messageId: string, userId: string, emoji: string): Promise<void> {
@@ -128,6 +145,22 @@ export class ChatActionService {
             conversationId: message.conversationId,
             data: { messageId, userId, emoji }
         });
+
+        // 5. Publish to Kafka for notification cleanup
+        const recipientIds = message.conversation.participants
+            .filter(p => p.userId !== userId && !p.deletedAt)
+            .map(p => p.userId);
+
+        if (recipientIds.length > 0) {
+            await publishChatEvent({
+                eventType: 'ReactionRemoved',
+                messageId,
+                senderId: userId,
+                conversationId: message.conversationId,
+                emoji,
+                recipientIds
+            });
+        }
     }
 
     async pinMessage(messageId: string, userId: string): Promise<void> {

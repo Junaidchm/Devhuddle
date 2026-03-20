@@ -126,6 +126,25 @@ export interface INotificationRepository {
     conversationId: string,
     messageId: string,
     content: string,
+    version: number,
+    messageType?: string,
+    replyToId?: string // ✅ New: reply information
+  ): Promise<void>;
+
+  createReactionNotification(
+    senderId: string,
+    recipientId: string,
+    conversationId: string,
+    messageId: string,
+    emoji: string,
+    version: number
+  ): Promise<void>;
+
+  deleteReactionNotification(
+    senderId: string,
+    recipientId: string,
+    messageId: string,
+    emoji: string,
     version: number
   ): Promise<void>;
 

@@ -12,8 +12,27 @@ interface MessageSentPayload {
   senderId: string;
   conversationId: string;
   content: string;
+  type?: string; 
   timestamp: string;
   recipientIds: string[]; 
+  replyToId?: string; // ✅ New: reply information
+  replyToUserId?: string; // ✅ New: reply target
+}
+
+interface ReactionAddedPayload {
+  messageId: string;
+  senderId: string;
+  conversationId: string;
+  emoji: string;
+  recipientIds: string[];
+}
+
+interface ReactionRemovedPayload {
+  messageId: string;
+  senderId: string;
+  conversationId: string;
+  emoji: string;
+  recipientIds: string[];
 }
 
 interface MessageReportedPayload {
@@ -72,6 +91,12 @@ export const startChatConsumer = async (wsService: WebSocketService) => {
             case 'MessageSent':
               await handleMessageSent(payload as MessageSentPayload, notificationService, wsService);
               break;
+            case 'ReactionAdded':
+              await handleReactionAdded(payload as ReactionAddedPayload, notificationService);
+              break;
+            case 'ReactionRemoved':
+              await handleReactionRemoved(payload as ReactionRemovedPayload, notificationService);
+              break;
             case 'MessageReported':
               await handleMessageReported(payload as MessageReportedPayload, notificationService, wsService);
               break;
@@ -104,17 +129,18 @@ async function handleMessageSent(
   notificationService: NotificationService,
   wsService: WebSocketService
 ) {
-  const { senderId, content, conversationId, recipientIds, messageId } = payload;
+  const { senderId, content, conversationId, recipientIds, messageId, type } = payload;
 
   if (!recipientIds || recipientIds.length === 0) {
       logger.warn('MessageSent event missing recipientIds, skipping notification');
       return;
   }
 
-  // Create notifications for each recipient in parallel for speed
+  // Create notifications for each recipient in parallel
   const notificationPromises = recipientIds.map(async (recipientId) => {
       try {
-          if (content === 'group_created') {
+          // Handle SYSTEM messages (like group events)
+          if (type === 'SYSTEM' || content === 'group_created' || content === 'participant_added') {
             await notificationService.createGroupAddedNotification(
               senderId,
               recipientId,
@@ -128,12 +154,40 @@ async function handleMessageSent(
               conversationId,
               messageId,
               content,
-              1 // version
+              1, // version
+              type,
+              payload.replyToId // ✅ New: Handle replies
             );
           }
       } catch (err) {
           logger.error(`Failed to create notification for user ${recipientId}`, { error: err });
       }
+  });
+
+  await Promise.all(notificationPromises);
+}
+
+async function handleReactionAdded(
+  payload: ReactionAddedPayload,
+  notificationService: NotificationService
+) {
+  const { senderId, conversationId, recipientIds, messageId, emoji } = payload;
+
+  if (!recipientIds || recipientIds.length === 0) return;
+
+  const notificationPromises = recipientIds.map(async (recipientId) => {
+    try {
+      await notificationService.createReactionNotification(
+        senderId,
+        recipientId,
+        conversationId,
+        messageId,
+        emoji,
+        1 // version
+      );
+    } catch (err) {
+      logger.error(`Failed to create reaction notification for user ${recipientId}`, { error: err });
+    }
   });
 
   await Promise.all(notificationPromises);
@@ -199,4 +253,29 @@ async function handleHubJoinRejected(
   } catch (err) {
     logger.error(`Failed to create HubJoinRejected notification for user ${requesterId}`, { error: err });
   }
+}
+
+async function handleReactionRemoved(
+  payload: any,
+  notificationService: NotificationService
+) {
+  const { senderId, conversationId, recipientIds, messageId, emoji } = payload;
+
+  if (!recipientIds || recipientIds.length === 0) return;
+
+  const notificationPromises = recipientIds.map(async (recipientId: string) => {
+    try {
+      await notificationService.deleteReactionNotification(
+        senderId,
+        recipientId,
+        messageId,
+        emoji,
+        1
+      );
+    } catch (err) {
+      logger.error(`Failed to delete reaction notification for user ${recipientId}`, { error: err });
+    }
+  });
+
+  await Promise.all(notificationPromises);
 }

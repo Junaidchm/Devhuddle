@@ -67,7 +67,8 @@ export async function publishEvent(
       ...event,
       dedupeId: dedupeId || uuidv4(),
       timestamp: new Date().toISOString(),
-      source: "notification-service",
+      source: "auth-service",
+
       version: event.version ?? 1,
       retryCount,
     };

@@ -14,7 +14,9 @@ export interface INotificationService {
     getUnreadCount(recipientId: string): Promise<number>;
     markAllAsRead(recipientId: string): Promise<void>;
     restoreNotification(notificationId: string, recipientId: string): Promise<void>;
-    createChatNotification(senderId: string, recipientId: string, conversationId: string, messageId: string, content: string, version: number): Promise<void>;
+    createChatNotification(senderId: string, recipientId: string, conversationId: string, messageId: string, content: string, version: number, messageType?: string, replyToId?: string): Promise<void>;
+    createReactionNotification(senderId: string, recipientId: string, conversationId: string, messageId: string, emoji: string, version: number): Promise<void>;
+    deleteReactionNotification(senderId: string, recipientId: string, messageId: string, emoji: string, version: number): Promise<void>;
     createHubJoinRequestNotification(requesterId: string, recipientId: string, hubId: string, requestId: string, version: number): Promise<void>;
     createHubJoinApprovedNotification(adminId: string, recipientId: string, hubId: string, requestId: string, version: number): Promise<void>;
     createHubJoinRejectedNotification(adminId: string, recipientId: string, hubId: string, requestId: string, version: number): Promise<void>;

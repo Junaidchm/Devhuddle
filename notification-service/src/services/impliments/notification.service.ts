@@ -259,7 +259,9 @@ export class NotificationService implements INotificationService {
     conversationId: string,
     messageId: string,
     content: string,
-    version: number
+    version: number,
+    messageType?: string,
+    replyToId?: string
   ): Promise<void> {
     try {
       await this._notificationRepository.createChatNotification(
@@ -268,7 +270,9 @@ export class NotificationService implements INotificationService {
         conversationId,
         messageId,
         content,
-        version
+        version,
+        messageType,
+        replyToId
       );
       logger.info(
         `Chat notification created for user ${recipientId} by ${senderId} in conversation ${conversationId}`
@@ -279,6 +283,66 @@ export class NotificationService implements INotificationService {
         senderId,
         recipientId,
         conversationId,
+      });
+      throw error;
+    }
+  }
+
+  async createReactionNotification(
+    senderId: string,
+    recipientId: string,
+    conversationId: string,
+    messageId: string,
+    emoji: string,
+    version: number
+  ): Promise<void> {
+    try {
+      await this._notificationRepository.createReactionNotification(
+        senderId,
+        recipientId,
+        conversationId,
+        messageId,
+        emoji,
+        version
+      );
+      logger.info(
+        `Reaction notification created for user ${recipientId} by ${senderId} in conversation ${conversationId}`
+      );
+    } catch (error: unknown) {
+      logger.error("Error in notification service - createReactionNotification", {
+        error: (error as Error).message,
+        senderId,
+        recipientId,
+        conversationId,
+      });
+      throw error;
+    }
+  }
+
+  async deleteReactionNotification(
+    senderId: string,
+    recipientId: string,
+    messageId: string,
+    emoji: string,
+    version: number
+  ): Promise<void> {
+    try {
+      await this._notificationRepository.deleteReactionNotification(
+        senderId,
+        recipientId,
+        messageId,
+        emoji,
+        version
+      );
+      logger.info(
+        `Reaction notification deleted for user ${recipientId} by ${senderId}`
+      );
+    } catch (error: unknown) {
+      logger.error("Error in notification service - deleteReactionNotification", {
+        error: (error as Error).message,
+        senderId,
+        recipientId,
+        messageId,
       });
       throw error;
     }
