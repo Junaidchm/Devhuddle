@@ -16,7 +16,7 @@ export const chatServiceProxy = createProxyMiddleware(
   {
     target: CHAT_TARGET,
     changeOrigin: true,
-    ws: true,
+    ws: false, // ✅ Disabled: Manual upgrade handled in index.ts for Async Auth
     // No path rewrite - forward /api/v1/chat/... as is
   
   onProxyReq: (proxyReq, req: any, res) => {

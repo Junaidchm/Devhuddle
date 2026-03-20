@@ -263,10 +263,13 @@ export class WebSocketService {
                 message.replyToId
             );
 
-            // Send confirmation to sender
             // Use Mapper to ensure consistent response format
             const messageDto = MessageMapper.toResponseDto(savedMessage);
-            
+
+            // Ensure sender has locally joined this conversation's room
+            // This is critical for newly created conversations so we receive our own Redis broadcasts
+            this._joinRoom(savedMessage.conversationId, ws);
+
             ws.send(JSON.stringify({
                 type: "message_sent",
                 tempId: message.dedupeId,
@@ -922,10 +925,11 @@ export class WebSocketService {
                 participants: participants.filter(id => id !== userId)
             }));
 
-            // ✅ BROADCAST TO ROOM (Via Redis)
+            // ✅ BROADCAST TO ROOM (Via Redis) - Targeted for multi-pod reliability
             await redisPublisher.publish('conversation_event', JSON.stringify({
                 conversationId,
                 type: 'call:participant_joined',
+                targetUserIds: participants, // Ensure all participants on all pods get this
                 data: {
                     conversationId,
                     userId

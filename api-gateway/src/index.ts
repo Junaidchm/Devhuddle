@@ -67,6 +67,8 @@ const allowedOrigins = [
   app_config.frontend_production_url,
   app_config.FRONTEND_PRODUCTION_URL2,
   "https://dev-huddle-prod.vercel.app",
+  "https://devhuddle.online",
+  "https://www.devhuddle.online",
 ].filter(Boolean);
 
 app.use(

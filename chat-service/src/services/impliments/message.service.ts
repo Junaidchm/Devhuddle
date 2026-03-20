@@ -197,7 +197,11 @@ export class MessageSagaService {
                 }]
 
             }).catch(err => {
-                logger.warn("Kafka Event Publish Failed (Circuit Breaker)", { error: err.message });
+                logger.error("❌ Kafka Event Publish Failed (Circuit Breaker)", { 
+                    error: err.message, 
+                    conversationId: conversation.id,
+                    messageId: message.id 
+                });
             });
 
             logger.info("👉 [DEBUG] Message Saga Completed", { messageId: message.id });
@@ -211,8 +215,13 @@ export class MessageSagaService {
 
             return message;
 
-        } catch (error) {
-            logger.error("Message Saga Failed", { error: (error as Error).message });
+        } catch (error: any) {
+            logger.error("❌ [CRITICAL] Message Saga Failed", { 
+                error: (error as Error).message,
+                stack: (error as Error).stack,
+                senderId: command.senderId,
+                conversationId: command.conversationId 
+            });
             throw error;
         }
     }

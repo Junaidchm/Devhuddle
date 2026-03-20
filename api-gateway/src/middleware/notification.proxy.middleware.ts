@@ -14,7 +14,7 @@ export const notificationServiceProxy = createProxyMiddleware(
   {
     target: app_config.notificationServiceUrl,
     changeOrigin: true,
-    ws: true,
+    ws: false, // ✅ Disabled: Manual upgrade handled in index.ts for Async Auth
     // No path rewrite - forward /api/v1/notifications/... as is
   
   onProxyReq: (proxyReq, req: any, res) => {
