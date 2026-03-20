@@ -39,7 +39,7 @@ export class AdminServiceClient {
   private readonly _timeout = 3000;
 
   constructor() {
-    const AUTH_SERVICE_GRPC_URL = process.env.AUTH_SERVICE_GRPC_URL || 'localhost:50051';
+    const AUTH_SERVICE_GRPC_URL = process.env.AUTH_GRPC_URL || process.env.AUTH_SERVICE_GRPC_URL || 'auth-service:50051';
 
     this._client = new adminService(
       AUTH_SERVICE_GRPC_URL,

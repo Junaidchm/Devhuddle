@@ -53,7 +53,7 @@ export class AuthServiceClient {
 
   constructor() {
     const AUTH_SERVICE_GRPC_URL =
-      process.env.AUTH_SERVICE_GRPC_URL || 'localhost:50051';
+      process.env.AUTH_GRPC_URL || process.env.AUTH_SERVICE_GRPC_URL || 'auth-service:50051';
 
     logger.info('🔌 Connecting to Auth Service gRPC', { url: AUTH_SERVICE_GRPC_URL });
 
