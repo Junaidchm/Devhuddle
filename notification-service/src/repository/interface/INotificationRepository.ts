@@ -157,7 +157,8 @@ export interface INotificationRepository {
     recipientId: string,
     hubId: string,
     requestId: string,
-    version: number
+    version: number,
+    hubName?: string // ✅ New
   ): Promise<void>;
 
   createHubJoinApprovedNotification(
@@ -165,7 +166,8 @@ export interface INotificationRepository {
     recipientId: string,
     hubId: string,
     requestId: string,
-    version: number
+    version: number,
+    hubName?: string // ✅ New
   ): Promise<void>;
 
   createHubJoinRejectedNotification(
@@ -173,7 +175,8 @@ export interface INotificationRepository {
     recipientId: string,
     hubId: string,
     requestId: string,
-    version: number
+    version: number,
+    hubName?: string // ✅ New
   ): Promise<void>;
 
   createEnforcedNotification(

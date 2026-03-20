@@ -2,6 +2,7 @@ import { HubJoinRequest, JoinRequestStatus } from "@prisma/client";
 import { IHubRequestService } from "../interfaces/IHubRequestService";
 import { IHubJoinRequestRepository } from "../../repositories/interfaces/IHubJoinRequestRepository";
 import { IChatRepository } from "../../repositories/interfaces/IChatRepository";
+import { RedisCacheService } from "../../utils/redis-cache.util";
 import { AppError } from "../../utils/AppError";
 import { publishChatEvent } from "../../utils/kafka.util";
 import { redisPublisher } from "../../config/redis.config";
@@ -51,8 +52,9 @@ export class HubRequestService implements IHubRequestService {
     await publishChatEvent({
       eventType: "HubJoinRequested",
       hubId,
+      hubName: hub.name || "Group", // Enriched metadata
       requesterId: userId,
-      ownerId: hub.ownerId,
+      ownerId: hub.ownerId || "",
       adminIds: uniqueAdminIds, // Pass full list to notification service
       requestId: request.id,
     });
@@ -65,7 +67,8 @@ export class HubRequestService implements IHubRequestService {
       data: {
         requestId: request.id,
         requesterId: userId,
-        hubId
+        hubId,
+        hubName: hub.name || "Group"
       }
     }));
 
@@ -100,11 +103,25 @@ export class HubRequestService implements IHubRequestService {
       request.version
     );
 
-    // Emit event for membership activation saga
+    // 3. DIRECT ACTIVATION: Add user to group immediately (Fallback/UX)
+    try {
+      const existing = await this._chatRepository.findParticipantInConversation(request.requesterId, request.hubId);
+      if (!existing) {
+        await this._chatRepository.addParticipantToGroup(request.hubId, request.requesterId);
+        await RedisCacheService.invalidateConversationCache(request.hubId);
+        logger.info(`Directly activated member ${request.requesterId} in hub ${request.hubId}`);
+      }
+    } catch (err) {
+      logger.error("Failed direct membership activation", { err });
+      // Don't fail the whole request if activation fails (consumer might retry)
+    }
+
+    // 4. Emit event for long-term notification & other side effects
     await publishChatEvent({
       eventType: "HubJoinApproved",
       requestId: request.id,
       hubId: request.hubId,
+      hubName: conversation.name || "Group",
       requesterId: request.requesterId,
       resolvedBy: adminId,
     });

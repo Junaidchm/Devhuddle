@@ -1629,13 +1629,13 @@ export class NotificationsRepository
         return "reminder";
 
       case NotificationType.HUB_JOIN_REQUEST:
-        return "requested to join your hub";
+        return metadata?.hubName ? `requested to join ${metadata.hubName}` : "requested to join your hub";
 
       case NotificationType.HUB_JOIN_APPROVED:
-        return "approved your request to join the hub";
+        return metadata?.hubName ? `approved your request to join ${metadata.hubName}` : "approved your request to join the hub";
 
       case NotificationType.HUB_JOIN_REJECTED:
-        return "rejected your request to join the hub";
+        return metadata?.hubName ? `rejected your request to join ${metadata.hubName}` : "rejected your request to join the hub";
 
       case NotificationType.CONTENT_HIDDEN:
         return "hidden"; // This will be handled specifically in the summary if needed
@@ -1650,7 +1650,8 @@ export class NotificationsRepository
     recipientId: string,
     hubId: string,
     requestId: string,
-    version: number
+    version: number,
+    hubName?: string // ✅ New
   ): Promise<void> {
     await this._createOrUpdateNotification(
       NotificationType.HUB_JOIN_REQUEST,
@@ -1661,7 +1662,7 @@ export class NotificationsRepository
       version,
       "requested to join your hub",
       requestId,
-      { hubId, requestId }
+      { hubId, requestId, hubName } // Store hubName in metadata
     );
   }
 
@@ -1670,7 +1671,8 @@ export class NotificationsRepository
     recipientId: string,
     hubId: string,
     requestId: string,
-    version: number
+    version: number,
+    hubName?: string // ✅ New
   ): Promise<void> {
     await this._createOrUpdateNotification(
       NotificationType.HUB_JOIN_APPROVED,
@@ -1681,7 +1683,7 @@ export class NotificationsRepository
       version,
       "approved your request to join the hub",
       requestId,
-      { hubId, requestId }
+      { hubId, requestId, hubName }
     );
   }
 
@@ -1690,7 +1692,8 @@ export class NotificationsRepository
     recipientId: string,
     hubId: string,
     requestId: string,
-    version: number
+    version: number,
+    hubName?: string // ✅ New
   ): Promise<void> {
     await this._createOrUpdateNotification(
       NotificationType.HUB_JOIN_REJECTED,
@@ -1701,7 +1704,7 @@ export class NotificationsRepository
       version,
       "rejected your request to join the hub",
       requestId,
-      { hubId, requestId }
+      { hubId, requestId, hubName }
     );
   }
 

@@ -47,6 +47,7 @@ interface MessageReportedPayload {
 interface HubJoinRequestedPayload {
   requestId: string;
   hubId: string;
+  hubName: string; // ✅ New: For descriptive notifications
   requesterId: string;
   ownerId: string;
 }
@@ -54,6 +55,7 @@ interface HubJoinRequestedPayload {
 interface HubJoinApprovedPayload {
   requestId: string;
   hubId: string;
+  hubName?: string; // ✅ New: Optional context
   requesterId: string;
   resolvedBy: string;
 }
@@ -219,7 +221,8 @@ async function handleHubJoinRequested(
         targetId,
         hubId,
         requestId,
-        1 // version
+        1, // version
+        payload.hubName // Pass hubName
       );
     } catch (err) {
       logger.error(`Failed to create HubJoinRequested notification for target ${targetId}`, { error: err });
@@ -240,7 +243,8 @@ async function handleHubJoinApproved(
       requesterId,
       hubId,
       requestId,
-      1 // version
+      1, // version
+      payload.hubName // Pass hubName
     );
   } catch (err) {
     logger.error(`Failed to create HubJoinApproved notification for user ${requesterId}`, { error: err });

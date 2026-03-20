@@ -45,13 +45,14 @@ export async function startHubActivationConsumer(
 
         // 1. Check if already a member (Idempotency)
         const existing = await chatRepository.findParticipantInConversation(requesterId, hubId);
-        if (existing) {
-          logger.warn(`User ${requesterId} is already a member of ${hubId}. Skipping activation.`);
-          return;
-        }
 
-        // 2. Add user to group
-        await chatRepository.addParticipantToGroup(hubId, requesterId);
+        // 2. Add user to group (if not already added by direct activation)
+        if (!existing) {
+          await chatRepository.addParticipantToGroup(hubId, requesterId);
+          logger.info(`Membership added for user ${requesterId} in hub ${hubId}`);
+        } else {
+          logger.info(`User ${requesterId} already added by direct activation. Proceeding with side-effects.`);
+        }
 
         // 3. Invalidate cache
         await RedisCacheService.invalidateConversationCache(hubId);

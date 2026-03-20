@@ -353,7 +353,8 @@ export class NotificationService implements INotificationService {
     recipientId: string,
     hubId: string,
     requestId: string,
-    version: number
+    version: number,
+    hubName?: string // ✅ New
   ): Promise<void> {
     try {
       await this._notificationRepository.createHubJoinRequestNotification(
@@ -361,7 +362,8 @@ export class NotificationService implements INotificationService {
         recipientId,
         hubId,
         requestId,
-        version
+        version,
+        hubName
       );
     } catch (error: any) {
       logger.error("Error creating HubJoinRequest notification", { error: error.message });
@@ -374,7 +376,8 @@ export class NotificationService implements INotificationService {
     recipientId: string,
     hubId: string,
     requestId: string,
-    version: number
+    version: number,
+    hubName?: string // ✅ New
   ): Promise<void> {
     try {
       await this._notificationRepository.createHubJoinApprovedNotification(
@@ -382,7 +385,8 @@ export class NotificationService implements INotificationService {
         recipientId,
         hubId,
         requestId,
-        version
+        version,
+        hubName
       );
     } catch (error: any) {
       logger.error("Error creating HubJoinApproved notification", { error: error.message });
