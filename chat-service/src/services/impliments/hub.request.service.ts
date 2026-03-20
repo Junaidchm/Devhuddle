@@ -40,20 +40,28 @@ export class HubRequestService implements IHubRequestService {
       ownerId: hub.ownerId || "",
     });
 
-    // 5. Emit event
+    // 5. Identify admins to notify
+    const adminIds = hub.participants
+      .filter(p => p.role === 'ADMIN' || p.userId === hub.ownerId)
+      .map(p => p.userId);
+    
+    const uniqueAdminIds = Array.from(new Set(adminIds));
+
+    // 6. Emit event for long-term notification
     await publishChatEvent({
       eventType: "HubJoinRequested",
       hubId,
       requesterId: userId,
       ownerId: hub.ownerId,
+      adminIds: uniqueAdminIds, // Pass full list to notification service
       requestId: request.id,
     });
 
-    // 6. Broadcast real-time update to Owner
+    // 7. Broadcast real-time update to all Admins & Owner
     await redisPublisher.publish('conversation_event', JSON.stringify({
       type: 'hub_join_requested',
       conversationId: hubId,
-      targetUserId: hub.ownerId, // Specifically target the owner
+      targetUserIds: uniqueAdminIds, // Use specialized multi-target field
       data: {
         requestId: request.id,
         requesterId: userId,

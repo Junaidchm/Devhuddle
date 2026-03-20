@@ -202,21 +202,31 @@ async function handleMessageReported(
 }
 
 async function handleHubJoinRequested(
-  payload: HubJoinRequestedPayload,
+  payload: HubJoinRequestedPayload & { adminIds?: string[] },
   notificationService: NotificationService
 ) {
-  const { requestId, hubId, requesterId, ownerId } = payload;
-  try {
-    await notificationService.createHubJoinRequestNotification(
-      requesterId,
-      ownerId,
-      hubId,
-      requestId,
-      1 // version
-    );
-  } catch (err) {
-    logger.error(`Failed to create HubJoinRequested notification for owner ${ownerId}`, { error: err });
-  }
+  const { requestId, hubId, requesterId, ownerId, adminIds } = payload;
+  
+  // Use adminIds if provided, fallback to ownerId for backward compatibility
+  const targetIds = adminIds && adminIds.length > 0 ? adminIds : [ownerId];
+
+  logger.info(`Processing HubJoinRequested for targets: ${targetIds.join(', ')}`);
+
+  const notificationPromises = targetIds.map(async (targetId) => {
+    try {
+      await notificationService.createHubJoinRequestNotification(
+        requesterId,
+        targetId,
+        hubId,
+        requestId,
+        1 // version
+      );
+    } catch (err) {
+      logger.error(`Failed to create HubJoinRequested notification for target ${targetId}`, { error: err });
+    }
+  });
+
+  await Promise.all(notificationPromises);
 }
 
 async function handleHubJoinApproved(
