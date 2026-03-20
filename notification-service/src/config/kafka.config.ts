@@ -83,6 +83,7 @@ export const KAFKA_TOPICS = {
   NOTIFICATION_FAILED_DLQ: "notification-failed-dlq",
   USER_DELETED: "user-events",
   ADMIN_ACTION_ENFORCED: "admin-action-enforced",
+  CHAT_EVENTS: "chat-events", // ✅ Standardized topic name
 } as const;
 
 export const KAFKA_CONFIG = {

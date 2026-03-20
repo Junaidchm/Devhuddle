@@ -1,6 +1,7 @@
 
 import { getConsumer } from "../utils/kafka.util";
 import logger from "../utils/logger.util";
+import { KAFKA_TOPICS } from "../config/kafka.config";
 import { NotificationService } from "../services/impliments/notification.service";
 import { NotificationsRepository } from "../repository/impliments/notifications.repository";
 import { WebSocketService } from "../utils/websocket.util";
@@ -71,7 +72,7 @@ export const startChatConsumer = async (wsService: WebSocketService) => {
   try {
     const consumer = await getConsumer('notification-service-chat-group');
     
-    await consumer.subscribe({ topic: 'chat-events', fromBeginning: false });
+    await consumer.subscribe({ topic: KAFKA_TOPICS.CHAT_EVENTS, fromBeginning: false });
 
     await consumer.run({
       eachMessage: async ({ topic, partition, message }: EachMessagePayload) => {
