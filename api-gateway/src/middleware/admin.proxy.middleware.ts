@@ -32,17 +32,48 @@ const fallbackMiddleware = (req: Request, res: Response, next: NextFunction) => 
   });
 };
 
-// Only create proxy if URL is configured, otherwise use fallback
+// Only create proxy if at least auth service is configured
 export const adminServiceProxy = app_config.authServiceUrl
   ? createProxyMiddleware(
       (path) => path.startsWith("/api/v1/admin") || path.startsWith("/admin"),
       {
-        target: app_config.authServiceUrl,
+        router: (req) => {
+          const path = req.url || "";
+          const originalPath = (req as any).originalUrl || path;
+          
+          logger.info(`[Admin Proxy Router] deciding target for: ${path} (original: ${originalPath})`);
+
+          if (path.includes("/admin/posts") || originalPath.includes("/admin/posts") ||
+              path.includes("/admin/comments") || originalPath.includes("/admin/comments") ||
+              path.includes("/admin/reports") || originalPath.includes("/admin/reports") ||
+              path.includes("/admin/analytics") || originalPath.includes("/admin/analytics")) {
+            logger.info(`[Admin Proxy] Routing to Post Service: ${path}`);
+            return app_config.postServiceUrl;
+          }
+          
+          if (path.includes("/admin/projects") || originalPath.includes("/admin/projects")) {
+            logger.info(`[Admin Proxy] Routing to Project Service: ${path}`);
+            return app_config.projectServiceUrl;
+          }
+          
+          if (path.includes("/admin/hubs") || originalPath.includes("/admin/hubs")) {
+            logger.info(`[Admin Proxy] Routing to Chat Service: ${path}`);
+            return app_config.chatServiceUrl;
+          }
+          
+          // Default to Auth Service for users, user details, audit-logs, etc.
+          logger.info(`[Admin Proxy] Routing to Auth Service (Default): ${path}`);
+          return app_config.authServiceUrl;
+        },
         changeOrigin: true,
         // No path rewrite - forward /api/v1/admin/... as is
       onProxyReq: (proxyReq, req: any, res) => {
+        const targetHost = (proxyReq as any).host;
+        const targetProtocol = (proxyReq as any).protocol;
+        const targetUrl = `${targetProtocol}//${targetHost}${proxyReq.path}`;
+        
         logger.info(
-          `[Admin Proxy] Forwarding ${req.method} ${req.originalUrl} to ${app_config.authServiceUrl}${req.url}`
+          `[Admin Proxy] Forwarding ${req.method} ${req.originalUrl} -> ${targetUrl}`
         );
 
         // Forward user data from JWT middleware if available
@@ -76,8 +107,8 @@ export const adminServiceProxy = app_config.authServiceUrl
       },
       onError: (err, req, res) => {
         logger.error("Admin Service Proxy error:", { error: err.message });
-        if (typeof res.status === "function") {
-          res.status(500).json({ error: "Proxy failed", message: "Unable to connect to admin service" });
+        if (typeof (res as any).status === "function") {
+          (res as any).status(500).json({ error: "Proxy failed", message: "Unable to connect to admin service" });
         } else {
           res.end("Proxy failed");
         }
