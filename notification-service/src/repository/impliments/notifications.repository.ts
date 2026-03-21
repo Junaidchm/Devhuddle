@@ -1667,12 +1667,12 @@ export class NotificationsRepository
     await this._createOrUpdateNotification(
       NotificationType.HUB_JOIN_REQUEST,
       EntityType.HUB,
-      hubId,
+      requestId,  // ✅ Use requestId as entityId so each request creates a NEW notification (not blocked by version check)
       requesterId,
       recipientId,
       version,
-      "requested to join your hub",
-      requestId,
+      hubName ? `requested to join ${hubName}` : "requested to join your hub",
+      hubId, // contextId = hubId for navigation
       { hubId, requestId, hubName } // Store hubName in metadata
     );
   }
