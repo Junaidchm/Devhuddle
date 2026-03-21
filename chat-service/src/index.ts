@@ -79,7 +79,7 @@ async function startServer() {
         const chatService = new ChatService(messageSagaService, chatRepository, chatActionService);
         const reportService = new ReportService(chatRepository);
         const hubJoinRequestRepository = new HubJoinRequestRepository();
-        const hubRequestService = new HubRequestService(hubJoinRequestRepository, chatRepository);
+        const hubRequestService = new HubRequestService(hubJoinRequestRepository, chatRepository, messageSagaService);
 
         const chatController = new ChatController(chatService);
         const groupService = new GroupService(chatRepository, messageSagaService, hubJoinRequestRepository);

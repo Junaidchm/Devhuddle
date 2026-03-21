@@ -720,7 +720,8 @@ export class NotificationsRepository
           const summaryText = this._generateSummaryTextWithNames(
             actors,
             n.notificationObject.aggregatedCount || actors.length,
-            actionVerb
+            actionVerb,
+            n.notificationObject.type
           );
           
           summary = {
@@ -1064,7 +1065,8 @@ export class NotificationsRepository
         const summaryText = this._generateSummaryTextWithNames(
           actors,
           notification.aggregatedCount,
-          actionVerb
+          actionVerb,
+          notification.type
         );
 
         summary = {
@@ -1529,7 +1531,8 @@ export class NotificationsRepository
   private _generateSummaryTextWithNames(
     actors: Array<{ id: string; name: string; username?: string }>,
     count: number,
-    action: string
+    action: string,
+    type?: NotificationType
   ): string {
     if (actors.length === 0) {
       return `Someone ${action} you`;
@@ -1540,16 +1543,24 @@ export class NotificationsRepository
       ? firstActor.name 
       : firstActor.username || "Someone";
 
+    const isHubAction = type && (
+      type === NotificationType.HUB_JOIN_REQUEST ||
+      type === NotificationType.HUB_JOIN_APPROVED ||
+      type === NotificationType.HUB_JOIN_REJECTED
+    );
+
+    const suffix = isHubAction ? "" : " you";
+
     if (count === 1) {
-      return `${firstName} ${action} you`;
+      return `${firstName} ${action}${suffix}`;
     } else if (count === 2 && actors.length >= 2) {
       const secondActor = actors[1];
       const secondName = secondActor.name && secondActor.name !== "Unknown User"
         ? secondActor.name
         : secondActor.username || "Someone";
-      return `${firstName} and ${secondName} ${action} you`;
+      return `${firstName} and ${secondName} ${action}${suffix}`;
     } else {
-      return `${firstName} and ${count - 1} others ${action} you`;
+      return `${firstName} and ${count - 1} others ${action}${suffix}`;
     }
   }
 

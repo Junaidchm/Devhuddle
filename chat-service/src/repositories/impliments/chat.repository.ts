@@ -779,6 +779,37 @@ export class ChatRepository extends BaseRepository<
         });
     }
 
+    async ensureParticipantActive(groupId: string, userId: string, role: 'ADMIN' | 'MEMBER' = 'MEMBER'): Promise<{ wasAlreadyActive: boolean }> {
+        // First check current state to determine if it was already active
+        const existing = await this.findParticipantInConversation(userId, groupId);
+        
+        if (existing && !existing.deletedAt) {
+            return { wasAlreadyActive: true };
+        }
+
+        // If not existing or deleted, use upsert to create/reactivate
+        await prisma.participant.upsert({
+            where: {
+                userId_conversationId: {
+                    userId,
+                    conversationId: groupId
+                }
+            },
+            update: {
+                role,
+                deletedAt: null,
+                joinedAt: new Date()
+            },
+            create: {
+                conversationId: groupId,
+                userId,
+                role
+            }
+        });
+
+        return { wasAlreadyActive: false };
+    }
+
     async removeParticipantFromGroup(groupId: string, userId: string): Promise<void> {
         await prisma.participant.deleteMany({
             where: {

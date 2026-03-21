@@ -103,6 +103,12 @@ export interface IChatRepository {
     ): Promise<(Conversation & { participants: Participant[] })[]>;
     getPopularTopics(limit?: number): Promise<{ topic: string, count: number }[]>;
   addParticipantToGroup(groupId: string, userId: string, role?: 'ADMIN' | 'MEMBER'): Promise<void>;
+  /** 
+   * Idempotent method to ensure a participant is active in a group.
+   * Handles re-activation of previously deleted participants.
+   * Returns whether the participant was ALREADY active.
+   */
+  ensureParticipantActive(groupId: string, userId: string, role?: 'ADMIN' | 'MEMBER'): Promise<{ wasAlreadyActive: boolean }>;
   removeParticipantFromGroup(groupId: string, userId: string): Promise<void>;
   updateParticipantRole(groupId: string, userId: string, role: 'ADMIN' | 'MEMBER'): Promise<void>;
   updateGroupMetadata(

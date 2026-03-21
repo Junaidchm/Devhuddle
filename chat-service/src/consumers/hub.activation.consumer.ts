@@ -43,21 +43,20 @@ export async function startHubActivationConsumer(
       try {
         logger.info(`Activating membership for user ${requesterId} in hub ${hubId}`);
 
-        // 1. Check if already a member (Idempotency)
-        const existing = await chatRepository.findParticipantInConversation(requesterId, hubId);
+        // 1. Ensure participant is active (Idempotent upsert)
+        const { wasAlreadyActive } = await chatRepository.ensureParticipantActive(hubId, requesterId);
 
-        // 2. Add user to group (if not already added by direct activation)
-        if (!existing) {
-          await chatRepository.addParticipantToGroup(hubId, requesterId);
-          logger.info(`Membership added for user ${requesterId} in hub ${hubId}`);
-        } else {
-          logger.info(`User ${requesterId} already added by direct activation. Proceeding with side-effects.`);
+        if (wasAlreadyActive) {
+          logger.info(`User ${requesterId} already an active member in hub ${hubId}. Skipping side-effects.`);
+          return;
         }
 
-        // 3. Invalidate cache
+        logger.info(`Membership activated for user ${requesterId} in hub ${hubId}. Proceeding with side-effects.`);
+
+        // 2. Invalidate cache
         await RedisCacheService.invalidateConversationCache(hubId);
 
-        // 4. Enrich profile and send system message
+        // 3. Enrich profile and send system message
         const userProfilesMap = await authServiceClient.getUserProfiles([requesterId]);
         const userProfile = userProfilesMap.get(requesterId);
         const snapshotName = userProfile?.name || userProfile?.username || 'Unknown User';
@@ -68,10 +67,10 @@ export async function startHubActivationConsumer(
           requesterId
         );
 
-        // 5. Update member count
+        // 4. Update member count
         const newMemberCount = await chatRepository.updateMemberCount(hubId, 1);
 
-        logger.info(`Membership activated for user ${requesterId} in hub ${hubId}. New count: ${newMemberCount}`);
+        logger.info(`Membership activation complete for user ${requesterId} in hub ${hubId}. New count: ${newMemberCount}`);
 
         // TODO: Emit HubMemberAdded if needed for other services
       } catch (err: any) {

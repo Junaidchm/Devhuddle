@@ -9,10 +9,13 @@ import { redisPublisher } from "../../config/redis.config";
 import { authServiceClient } from "../../clients/auth-service.client";
 import logger from "../../utils/logger.util";
 
+import { MessageSagaService } from "./message.service";
+
 export class HubRequestService implements IHubRequestService {
   constructor(
     private _hubJoinRequestRepository: IHubJoinRequestRepository,
-    private _chatRepository: IChatRepository
+    private _chatRepository: IChatRepository,
+    private _messageSagaService: MessageSagaService
   ) {}
 
   async requestToJoin(hubId: string, userId: string): Promise<HubJoinRequest> {
@@ -77,25 +80,44 @@ export class HubRequestService implements IHubRequestService {
   }
 
   async approveRequest(requestId: string, adminId: string): Promise<HubJoinRequest> {
+    logger.info("👉 [HubRequestService] Approving request", { requestId, adminId });
+    
     const request = await this._hubJoinRequestRepository.findById(requestId);
-    if (!request) throw new AppError("Request not found", 404);
+    if (!request) {
+      logger.error("❌ [HubRequestService] Request not found", { requestId });
+      throw new AppError("Request not found", 404);
+    }
 
     if (request.status !== JoinRequestStatus.PENDING) {
+      logger.warn("⚠️ [HubRequestService] Request is not pending", { requestId, status: request.status });
       throw new AppError(`Cannot approve request in ${request.status} status`, 400);
     }
 
     // Verify admin is owner or admin of the hub
     const conversation = await this._chatRepository.findConversationById(request.hubId);
-    if (!conversation) throw new AppError("Hub not found", 404);
+    if (!conversation) {
+      logger.error("❌ [HubRequestService] Hub not found", { hubId: request.hubId });
+      throw new AppError("Hub not found", 404);
+    }
 
     const isAdmin = conversation.participants.some(p => p.userId === adminId && p.role === 'ADMIN');
     const isOwner = conversation.ownerId === adminId;
 
+    logger.debug("👉 [HubRequestService] Permission check", { 
+      requestId, 
+      adminId, 
+      isAdmin, 
+      isOwner,
+      ownerId: conversation.ownerId 
+    });
+
     if (!isAdmin && !isOwner) {
+      logger.warn("🚫 [HubRequestService] Unauthorized approval attempt", { requestId, adminId });
       throw new AppError("Only owners or admins can approve join requests", 403);
     }
 
     // Atomic transition with versioning
+    logger.info("👉 [HubRequestService] Updating status to APPROVED", { requestId, version: request.version });
     const updated = await this._hubJoinRequestRepository.updateStatus(
       requestId,
       JoinRequestStatus.APPROVED,
@@ -103,20 +125,51 @@ export class HubRequestService implements IHubRequestService {
       request.version
     );
 
-    // 3. DIRECT ACTIVATION: Add user to group immediately (Fallback/UX)
+    // 3. FULL ACTIVATION: Add user to group immediately (Fallback/UX)
     try {
-      const existing = await this._chatRepository.findParticipantInConversation(request.requesterId, request.hubId);
-      if (!existing) {
-        await this._chatRepository.addParticipantToGroup(request.hubId, request.requesterId);
+      logger.info("👉 [HubRequestService] Attempting full direct activation", { 
+        hubId: request.hubId, 
+        requesterId: request.requesterId 
+      });
+      
+      const { wasAlreadyActive } = await this._chatRepository.ensureParticipantActive(request.hubId, request.requesterId);
+      
+      if (!wasAlreadyActive) {
+        // Update member count
+        await this._chatRepository.updateMemberCount(request.hubId, 1);
+        
+        // Invalidate cache
         await RedisCacheService.invalidateConversationCache(request.hubId);
-        logger.info(`Directly activated member ${request.requesterId} in hub ${request.hubId}`);
+
+        // Fetch profile for system message
+        const userProfilesMap = await authServiceClient.getUserProfiles([request.requesterId]);
+        const userProfile = userProfilesMap.get(request.requesterId);
+        const snapshotName = userProfile?.name || userProfile?.username || 'Unknown User';
+
+        // Send group joined system message
+        await this._messageSagaService.sendSystemMessage(
+          request.hubId,
+          `joined_group:${JSON.stringify({ id: request.requesterId, name: snapshotName })}`,
+          request.requesterId
+        );
+
+        logger.info("✅ [HubRequestService] Fully activated member (direct)", { 
+          requesterId: request.requesterId, 
+          hubId: request.hubId 
+        });
+      } else {
+        logger.info("ℹ️ [HubRequestService] User already an active member", { requesterId: request.requesterId });
       }
-    } catch (err) {
-      logger.error("Failed direct membership activation", { err });
+    } catch (err: any) {
+      logger.error("❌ [HubRequestService] Failed direct membership activation", { 
+        error: err.message,
+        requestId 
+      });
       // Don't fail the whole request if activation fails (consumer might retry)
     }
 
     // 4. Emit event for long-term notification & other side effects
+    logger.info("👉 [HubRequestService] Publishing HubJoinApproved event", { requestId });
     await publishChatEvent({
       eventType: "HubJoinApproved",
       requestId: request.id,
@@ -126,9 +179,8 @@ export class HubRequestService implements IHubRequestService {
       resolvedBy: adminId,
     });
 
-    logger.info("Hub join request approved", { requestId, adminId });
-
     // Broadcast real-time update to Requester
+    logger.info("👉 [HubRequestService] Broadcasting real-time approval", { requesterId: request.requesterId });
     await redisPublisher.publish('conversation_event', JSON.stringify({
       type: 'hub_join_approved',
       conversationId: request.hubId,
