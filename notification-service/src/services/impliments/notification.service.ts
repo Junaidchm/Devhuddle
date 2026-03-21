@@ -239,6 +239,19 @@ export class NotificationService implements INotificationService {
     }
   }
 
+  async clearAllNotifications(recipientId: string): Promise<void> {
+    try {
+      await this._notificationRepository.clearAllNotifications(recipientId);
+      logger.info(`All notifications cleared for user ${recipientId}`);
+    } catch (error: unknown) {
+      logger.error("Error in notification service - clearAllNotifications", {
+        error: (error as Error).message,
+        recipientId,
+      });
+      throw error;
+    }
+  }
+
   async restoreNotification(notificationId: string, recipientId: string): Promise<void> {
     try {
       await this._notificationRepository.restoreNotification(notificationId, recipientId);

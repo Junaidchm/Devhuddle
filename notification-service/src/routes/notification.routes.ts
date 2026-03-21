@@ -37,6 +37,10 @@ router
   .post(
     "/:userId/mark-all-read",
     notificationController.markAllAsRead.bind(notificationController)
+  )
+  .delete(
+    "/:userId/clear-all",
+    notificationController.clearAll.bind(notificationController)
   );
 
 export default router;

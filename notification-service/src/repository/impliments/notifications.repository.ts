@@ -968,6 +968,42 @@ export class NotificationsRepository
   }
 
   /**
+   * Clear all notifications for a user (soft delete)
+   */
+  async clearAllNotifications(recipientId: string): Promise<void> {
+    try {
+      await prisma.notificationRecipient.updateMany({
+        where: {
+          recipientId,
+          deletedAt: null,
+        },
+        data: {
+          deletedAt: new Date(),
+        },
+      });
+
+      // Invalidating cache and broadcasting count (which will be 0) in background
+      Promise.all([
+        this._invalidateNotificationCache(recipientId),
+        this._updateAndBroadcastUnreadCount(recipientId),
+      ]).catch((error) => {
+        logger.error("Error in background tasks for clearAllNotifications", {
+          error: error.message,
+          recipientId,
+        });
+      });
+
+      logger.info(`All notifications cleared for user ${recipientId}`);
+    } catch (error: unknown) {
+      logger.error("Error clearing all notifications", {
+        error: (error as Error).message,
+        recipientId,
+      });
+      throw new Error("Database error");
+    }
+  }
+
+  /**
    * Invalidates notification cache for a user
    * ✅ FIXED: Used SCAN instead of KEYS to avoid blocking Redis
    */

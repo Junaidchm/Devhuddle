@@ -114,6 +114,7 @@ export interface INotificationRepository {
   ): Promise<void>;
   getUnreadCount(recipientId: string): Promise<number>;
   markAllAsRead(recipientId: string): Promise<void>;
+  clearAllNotifications(recipientId: string): Promise<void>;
   restoreNotification(
     notificationId: string,
     recipientId: string

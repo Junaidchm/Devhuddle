@@ -144,6 +144,32 @@ export class NotificationController {
   }
 
   /**
+   * Clear all notifications
+   */
+  async clearAll(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId } = req.params;
+
+      if (!userId) {
+        res.status(400).json({ error: "User ID is required" });
+        return;
+      }
+      
+      await this._notificationService.clearAllNotifications(userId);
+
+      res.status(200).json({
+        success: true,
+        message: "All notifications cleared",
+      });
+    } catch (error: any) {
+      logger.error("Error clearing all notifications", {
+        error: error.message,
+      });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  /**
    * Restore a soft-deleted notification
    */
   async restoreNotification(req: Request, res: Response): Promise<void> {
