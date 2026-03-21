@@ -26,7 +26,14 @@ export class AdminService implements IAdminService {
 
   async listReports(params: ListReportsParams): Promise<ListReportsResult> {
     try {
-      return await this._adminRepository.listReports(params);
+      const result = await this._adminRepository.listReports(params);
+      
+      // Enrich with reporter data
+      if (result.reports.length > 0) {
+        result.reports = await this._enrichReportsWithUserData(result.reports);
+      }
+      
+      return result;
     } catch (error: any) {
       logger.error("Error in listReports service", { error: error.message });
       throw new CustomError(500, "Failed to list reports");
@@ -218,6 +225,52 @@ export class AdminService implements IAdminService {
     } catch (error: any) {
       logger.error("Error in _enrichCommentsWithUserData", { error: error.message });
       return comments;
+    }
+  }
+
+  private async _enrichReportsWithUserData(reports: any[]): Promise<any[]> {
+    try {
+      return await Promise.all(
+        reports.map(async (report) => {
+          try {
+            const userResponse: any = await grpcs<UserServiceClient, { userId: string }, any>(
+              this._userClient,
+              "getUserForFeedListing",
+              { userId: report.reporterId }
+            );
+
+            return {
+              ...report,
+              reporter: userResponse ? {
+                id: report.reporterId,
+                name: userResponse.name,
+                username: userResponse.username,
+                profilePicture: userResponse.avatar,
+              } : {
+                id: report.reporterId,
+                name: "Deleted User",
+                username: "deleted_user",
+                profilePicture: null,
+                isDeleted: true
+              }
+            };
+          } catch (err) {
+            logger.warn(`Failed to fetch user data for reporter ${report.reporterId}`, { reportId: report.id });
+            return {
+              ...report,
+              reporter: {
+                id: report.reporterId,
+                name: "Unknown",
+                username: "unknown",
+                profilePicture: null
+              }
+            };
+          }
+        })
+      );
+    } catch (error) {
+      logger.error("Error enriching reports with user data", { error });
+      return reports;
     }
   }
 
