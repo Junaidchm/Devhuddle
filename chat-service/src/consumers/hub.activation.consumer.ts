@@ -53,8 +53,24 @@ export async function startHubActivationConsumer(
 
         logger.info(`Membership activated for user ${requesterId} in hub ${hubId}. Proceeding with side-effects.`);
 
-        // 2. Invalidate cache
+        // 2. Invalidate hub-specific cache
         await RedisCacheService.invalidateConversationCache(hubId);
+
+        // Fetch FRESH conversation with updated participants for cache invalidation
+        const freshConversation = await chatRepository.findConversationById(hubId);
+        if (freshConversation) {
+          const allActiveParticipantIds = freshConversation.participants
+            .filter(p => !p.deletedAt)
+            .map(p => p.userId);
+
+          // ✅ CRITICAL FIX: Invalidate the conversation LIST cache for EVERY participant.
+          // This prevents "state poisoning" where the UI refetches but gets 2-minute old cached list data.
+          logger.info(`Invalidating list caches for ${allActiveParticipantIds.length} participants in hub ${hubId}`);
+          for (const userId of allActiveParticipantIds) {
+            await RedisCacheService.invalidateUserConversationsMetadataCache(userId);
+            await RedisCacheService.invalidateUserConversationsCache(userId);
+          }
+        }
 
         // 3. Enrich profile and send system message
         const userProfilesMap = await authServiceClient.getUserProfiles([requesterId]);

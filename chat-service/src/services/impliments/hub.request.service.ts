@@ -138,8 +138,28 @@ export class HubRequestService implements IHubRequestService {
         // Update member count
         await this._chatRepository.updateMemberCount(request.hubId, 1);
         
-        // Invalidate cache
+        // Invalidate hub-specific cache
         await RedisCacheService.invalidateConversationCache(request.hubId);
+
+        // Fetch FRESH conversation with updated participants for cache invalidation and broadcast
+        const freshConversation = await this._chatRepository.findConversationById(request.hubId);
+        if (freshConversation) {
+          const allActiveParticipantIds = freshConversation.participants
+            .filter(p => !p.deletedAt)
+            .map(p => p.userId);
+
+          // ✅ CRITICAL FIX: Invalidate the conversation LIST cache for EVERY participant.
+          // This prevents "state poisoning" where the UI refetches but gets 2-minute old cached list data.
+          logger.info(`Invalidating list caches for ${allActiveParticipantIds.length} participants in hub ${request.hubId}`);
+          for (const userId of allActiveParticipantIds) {
+            await RedisCacheService.invalidateUserConversationsMetadataCache(userId);
+            await RedisCacheService.invalidateUserConversationsCache(userId);
+          }
+
+          // Use this fresh list for the broadcast later
+          (request as any)._allParticipantIds = allActiveParticipantIds;
+          (request as any)._hubName = freshConversation.name || "Group";
+        }
 
         // Fetch profile for system message
         const userProfilesMap = await authServiceClient.getUserProfiles([request.requesterId]);
@@ -174,7 +194,7 @@ export class HubRequestService implements IHubRequestService {
       eventType: "HubJoinApproved",
       requestId: request.id,
       hubId: request.hubId,
-      hubName: conversation.name || "Group",
+      hubName: (request as any)._hubName || conversation.name || "Group",
       requesterId: request.requesterId,
       resolvedBy: adminId,
     });
@@ -192,9 +212,9 @@ export class HubRequestService implements IHubRequestService {
       }
     }));
 
-    // Broadcast participants_added to ALL group members (including admin/owner) 
+    // Broadcast participants_added to ALL group members (including admin/owner and NEW member) 
     // so their member list and count refreshes in real-time without a page reload
-    const allParticipantIds = conversation.participants
+    const allParticipantIds = (request as any)._allParticipantIds || conversation.participants
       .filter(p => !p.deletedAt)
       .map(p => p.userId);
     
