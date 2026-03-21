@@ -255,10 +255,10 @@ model HubJoinRequest {
 
   conversation Conversation @relation(fields: [hubId], references: [id], onDelete: Cascade)
 
-  @@unique([hubId, requesterId, status])
   @@index([hubId])
   @@index([requesterId])
   @@index([status])
+  @@index([hubId, requesterId, status]) // Fast lookup for pending requests
 }
 
 enum JoinRequestStatus {

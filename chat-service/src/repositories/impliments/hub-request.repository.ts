@@ -12,13 +12,11 @@ export class HubJoinRequestRepository implements IHubJoinRequestRepository {
   }
 
   async findPendingRequest(hubId: string, requesterId: string): Promise<HubJoinRequest | null> {
-    return await prisma.hubJoinRequest.findUnique({
+    return await prisma.hubJoinRequest.findFirst({
       where: {
-        hubId_requesterId_status: {
-          hubId,
-          requesterId,
-          status: JoinRequestStatus.PENDING,
-        },
+        hubId,
+        requesterId,
+        status: JoinRequestStatus.PENDING,
       },
     });
   }
@@ -68,10 +66,10 @@ export class HubJoinRequestRepository implements IHubJoinRequestRepository {
     version: number
   ): Promise<HubJoinRequest> {
     try {
-      const updated = await prisma.hubJoinRequest.update({
+      const result = await prisma.hubJoinRequest.updateMany({
         where: {
           id,
-          version: version, // Optimistic locking
+          version,
         },
         data: {
           status,
@@ -80,33 +78,43 @@ export class HubJoinRequestRepository implements IHubJoinRequestRepository {
           version: { increment: 1 },
         },
       });
+
+      if (result.count === 0) {
+        throw new AppError("Request not found, already processed, or version mismatch", 409);
+      }
+
+      const updated = await this.findById(id);
+      if (!updated) throw new AppError("Request no longer exists", 404);
       return updated;
     } catch (error: any) {
-      if (error.code === 'P2025') {
-        throw new AppError("Request not found or version mismatch (Optimistic Lock Failure)", 409);
-      }
+      if (error instanceof AppError) throw error;
       throw error;
     }
   }
 
   async cancelRequest(id: string, requesterId: string, version: number): Promise<HubJoinRequest> {
     try {
-      const updated = await prisma.hubJoinRequest.update({
+      const result = await prisma.hubJoinRequest.updateMany({
         where: {
           id,
           requesterId,
-          version: version,
+          version,
         },
         data: {
           status: JoinRequestStatus.CANCELLED,
           version: { increment: 1 },
         },
       });
-      return updated;
-    } catch (error: any) {
-      if (error.code === 'P2025') {
+
+      if (result.count === 0) {
         throw new AppError("Request not found, unauthorized, or version mismatch", 403);
       }
+
+      const updated = await this.findById(id);
+      if (!updated) throw new AppError("Request no longer exists", 404);
+      return updated;
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
       throw error;
     }
   }
