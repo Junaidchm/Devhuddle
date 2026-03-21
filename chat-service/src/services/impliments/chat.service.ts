@@ -608,7 +608,7 @@ export class ChatService implements IChatService {
                     createdAt: { lte: lastReadMessage.createdAt },
                     status: { notIn: ['READ'] as any }
                 },
-                select: { id: true }
+                select: { id: true, senderId: true }
             });
 
             // Process receipts in parallel (fire-and-forget per message)
@@ -642,6 +642,19 @@ export class ChatService implements IChatService {
                 lastReadMessageId,
                 affectedCount: messagesToMark.length
             });
+
+            // ✅ FIX: Invalidate the user's conversation cache strictly so unreadCount resets to 0.
+            // If we don't invalidate here, subsequent GET /conversations return stale data from Redis.
+            await RedisCacheService.invalidateUserConversationsCache(userId);
+            await RedisCacheService.invalidateUserConversationsMetadataCache(userId);
+
+            // Also invalidate cache for senders whose messages were just marked as read
+            const senderIdsSet = new Set(messagesToMark.map(m => m.senderId));
+            for (const senderId of senderIdsSet) {
+                await RedisCacheService.invalidateUserConversationsCache(senderId);
+                await RedisCacheService.invalidateUserConversationsMetadataCache(senderId);
+            }
+
         } catch (error) {
             logger.error('Error marking messages as read', {
                 error: (error as Error).message,
