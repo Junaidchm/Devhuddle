@@ -3,11 +3,15 @@ import { IChatRepository } from "../../repositories/interfaces/IChatRepository";
 import { Conversation, Prisma } from "@prisma/client";
 import { AppError } from "../../utils/AppError";
 import logger from "../../utils/logger.util";
-import { adminAuthClient } from "../../config/grpc.client";
+import { adminAuthClient, userClient } from "../../config/grpc.client";
 import { grpcs } from "../../utils/grpc.client.util";
+import { UserServiceClient } from "../../grpc/generated/user";
 
 export class AdminService implements IAdminService {
-  constructor(private readonly _chatRepository: IChatRepository) {}
+  constructor(
+    private readonly _chatRepository: IChatRepository,
+    private readonly _userClient: UserServiceClient = userClient
+  ) {}
 
   async getHubs(params: GetHubsParams): Promise<{ hubs: AdminHub[]; total: number }> {
     try {
@@ -41,10 +45,12 @@ export class AdminService implements IAdminService {
         this._chatRepository.getConversationCount(where),
       ]);
 
-      const hubs: AdminHub[] = hubsWithCounts.map((hub) => ({
-        ...hub,
-        reportsCount: hub._count.reports,
-      }));
+      const hubs: AdminHub[] = await this._enrichHubsWithUserData(
+        hubsWithCounts.map((hub) => ({
+          ...hub,
+          reportsCount: hub._count.reports,
+        }))
+      );
 
       return { hubs, total };
     } catch (error: unknown) {
@@ -78,10 +84,12 @@ export class AdminService implements IAdminService {
         this._chatRepository.getConversationCount(where),
       ]);
 
-      const hubs: AdminHub[] = hubsWithCounts.map((hub) => ({
-        ...hub,
-        reportsCount: hub._count.reports,
-      }));
+      const hubs: AdminHub[] = await this._enrichHubsWithUserData(
+        hubsWithCounts.map((hub) => ({
+          ...hub,
+          reportsCount: hub._count.reports,
+        }))
+      );
 
       return { hubs, total };
     } catch (error: unknown) {
@@ -97,10 +105,14 @@ export class AdminService implements IAdminService {
         throw new AppError("Hub not found", 404);
       }
 
-      return {
-        ...hub,
-        reportsCount: hub._count.reports,
-      };
+      const enriched = await this._enrichHubsWithUserData([
+        {
+          ...hub,
+          reportsCount: hub._count.reports,
+        },
+      ]);
+
+      return enriched[0];
     } catch (error: unknown) {
       logger.error("AdminService.getHubById Error", { error });
       throw error;
@@ -202,6 +214,54 @@ export class AdminService implements IAdminService {
     } catch (error: unknown) {
       logger.error("AdminService.getHubStats Error", { error });
       throw error;
+    }
+  }
+
+  private async _enrichHubsWithUserData(hubs: any[]): Promise<any[]> {
+    try {
+      return await Promise.all(
+        hubs.map(async (hub) => {
+          if (!hub.ownerId) return hub;
+
+          try {
+            const userResponse: any = await grpcs<UserServiceClient, { userId: string }, any>(
+              this._userClient,
+              "getUserForFeedListing",
+              { userId: hub.ownerId }
+            );
+
+            return {
+              ...hub,
+              owner: userResponse ? {
+                id: hub.ownerId,
+                name: userResponse.name,
+                username: userResponse.username,
+                profilePicture: userResponse.avatar,
+              } : {
+                id: hub.ownerId,
+                name: "Deleted User",
+                username: "deleted_user",
+                profilePicture: null,
+                isDeleted: true
+              }
+            };
+          } catch (err) {
+            logger.warn(`Failed to fetch user data for hub owner ${hub.ownerId}`, { hubId: hub.id });
+            return {
+              ...hub,
+              owner: {
+                id: hub.ownerId,
+                name: "Unknown",
+                username: "unknown",
+                profilePicture: null
+              }
+            };
+          }
+        })
+      );
+    } catch (error) {
+      logger.error("Error enriching hubs with user data", { error });
+      return hubs;
     }
   }
 }
