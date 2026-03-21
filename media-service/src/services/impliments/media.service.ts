@@ -275,6 +275,71 @@ export class MediaService implements IMediaService {
     }
   }
 
+  async deleteAllUserMedia(userId: string): Promise<void> {
+    try {
+      // 1. Find all media for the user
+      const userMedia = await this._mediaRepository.findByUserId(userId, 1000, 0);
+      
+      if (userMedia.length === 0) {
+        logger.info("No media found for user", { userId });
+        return;
+      }
+
+      logger.info(`Cleaning up ${userMedia.length} media items for deleted user`, { userId });
+
+      // 2. Collect all storage keys to delete
+      const allKeys: string[] = [];
+      for (const media of userMedia) {
+        // Main file
+        allKeys.push(media.storageKey);
+
+        // Thumbnails
+        if (media.thumbnailUrls) {
+          const thumbnails = media.thumbnailUrls as unknown as ThumbnailUrl[];
+          if (Array.isArray(thumbnails)) {
+            thumbnails.forEach(t => t.storageKey && allKeys.push(t.storageKey));
+          }
+        }
+
+        // Transcoded videos
+        if (media.transcodedUrls) {
+          const transcoded = media.transcodedUrls as unknown as TranscodedUrlMap;
+          if (typeof transcoded === "object") {
+            Object.values(transcoded).forEach(url => {
+              if (typeof url === "string") {
+                const parts = url.split("/");
+                allKeys.push(parts[parts.length - 1]);
+              }
+            });
+          }
+        }
+      }
+
+      // 3. Delete files from storage in batches
+      const uniqueKeys = Array.from(new Set(allKeys.filter(Boolean)));
+      if (uniqueKeys.length > 0) {
+        // Cloudflare R2 / S3 suggest deleting in batches of 1000
+        for (let i = 0; i < uniqueKeys.length; i += 1000) {
+          const batch = uniqueKeys.slice(i, i + 1000);
+          await this.storageService.deleteFiles(batch);
+        }
+        logger.info(`Deleted ${uniqueKeys.length} physical files for user`, { userId });
+      }
+
+      // 4. Delete DB records
+      const mediaIds = userMedia.map(m => m.id);
+      await this._mediaRepository.deleteMany(mediaIds);
+      
+      logger.info(`Successfully purged all media and files for user: ${userId}`);
+    } catch (error: unknown) {
+      logger.error("Failed to purge user media", {
+        error: (error as Error).message,
+        userId,
+      });
+      throw error;
+    }
+  }
+
   async validateMediaOwnership(
     request: { mediaIds: string[]; userId: string }
   ): Promise<MediaValidationResult> {

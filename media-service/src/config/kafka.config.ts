@@ -14,4 +14,5 @@ export const KAFKA_TOPICS = {
   // Post Deletion events
   POST_DELETED: "post.deleted.v1",
   POST_DELETED_DLQ: "post.deleted.v1-dlq",
+  USER_DELETED: "user-events",
 } as const;

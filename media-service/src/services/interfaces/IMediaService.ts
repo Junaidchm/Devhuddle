@@ -48,6 +48,7 @@ export interface IMediaService {
   getMediaByPostId(postId: string): Promise<any[]>;
   getMediaByProjectId(projectId: string): Promise<any[]>;
   deleteMedia(mediaId: string, userId: string): Promise<void>;
+  deleteAllUserMedia(userId: string): Promise<void>;
   validateMediaOwnership(request: ValidateMediaRequest): Promise<ValidateMediaResponse>;
   linkMediaToPost(mediaIds: string[], postId: string, userId: string): Promise<void>;
   linkMediaToProject(mediaIds: string[], projectId: string, userId: string): Promise<void>;
