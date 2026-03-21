@@ -747,19 +747,56 @@ export class PostRepository
     }
   }
 
-  async deleteAllPostsByUser(userId: string): Promise<void> {
+  async deleteAllUserRelatedData(userId: string): Promise<void> {
     try {
-      // Hard delete all posts by user (cascading deletes for Media and PostVersions should be handled by DB or manually)
-      // Check schema for cascade rules.
-      await prisma.posts.deleteMany({
-        where: { userId },
-      });
+      await prisma.$transaction([
+        // 1. Delete all reactions by user
+        prisma.reaction.deleteMany({ where: { userId } }),
+
+        // 2. Delete all reports by user
+        prisma.report.deleteMany({ where: { reporterId: userId } }),
+
+        // 3. Delete all post mentions by user (as actor)
+        prisma.postMention.deleteMany({ where: { actorId: userId } }),
+
+        // 4. Delete all post mentions OF user
+        prisma.postMention.deleteMany({ where: { mentionedUserId: userId } }),
+
+        // 5. Delete all saved posts by user
+        prisma.savedPost.deleteMany({ where: { userId } }),
+
+        // 6. Delete all user feed entries for user
+        prisma.userFeed.deleteMany({ where: { userId } }),
+
+        // 7. Delete all shares by user
+        prisma.share.deleteMany({ where: { userId } }),
+
+        // 8. Delete all comment mentions by user (as actor)
+        prisma.commentMention.deleteMany({ where: { actorId: userId } }),
+
+        // 9. Delete all comment mentions OF user
+        prisma.commentMention.deleteMany({ where: { mentionedUserId: userId } }),
+
+        // 10. Delete all idempotency keys by user
+        prisma.idempotencyKey.deleteMany({ where: { userId } }),
+
+        // 11. Delete all comments by user (cascades to reactions/reports on those comments)
+        prisma.comment.deleteMany({ where: { userId } }),
+
+        // 12. Delete all posts by user (cascades to Media, Poll, Versions, etc.)
+        prisma.posts.deleteMany({ where: { userId } }),
+      ]);
+      logger.info(`✅ Successfully purged all user-related data for user: ${userId}`);
     } catch (error: unknown) {
-      logger.error("Error deleting all posts by user", {
+      logger.error("Error purging all user-related data", {
         error: (error as Error).message,
         userId,
       });
-      throw new Error("Database error");
+      throw new Error("Database error during user data purge");
     }
+  }
+
+  async deleteAllPostsByUser(userId: string): Promise<void> {
+    return this.deleteAllUserRelatedData(userId);
   }
 }
