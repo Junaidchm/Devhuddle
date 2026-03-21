@@ -40,29 +40,34 @@ export const adminServiceProxy = app_config.authServiceUrl
         router: (req) => {
           const path = req.url || "";
           const originalPath = (req as any).originalUrl || path;
+          // Remove query params for matching
+          const cleanPath = originalPath.split('?')[0];
           
-          logger.info(`[Admin Proxy Router] deciding target for: ${path} (original: ${originalPath})`);
+          logger.info(`[Admin Proxy Router] deciding target for: ${cleanPath} (originalUrl: ${originalPath})`);
 
-          if (path.includes("/admin/posts") || originalPath.includes("/admin/posts") ||
-              path.includes("/admin/comments") || originalPath.includes("/admin/comments") ||
-              path.includes("/admin/reports") || originalPath.includes("/admin/reports") ||
-              path.includes("/admin/analytics") || originalPath.includes("/admin/analytics")) {
-            logger.info(`[Admin Proxy] Routing to Post Service: ${path}`);
+          // Route to Post Service
+          if (cleanPath.includes("/admin/posts") || 
+              cleanPath.includes("/admin/comments") || 
+              cleanPath.includes("/admin/reports") || 
+              cleanPath.includes("/admin/analytics")) {
+            logger.info(`[Admin Proxy] Routing to Post Service: ${cleanPath}`);
             return app_config.postServiceUrl;
           }
           
-          if (path.includes("/admin/projects") || originalPath.includes("/admin/projects")) {
-            logger.info(`[Admin Proxy] Routing to Project Service: ${path}`);
+          // Route to Project Service
+          if (cleanPath.includes("/admin/projects")) {
+            logger.info(`[Admin Proxy] Routing to Project Service: ${cleanPath}`);
             return app_config.projectServiceUrl;
           }
           
-          if (path.includes("/admin/hubs") || originalPath.includes("/admin/hubs")) {
-            logger.info(`[Admin Proxy] Routing to Chat Service: ${path}`);
+          // Route to Chat Service
+          if (cleanPath.includes("/admin/hubs")) {
+            logger.info(`[Admin Proxy] Routing to Chat Service: ${cleanPath}`);
             return app_config.chatServiceUrl;
           }
           
           // Default to Auth Service for users, user details, audit-logs, etc.
-          logger.info(`[Admin Proxy] Routing to Auth Service (Default): ${path}`);
+          logger.info(`[Admin Proxy] Routing to Auth Service (Default): ${cleanPath}`);
           return app_config.authServiceUrl;
         },
         changeOrigin: true,
