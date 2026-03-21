@@ -179,8 +179,8 @@ export class HubRequestService implements IHubRequestService {
       resolvedBy: adminId,
     });
 
-    // Broadcast real-time update to Requester
-    logger.info("👉 [HubRequestService] Broadcasting real-time approval", { requesterId: request.requesterId });
+    // Broadcast real-time update to Requester (so they know they were approved)
+    logger.info("👉 [HubRequestService] Broadcasting real-time approval to requester", { requesterId: request.requesterId });
     await redisPublisher.publish('conversation_event', JSON.stringify({
       type: 'hub_join_approved',
       conversationId: request.hubId,
@@ -189,6 +189,24 @@ export class HubRequestService implements IHubRequestService {
         requestId: request.id,
         hubId: request.hubId,
         status: JoinRequestStatus.APPROVED
+      }
+    }));
+
+    // Broadcast participants_added to ALL group members (including admin/owner) 
+    // so their member list and count refreshes in real-time without a page reload
+    const allParticipantIds = conversation.participants
+      .filter(p => !p.deletedAt)
+      .map(p => p.userId);
+    
+    logger.info("👉 [HubRequestService] Broadcasting participants_added to all group members", { count: allParticipantIds.length });
+    await redisPublisher.publish('conversation_event', JSON.stringify({
+      type: 'participants_added',
+      conversationId: request.hubId,
+      targetUserIds: allParticipantIds,
+      data: {
+        conversationId: request.hubId,
+        newParticipants: [request.requesterId],
+        hubId: request.hubId,
       }
     }));
 
@@ -224,6 +242,7 @@ export class HubRequestService implements IHubRequestService {
       eventType: "HubJoinRejected",
       requestId: request.id,
       hubId: request.hubId,
+      hubName: conversation?.name || "Group",
       requesterId: request.requesterId,
       resolvedBy: adminId,
     });

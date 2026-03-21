@@ -64,6 +64,7 @@ interface HubJoinApprovedPayload {
 interface HubJoinRejectedPayload {
   requestId: string;
   hubId: string;
+  hubName?: string; // ✅ Added for descriptive notification
   requesterId: string;
   resolvedBy: string;
 }
@@ -263,7 +264,8 @@ async function handleHubJoinRejected(
       requesterId,
       hubId,
       requestId,
-      1 // version
+      1,
+      payload.hubName // ✅ Pass hubName for descriptive message
     );
   } catch (err) {
     logger.error(`Failed to create HubJoinRejected notification for user ${requesterId}`, { error: err });

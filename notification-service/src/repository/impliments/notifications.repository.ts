@@ -1688,12 +1688,12 @@ export class NotificationsRepository
     await this._createOrUpdateNotification(
       NotificationType.HUB_JOIN_APPROVED,
       EntityType.HUB,
-      hubId,
+      requestId, // ✅ Use requestId (not hubId) to avoid version conflict with join-request notification
       adminId,
       recipientId,
       version,
-      "approved your request to join the hub",
-      requestId,
+      hubName ? `approved your request to join ${hubName}` : "approved your request to join the hub",
+      hubId, // contextId = hubId for navigation
       { hubId, requestId, hubName }
     );
   }
@@ -1709,12 +1709,12 @@ export class NotificationsRepository
     await this._createOrUpdateNotification(
       NotificationType.HUB_JOIN_REJECTED,
       EntityType.HUB,
-      hubId,
+      requestId, // ✅ Use requestId (not hubId) to avoid version conflict
       adminId,
       recipientId,
       version,
-      "rejected your request to join the hub",
-      requestId,
+      hubName ? `rejected your request to join ${hubName}` : "rejected your request to join the hub",
+      hubId, // contextId = hubId for navigation
       { hubId, requestId, hubName }
     );
   }

@@ -399,7 +399,8 @@ export class NotificationService implements INotificationService {
     recipientId: string,
     hubId: string,
     requestId: string,
-    version: number
+    version: number,
+    hubName?: string
   ): Promise<void> {
     try {
       await this._notificationRepository.createHubJoinRejectedNotification(
@@ -407,7 +408,8 @@ export class NotificationService implements INotificationService {
         recipientId,
         hubId,
         requestId,
-        version
+        version,
+        hubName
       );
     } catch (error: any) {
       logger.error("Error creating HubJoinRejected notification", { error: error.message });
