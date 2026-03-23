@@ -101,6 +101,9 @@ export interface IChatRepository {
         limit?: number,
         offset?: number
     ): Promise<(Conversation & { participants: Participant[] })[]>;
+    countAllGroups(query?: string, topics?: string[]): Promise<number>;
+    countMyGroups(userId: string, query?: string): Promise<number>;
+    countDiscoverGroups(userId: string, query?: string, topics?: string[]): Promise<number>;
     getPopularTopics(limit?: number): Promise<{ topic: string, count: number }[]>;
   addParticipantToGroup(groupId: string, userId: string, role?: 'ADMIN' | 'MEMBER'): Promise<void>;
   /** 

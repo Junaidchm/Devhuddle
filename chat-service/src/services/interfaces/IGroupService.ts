@@ -1,5 +1,5 @@
 import { Conversation, Participant } from "@prisma/client";
-import { ConversationWithMetadataDto, GroupListDto } from "../../dtos/chat-service.dto";
+import { ConversationWithMetadataDto, GroupListDto, PaginatedGroupsDto, PaginatedGroupListDto } from "../../dtos/chat-service.dto";
 
 export interface IGroupService {
   createGroup(
@@ -17,7 +17,7 @@ export interface IGroupService {
     topics?: string[],
     limit?: number,
     offset?: number
-  ): Promise<ConversationWithMetadataDto[]>;
+  ): Promise<PaginatedGroupsDto>;
 
   getGroupDetails(groupId: string): Promise<Conversation & { participants: Participant[] }>;
   addParticipants(groupId: string, adminId: string, userIds: string[]): Promise<void>;
@@ -43,7 +43,7 @@ export interface IGroupService {
     query?: string,
     limit?: number,
     offset?: number
-  ): Promise<GroupListDto[]>;
+  ): Promise<PaginatedGroupListDto>;
 
   getDiscoverGroups(
     userId: string,
@@ -51,7 +51,7 @@ export interface IGroupService {
     topics?: string[],
     limit?: number,
     offset?: number
-  ): Promise<GroupListDto[]>;
+  ): Promise<PaginatedGroupListDto>;
 
   getGroupTopics(limit?: number): Promise<{ topic: string, count: number }[]>;
 }

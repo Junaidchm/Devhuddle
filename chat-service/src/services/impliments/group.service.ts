@@ -3,7 +3,7 @@ import { IGroupService } from "../interfaces/IGroupService";
 import { IChatRepository } from "../../repositories/interfaces/IChatRepository";
 import { AppError } from "../../utils/AppError";
 import { authServiceClient } from "../../clients/auth-service.client";
-import { ConversationWithMetadataDto, GroupListDto } from "../../dtos/chat-service.dto";
+import { ConversationWithMetadataDto, GroupListDto, PaginatedGroupsDto, PaginatedGroupListDto } from "../../dtos/chat-service.dto";
 
 import { redisPublisher } from "../../config/redis.config";
 import logger from "../../utils/logger.util";
@@ -108,8 +108,11 @@ export class GroupService implements IGroupService {
     topics?: string[],
     limit: number = 20,
     offset: number = 0
-  ): Promise<ConversationWithMetadataDto[]> {
-    const groups = await this._chatRepository.findAllGroups(query, topics, limit, offset);
+  ): Promise<PaginatedGroupsDto> {
+    const [groups, totalCount] = await Promise.all([
+        this._chatRepository.findAllGroups(query, topics, limit, offset),
+        this._chatRepository.countAllGroups(query, topics)
+    ]);
 
     // Collect all unique user IDs to fetch profiles
     const allUserIds = new Set<string>();
@@ -117,7 +120,7 @@ export class GroupService implements IGroupService {
 
     const userProfilesMap = await authServiceClient.getUserProfiles(Array.from(allUserIds));
 
-    return groups.map(group => ({
+    const enrichedGroups = groups.map(group => ({
         conversationId: group.id,
         type: group.type as 'GROUP',
         name: group.name,
@@ -142,6 +145,8 @@ export class GroupService implements IGroupService {
         unreadCount: 0,
         createdAt: group.createdAt
     }));
+
+    return { groups: enrichedGroups, totalCount };
   }
 
   async getMyGroups(
@@ -149,9 +154,13 @@ export class GroupService implements IGroupService {
     query?: string,
     limit: number = 20,
     offset: number = 0
-  ): Promise<GroupListDto[]> {
-    const groups = await this._chatRepository.findMyGroups(userId, query, limit, offset);
-    return groups.map(group => ({
+  ): Promise<PaginatedGroupListDto> {
+    const [groups, totalCount] = await Promise.all([
+        this._chatRepository.findMyGroups(userId, query, limit, offset),
+        this._chatRepository.countMyGroups(userId, query)
+    ]);
+
+    const groupList = groups.map(group => ({
       conversationId: group.id,
       name: group.name,
       description: group.description,
@@ -162,6 +171,8 @@ export class GroupService implements IGroupService {
       isRequestPending: false, // User is already a member
       createdAt: group.createdAt
     }));
+
+    return { groups: groupList, totalCount };
   }
 
   async getDiscoverGroups(
@@ -170,15 +181,18 @@ export class GroupService implements IGroupService {
     topics?: string[],
     limit: number = 20,
     offset: number = 0
-  ): Promise<GroupListDto[]> {
-    const groups = await this._chatRepository.findDiscoverGroups(userId, query, topics, limit, offset);
+  ): Promise<PaginatedGroupListDto> {
+    const [groups, totalCount] = await Promise.all([
+        this._chatRepository.findDiscoverGroups(userId, query, topics, limit, offset),
+        this._chatRepository.countDiscoverGroups(userId, query, topics)
+    ]);
     
     // Efficiently batch check for pending requests
     const groupIds = groups.map(g => g.id);
     const pendingRequests = await this._hubJoinRequestRepository.findPendingRequestsByUser(userId, groupIds);
     const pendingHubIds = new Set(pendingRequests.map(r => r.hubId));
 
-    return groups.map(group => ({
+    const groupList = groups.map(group => ({
       conversationId: group.id,
       name: group.name,
       description: group.description,
@@ -189,6 +203,8 @@ export class GroupService implements IGroupService {
       isRequestPending: pendingHubIds.has(group.id),
       createdAt: group.createdAt
     }));
+
+    return { groups: groupList, totalCount };
   }
 
   async getGroupTopics(limit: number = 10): Promise<{ topic: string; count: number }[]> {

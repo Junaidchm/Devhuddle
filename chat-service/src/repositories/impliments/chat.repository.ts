@@ -676,6 +676,27 @@ export class ChatRepository extends BaseRepository<
         });
     }
 
+    async countAllGroups(query?: string, topics?: string[]): Promise<number> {
+        return await prisma.conversation.count({
+            where: {
+                type: 'GROUP',
+                isSuspended: false,
+                deletedAt: null,
+                ...(query ? {
+                    OR: [
+                        { name: { contains: query, mode: 'insensitive' } },
+                        { description: { contains: query, mode: 'insensitive' } }
+                    ]
+                } : {}),
+                ...(topics && topics.length > 0 ? {
+                    topics: {
+                        hasSome: topics
+                    }
+                } : {})
+            }
+        });
+    }
+
     async findMyGroups(
         userId: string,
         query?: string,
@@ -709,6 +730,28 @@ export class ChatRepository extends BaseRepository<
             skip: offset,
             orderBy: {
                 createdAt: 'desc'
+            }
+        });
+    }
+
+    async countMyGroups(userId: string, query?: string): Promise<number> {
+        return await prisma.conversation.count({
+            where: {
+                type: 'GROUP',
+                isSuspended: false,
+                deletedAt: null,
+                participants: {
+                    some: { 
+                        userId,
+                        deletedAt: null
+                    }
+                },
+                ...(query ? {
+                    OR: [
+                        { name: { contains: query, mode: 'insensitive' } },
+                        { description: { contains: query, mode: 'insensitive' } }
+                    ]
+                } : {})
             }
         });
     }
@@ -747,6 +790,27 @@ export class ChatRepository extends BaseRepository<
             skip: offset,
             orderBy: {
                 createdAt: 'desc'
+            }
+        });
+    }
+
+    async countDiscoverGroups(userId: string, query?: string, topics?: string[]): Promise<number> {
+        return await prisma.conversation.count({
+            where: {
+                type: 'GROUP',
+                isSuspended: false,
+                deletedAt: null,
+                ...(query ? {
+                    OR: [
+                        { name: { contains: query, mode: 'insensitive' } },
+                        { description: { contains: query, mode: 'insensitive' } }
+                    ]
+                } : {}),
+                ...(topics && topics.length > 0 ? {
+                    topics: {
+                        hasSome: topics
+                    }
+                } : {})
             }
         });
     }

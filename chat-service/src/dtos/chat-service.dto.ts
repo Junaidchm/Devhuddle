@@ -275,4 +275,14 @@ export interface GroupListDto {
   createdAt: Date;
 }
 
+export interface PaginatedGroupsDto {
+  groups: ConversationWithMetadataDto[];
+  totalCount: number;
+}
+
+export interface PaginatedGroupListDto {
+  groups: GroupListDto[];
+  totalCount: number;
+}
+
 

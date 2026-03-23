@@ -126,9 +126,9 @@ export class ProjectController {
       const userId = req.headers["x-user-data"]
         ? getUserIdFromRequest(req)
         : undefined;
-      const { cursor, pageParam, filter, techStack, tags, period, limit, authorId } = req.query;
-      // Support both 'cursor' (from client) and 'pageParam' (legacy) for backward compatibility
-      const pageCursor = (cursor as string) || (pageParam as string) || undefined;
+      const { cursor, pageParam, filter, techStack, tags, period, limit, authorId, page } = req.query;
+      // Support 'page' for numbered pagination, falling back to 'cursor' or 'pageParam'
+      const pageCursor = (page as string) || (cursor as string) || (pageParam as string) || undefined;
 
       const result = await this._projectService.listProjects({
         pageParam: pageCursor,
@@ -267,9 +267,9 @@ export class ProjectController {
       const userId = req.headers["x-user-data"]
         ? getUserIdFromRequest(req)
         : undefined;
-      const { query, cursor, pageParam, techStack, tags, limit } = req.query;
-      // Support both 'cursor' (from client) and 'pageParam' (legacy) for backward compatibility
-      const pageCursor = (cursor as string) || (pageParam as string) || undefined;
+      const { query, cursor, pageParam, techStack, tags, limit, page } = req.query;
+      // Support 'page' for numbered pagination
+      const pageCursor = (page as string) || (cursor as string) || (pageParam as string) || undefined;
 
       if (!query) {
         throw new CustomError(

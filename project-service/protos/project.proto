@@ -113,6 +113,7 @@ message GetTrendingProjectsRequest {
 message GetTrendingProjectsResponse {
   repeated Project projects = 1;
   optional string nextCursor = 2;
+  int32 totalCount = 3;
 }
 
 message GetTopProjectsRequest {
@@ -125,6 +126,7 @@ message GetTopProjectsRequest {
 message GetTopProjectsResponse {
   repeated Project projects = 1;
   optional string nextCursor = 2;
+  int32 totalCount = 3;
 }
 
 message SearchProjectsRequest {

@@ -240,14 +240,16 @@ export class ProjectService implements IProjectService {
   async listProjects(req: ListProjectsRequest): Promise<ListProjectsResponse> {
     try {
       const PAGE_SIZE = req.limit || 10;
+      const page = req.pageParam && !isNaN(parseInt(req.pageParam)) ? Math.max(1, parseInt(req.pageParam)) : 1;
+      
       const where: Prisma.ProjectWhereInput = {
         status: "PUBLISHED",
         deletedAt: null,
       };
+      
       const options: ProjectSelectOptions = {
-        take: PAGE_SIZE + 1,
-        skip: req.pageParam ? 1 : 0,
-        cursor: req.pageParam ? { id: req.pageParam } : undefined,
+        take: PAGE_SIZE,
+        skip: (page - 1) * PAGE_SIZE,
         orderBy: { createdAt: "desc" },
         where: where,
       };
@@ -296,9 +298,12 @@ export class ProjectService implements IProjectService {
         where.userId = req.authorId;
       }
 
-      const projects = await this._projectRepository.listProjects(options);
-      const hasMore = projects.length > PAGE_SIZE;
-      const items = projects.slice(0, PAGE_SIZE);
+      const [projects, totalCount] = await Promise.all([
+        this._projectRepository.listProjects(options),
+        this._projectRepository.getProjectCount(where)
+      ]);
+      
+      const items = projects;
 
       // Get user engagement status
       let userLikesMap: Record<string, boolean> = {};
@@ -327,12 +332,9 @@ export class ProjectService implements IProjectService {
         };
       });
 
-      const nextCursor = hasMore ? enrichedProjects[enrichedProjects.length - 1].id : null;
-
       return {
         projects: enrichedProjects,
-        nextCursor: nextCursor || undefined,
-        totalCount: enrichedProjects.length,
+        totalCount: totalCount,
       };
     } catch (err: unknown) {
       logger.error("ListProjects error", { error: (err as Error).message });
@@ -415,12 +417,14 @@ export class ProjectService implements IProjectService {
   async getTrendingProjects(req: GetTrendingProjectsRequest): Promise<GetTrendingProjectsResponse> {
     try {
       const PAGE_SIZE = req.limit || 10;
+      const page = req.pageParam && !isNaN(parseInt(req.pageParam)) ? Math.max(1, parseInt(req.pageParam)) : 1;
+      
+      const where: Prisma.ProjectWhereInput = { status: "PUBLISHED" };
       const options: ProjectSelectOptions = {
-        take: PAGE_SIZE + 1,
-        skip: req.pageParam ? 1 : 0,
-        cursor: req.pageParam ? { id: req.pageParam } : undefined,
+        take: PAGE_SIZE,
+        skip: (page - 1) * PAGE_SIZE,
         orderBy: { trendingScore: "desc" },
-        where: { status: "PUBLISHED" },
+        where,
       };
 
       if (req.period && req.period !== "all-time") {
@@ -428,17 +432,20 @@ export class ProjectService implements IProjectService {
         if (req.period === "this-week") {
           const weekAgo = new Date();
           weekAgo.setDate(now.getDate() - 7);
-          options.where = { ...options.where, createdAt: { gte: weekAgo } };
+          where.createdAt = { gte: weekAgo };
         } else if (req.period === "this-month") {
           const monthAgo = new Date();
           monthAgo.setMonth(now.getMonth() - 1);
-          options.where = { ...options.where, createdAt: { gte: monthAgo } };
+          where.createdAt = { gte: monthAgo };
         }
       }
 
-      const projects = await this._projectRepository.getTrendingProjects(options);
-      const hasMore = projects.length > PAGE_SIZE;
-      const items = projects.slice(0, PAGE_SIZE);
+      const [projects, totalCount] = await Promise.all([
+        this._projectRepository.getTrendingProjects(options),
+        this._projectRepository.getProjectCount(where)
+      ]);
+      
+      const items = projects;
 
       // Get user engagement status
       let userLikesMap: Record<string, boolean> = {};
@@ -467,11 +474,9 @@ export class ProjectService implements IProjectService {
         };
       });
 
-      const nextCursor = hasMore ? enrichedProjects[enrichedProjects.length - 1].id : null;
-
       return {
         projects: enrichedProjects,
-        nextCursor: nextCursor || undefined,
+        totalCount: totalCount,
       };
     } catch (err: unknown) {
       logger.error("GetTrendingProjects error", { error: (err as Error).message });
@@ -482,11 +487,12 @@ export class ProjectService implements IProjectService {
   async getTopProjects(req: GetTopProjectsRequest): Promise<GetTopProjectsResponse> {
     try {
       const PAGE_SIZE = req.limit || 10;
+      const page = req.pageParam && !isNaN(parseInt(req.pageParam)) ? Math.max(1, parseInt(req.pageParam)) : 1;
+      
       const where: Prisma.ProjectWhereInput = { status: "PUBLISHED" };
       const options: ProjectSelectOptions = {
-        take: PAGE_SIZE + 1,
-        skip: req.pageParam ? 1 : 0,
-        cursor: req.pageParam ? { id: req.pageParam } : undefined,
+        take: PAGE_SIZE,
+        skip: (page - 1) * PAGE_SIZE,
         orderBy: [
           { likesCount: "desc" },
           { commentsCount: "desc" },
@@ -508,9 +514,12 @@ export class ProjectService implements IProjectService {
         }
       }
 
-      const projects = await this._projectRepository.getTopProjects(options);
-      const hasMore = projects.length > PAGE_SIZE;
-      const items = projects.slice(0, PAGE_SIZE);
+      const [projects, totalCount] = await Promise.all([
+        this._projectRepository.getTopProjects(options),
+        this._projectRepository.getProjectCount(where)
+      ]);
+      
+      const items = projects;
 
       // Get user engagement status
       let userLikesMap: Record<string, boolean> = {};
@@ -539,11 +548,9 @@ export class ProjectService implements IProjectService {
         };
       });
 
-      const nextCursor = hasMore ? enrichedProjects[enrichedProjects.length - 1].id : null;
-
       return {
         projects: enrichedProjects,
-        nextCursor: nextCursor || undefined,
+        totalCount: totalCount,
       };
     } catch (err: unknown) {
       logger.error("GetTopProjects error", { error: (err as Error).message });
@@ -553,12 +560,34 @@ export class ProjectService implements IProjectService {
 
   async searchProjects(req: SearchProjectsRequest): Promise<SearchProjectsResponse> {
     try {
-      const projects = await this._projectRepository.searchProjects(req.query, {
-        techStack: req.techStack || [],
-        tags: req.tags || [],
-        limit: req.limit || 20,
-        status: "PUBLISHED"
-      });
+      const PAGE_SIZE = req.limit || 20;
+      const page = req.pageParam && !isNaN(parseInt(req.pageParam)) ? Math.max(1, parseInt(req.pageParam)) : 1;
+      
+      const where: Prisma.ProjectWhereInput = { 
+        status: "PUBLISHED",
+        OR: [
+          { title: { contains: req.query, mode: 'insensitive' } },
+          { description: { contains: req.query, mode: 'insensitive' } },
+        ]
+      };
+
+      if (req.techStack && req.techStack.length > 0) {
+        where.techStack = { hasSome: req.techStack };
+      }
+      if (req.tags && req.tags.length > 0) {
+        where.tags = { hasSome: req.tags };
+      }
+
+      const [projects, totalCount] = await Promise.all([
+        this._projectRepository.searchProjects(req.query, {
+          techStack: req.techStack || [],
+          tags: req.tags || [],
+          limit: PAGE_SIZE,
+          skip: (page - 1) * PAGE_SIZE,
+          status: "PUBLISHED"
+        }),
+        this._projectRepository.getProjectCount(where)
+      ]);
 
       // Get user engagement status
       let userLikesMap: Record<string, boolean> = {};
@@ -589,7 +618,7 @@ export class ProjectService implements IProjectService {
 
       return {
         projects: enrichedProjects,
-        totalCount: enrichedProjects.length,
+        totalCount: totalCount,
       };
     } catch (err: unknown) {
       logger.error("SearchProjects error", { error: (err as Error).message });
