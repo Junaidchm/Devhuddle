@@ -7,6 +7,8 @@ import {
   GetUserStatusResponse,
   CreateAuditLogRequest,
   CreateAuditLogResponse,
+  GetDashboardUserStatsRequest,
+  GetDashboardUserStatsResponse,
 } from "../grpc/generated/admin";
 import logger from "../utils/logger.util";
 import { AdminRepository } from "../repositories/impliments/admin.repository";
@@ -117,6 +119,30 @@ export const adminGrpcService: AdminServiceServer = {
       callback({
         code: grpc.status.INTERNAL,
         message: err.message || "Failed to create audit log",
+      });
+    }
+  },
+  getDashboardUserStats: async (
+    call: grpc.ServerUnaryCall<GetDashboardUserStatsRequest, GetDashboardUserStatsResponse>,
+    callback: grpc.sendUnaryData<GetDashboardUserStatsResponse>
+  ) => {
+    try {
+      const stats = await adminService.getDashboardStats();
+      callback(null, {
+        totalUsers: stats.users.total,
+        activeUsers: stats.users.active,
+        blockedUsers: stats.users.blocked,
+        newUsersToday: stats.users.newToday,
+        newUsersThisWeek: stats.users.newThisWeek,
+        newUsersThisMonth: stats.users.newThisMonth,
+      });
+    } catch (err: any) {
+      logger.error("gRPC GetDashboardUserStats error", {
+        error: err.message,
+      });
+      callback({
+        code: grpc.status.INTERNAL,
+        message: err.message || "Failed to get dashboard user stats",
       });
     }
   },

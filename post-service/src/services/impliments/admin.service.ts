@@ -5,12 +5,11 @@ import { IPostRepository } from "../../repositories/interface/IPostRepository";
 import { ICommentRepository } from "../../repositories/interface/ICommentRepository";
 import { CustomError } from "../../utils/error.util";
 import logger from "../../utils/logger.util";
-import { userClient } from "../../config/grpc.client";
+import { userClient, adminAuthClient, projectClient, adminChatClient } from "../../config/grpc.client";
 import { grpcs } from "../../utils/grpc.client.call.util";
 import { UserServiceClient } from "../../grpc/generated/user";
 import { createCircuitBreaker } from "../../utils/circuit.breaker.util";
 import { fetchPostMedia } from "../../config/media.client";
-import { adminAuthClient } from "../../config/grpc.client";
 
 export class AdminService implements IAdminService {
   constructor(
@@ -637,7 +636,39 @@ export class AdminService implements IAdminService {
 
   async getDashboardStats(): Promise<DashboardStats> {
     try {
-      return await this._adminRepository.getDashboardStats();
+      const baseStats = await this._adminRepository.getDashboardStats();
+
+      // Helper for gRPC calls that won't throw
+      const safeGrpc = <T>(client: any, method: string, req: any = {}): Promise<T | null> =>
+        new Promise((resolve) => {
+          client[method](req, (err: any, resp: T) => {
+            if (err) { logger.warn(`gRPC ${method} failed: ${err.message}`); resolve(null); }
+            else resolve(resp);
+          });
+        });
+
+      const [userStats, projectStats] = await Promise.all([
+        safeGrpc<any>(adminAuthClient, "getDashboardUserStats", {}),
+        safeGrpc<any>(projectClient, "getProjectStats", {}),
+      ]);
+
+      return {
+        ...baseStats,
+        users: {
+          total: userStats?.totalUsers ?? 0,
+          active: userStats?.activeUsers ?? 0,
+          blocked: userStats?.blockedUsers ?? 0,
+          newToday: userStats?.newUsersToday ?? 0,
+          newThisWeek: userStats?.newUsersThisWeek ?? 0,
+          newThisMonth: userStats?.newUsersThisMonth ?? 0,
+        },
+        projects: {
+          total: projectStats?.totalProjects ?? 0,
+          reported: projectStats?.reportedProjects ?? 0,
+          hidden: projectStats?.hiddenProjects ?? 0,
+          deleted: projectStats?.deletedProjects ?? 0,
+        },
+      } as any;
     } catch (error: any) {
       logger.error("Error in getDashboardStats service", { error: error.message });
       throw new CustomError(500, "Failed to get dashboard stats");

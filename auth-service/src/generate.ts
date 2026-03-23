@@ -8,7 +8,8 @@ protoPath.push(
   path.resolve(__dirname, "../", "protos", "user.proto"),
   path.resolve(__dirname, "../", "protos", "post.proto"),
   path.resolve(__dirname, "../", "protos", "project.proto"),
-  path.resolve(__dirname, "../", "protos", "chat-admin.proto")
+  path.resolve(__dirname, "../", "protos", "chat-admin.proto"),
+  path.resolve(__dirname, "../", "protos", "admin.proto")
 );
 
 console.log('these are the protoPaths ...................' , protoPath)

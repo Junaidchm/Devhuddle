@@ -40,8 +40,20 @@ message CreateAuditLogResponse {
   string message = 3;
 }
 
+message GetDashboardUserStatsRequest {}
+
+message GetDashboardUserStatsResponse {
+  int32 totalUsers = 1;
+  int32 activeUsers = 2;
+  int32 blockedUsers = 3;
+  int32 newUsersToday = 4;
+  int32 newUsersThisWeek = 5;
+  int32 newUsersThisMonth = 6;
+}
+
 service AdminService {
   rpc SubmitReport (SubmitReportRequest) returns (SubmitReportResponse);
   rpc GetUserStatus (GetUserStatusRequest) returns (GetUserStatusResponse);
   rpc CreateAuditLog (CreateAuditLogRequest) returns (CreateAuditLogResponse);
+  rpc GetDashboardUserStats (GetDashboardUserStatsRequest) returns (GetDashboardUserStatsResponse);
 }

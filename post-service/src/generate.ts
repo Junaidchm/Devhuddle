@@ -7,7 +7,10 @@ import fs from "fs";
 const protoPath = [];
 protoPath.push(
   path.resolve(__dirname, "../", "protos", "user.proto"),
-  path.resolve(__dirname,"../", "protos", "post.proto")
+  path.resolve(__dirname,"../", "protos", "post.proto"),
+  path.resolve(__dirname,"../", "protos", "admin.proto"),
+  path.resolve(__dirname,"../", "protos", "project.proto"),
+  path.resolve(__dirname,"../", "protos", "chat-stats.proto")
 )
 const outDir = path.resolve(__dirname, "grpc", "generated");
 

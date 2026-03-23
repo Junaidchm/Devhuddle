@@ -108,6 +108,7 @@ export class CommentRepository
         include.other_Comment = {
           where: {
             deletedAt: null,
+            isHidden: false,
             // LinkedIn-style: Only get direct replies to this main comment
             // No nested replies - all replies are flat under main comment
           },
@@ -127,6 +128,7 @@ export class CommentRepository
           postId,
           parentCommentId: null, // Only top-level comments
           deletedAt: null,
+          isHidden: false,
         },
         orderBy: {
           createdAt: "desc",
@@ -153,7 +155,7 @@ export class CommentRepository
   async getReplies(commentId: string, limit: number = 10): Promise<Comment[]> {
     try {
       return await prisma.comment.findMany({
-        where: { parentCommentId: commentId, deletedAt: null },
+        where: { parentCommentId: commentId, deletedAt: null, isHidden: false },
         orderBy: { createdAt: "asc" },
         take: limit,
         include: {
