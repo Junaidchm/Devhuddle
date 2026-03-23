@@ -32,6 +32,7 @@ const AUTH_TIMEOUT = 5000; // 5 seconds
 
 
 export class WebSocketService {
+    private static _instance: WebSocketService | null = null;
     private _wss: Server;
     private _connections: Map<string, Set<AuthenticatedWebSocket>> = new Map();
     private _rooms: Map<string, Set<AuthenticatedWebSocket>> = new Map();
@@ -42,6 +43,7 @@ export class WebSocketService {
         private chatService: ChatService,
         private callRepository: ICallRepository
     ) {
+        WebSocketService._instance = this;
         this._wss = new Server({
             server: _server,
             path: WEBSOCKET_PATH,
@@ -91,6 +93,13 @@ export class WebSocketService {
         this._setupRedisSubscription();
         this._startHeartbeat();
         this._setupGracefulShutdown();
+    }
+
+    public static getInstance(): WebSocketService {
+        if (!WebSocketService._instance) {
+            throw new Error("WebSocketService not initialized");
+        }
+        return WebSocketService._instance;
     }
 
     private _initializeWebSocket() {
@@ -621,17 +630,31 @@ export class WebSocketService {
     }
 
     private _broadcastPresenceUpdate(data: { userId: string, isOnline: boolean, lastSeen?: string }) {
-        const payload = JSON.stringify({
-            type: 'presence_change',
-            data
-        });
+        this.broadcastToAll('presence_change', data);
+    }
 
-        // Broadcast to all active connections
-        this._wss.clients.forEach(client => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(payload);
-            }
-        });
+    /**
+     * Broadcast an event to ALL connected users
+     */
+    public broadcastToAll(event: string, data: any): void {
+        try {
+            const payload = JSON.stringify({
+                type: event,
+                data
+            });
+
+            this._wss.clients.forEach(client => {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(payload);
+                }
+            });
+
+            logger.info(`[WebSocket] Event ${event} broadcasted to all active connections`);
+        } catch (error: any) {
+            logger.error(`[WebSocket] Error broadcasting ${event} to all`, {
+                error: error.message,
+            });
+        }
     }
 
     private _setupGracefulShutdown(): void {

@@ -67,10 +67,6 @@ async function startServer() {
         await getProducer();
         logger.info("✅ Kafka producer initialized");
 
-        // 2b. Start consumers
-        await startAdminConsumer();
-        logger.info("✅ Admin enforcement consumer started");
-
         // 3. Initialize services
         const chatRepository = new ChatRepository();
         
@@ -105,11 +101,15 @@ async function startServer() {
         
         logger.info("✅ REST API routes registered");
 
-        // 5. Initialize WebSocket server
+        // 4. Initialize WebSocket server (earlier so consumers can use it)
         const callRepository = new CallRepository();
         logger.info("Initializing WebSocket server...");
-        new WebSocketService(server, chatService, callRepository);
+        const wsService = new WebSocketService(server, chatService, callRepository);
         logger.info("✅ WebSocket server initialized");
+
+        // 5. Start consumers
+        await startAdminConsumer();
+        logger.info("✅ Admin enforcement consumer started");
 
         // 7. Start HTTP server
         server.listen(Number(PORT), "0.0.0.0", () => {

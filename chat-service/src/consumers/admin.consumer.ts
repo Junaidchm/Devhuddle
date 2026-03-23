@@ -2,6 +2,7 @@ import { Kafka } from "kafkajs";
 import { KAFKA_CONFIG, KAFKA_TOPICS } from "../config/kafka.config";
 import logger from "../utils/logger.util";
 import prisma from "../config/db";
+import { WebSocketService } from "../utils/websocket.util";
 
 const consumers: Map<string, any> = new Map();
 
@@ -109,6 +110,14 @@ async function handleAdminActionEnforced(event: {
           suspendedAt: new Date()
         }
       });
+
+      // ✅ Broadcast to all chat users
+      WebSocketService.getInstance().broadcastToAll("content_removed", {
+        entityId: targetId,
+        entityType: targetType,
+        action,
+        timestamp: Date.now()
+      });
     } else if (targetType === "MESSAGE") {
       logger.info(`Moderation: Hiding message ${targetId}`);
       await prisma.message.update({
@@ -130,6 +139,14 @@ async function handleAdminActionEnforced(event: {
           suspendedAt: new Date()
         }
       });
+
+      // ✅ Broadcast to all chat users
+      WebSocketService.getInstance().broadcastToAll("content_removed", {
+        entityId: targetId,
+        entityType: targetType,
+        action,
+        timestamp: Date.now()
+      });
     }
   } else if (action === "UNHIDE") {
     if (targetType === "HUB") {
@@ -140,6 +157,14 @@ async function handleAdminActionEnforced(event: {
           isSuspended: false,
           suspendedAt: null
         }
+      });
+
+      // ✅ Broadcast to all chat users
+      WebSocketService.getInstance().broadcastToAll("content_restored", {
+        entityId: targetId,
+        entityType: targetType,
+        action,
+        timestamp: Date.now()
       });
     }
   }
