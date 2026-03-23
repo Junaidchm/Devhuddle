@@ -204,6 +204,8 @@ export class ChatRepository extends BaseRepository<
         try {
             return await prisma.conversation.findMany({
                 where: {
+                    isSuspended: false,
+                    deletedAt: null,
                     participants: {
                         some: {
                             userId,
@@ -236,6 +238,8 @@ export class ChatRepository extends BaseRepository<
             // Get conversations with participants and last message
             const conversations = await prisma.conversation.findMany({
                 where: {
+                    isSuspended: false,
+                    deletedAt: null,
                     participants: {
                         some: {
                             userId,

@@ -291,7 +291,7 @@ export class ChatService implements IChatService {
             // Cache miss - get from database
             const conversation = await this._chatRepository.findConversationById(conversationId);
 
-            if (!conversation) {
+            if (!conversation || conversation.isSuspended || conversation.deletedAt) {
                 return null;
             }
 
