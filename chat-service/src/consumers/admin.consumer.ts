@@ -100,73 +100,66 @@ async function handleAdminActionEnforced(event: {
 }) {
   const { action, targetType, targetId, reason } = event;
 
-  if (action === "HIDE" || action === "DELETE") {
-    if (targetType === "HUB") {
-      logger.info(`Moderation: Hiding hub ${targetId}`);
-      await prisma.conversation.update({
-        where: { id: targetId },
-        data: { 
-          isSuspended: true,
-          suspendedAt: new Date()
-        }
-      });
+  if (targetType === "HUB") {
+    // 1. Get conversation with participants for cache invalidation
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: targetId },
+      include: { participants: true }
+    });
 
-      // ✅ Broadcast to all chat users
-      WebSocketService.getInstance().broadcastToAll("content_removed", {
-        entityId: targetId,
-        entityType: targetType,
-        action,
-        timestamp: Date.now()
-      });
-    } else if (targetType === "MESSAGE") {
-      logger.info(`Moderation: Hiding message ${targetId}`);
-      await prisma.message.update({
-        where: { id: targetId },
-        data: { deletedForAll: true }
-      });
-    }
-  } else if (action === "BAN" || action === "SUSPEND") {
-    if (targetType === "USER") {
-      // The auth-service Redis block list enforced by gRPC GetUserStatus will prevent 
-      // new messages from being sent. Historical messages are kept for audit purposes.
-      logger.info(`Chat message restriction enforced for ${action} on user ${targetId} via Redis block list`);
-    } else if (targetType === "HUB" && action === "SUSPEND") {
-      logger.info(`Moderation: Suspending hub ${targetId}`);
-      await prisma.conversation.update({
-        where: { id: targetId },
-        data: { 
-          isSuspended: true,
-          suspendedAt: new Date()
-        }
-      });
+    if (conversation) {
+      // 2. Update DB status
+      if (action === "HIDE" || action === "DELETE" || action === "SUSPEND") {
+        logger.info(`Moderation: Suspending/Hiding hub ${targetId}`);
+        await prisma.conversation.update({
+          where: { id: targetId },
+          data: { 
+            isSuspended: true,
+            suspendedAt: new Date()
+          }
+        });
+      } else if (action === "UNHIDE") {
+        logger.info(`Moderation: Restoring hub ${targetId}`);
+        await prisma.conversation.update({
+          where: { id: targetId },
+          data: { 
+            isSuspended: false,
+            suspendedAt: null
+          }
+        });
+      }
 
-      // ✅ Broadcast to all chat users
-      WebSocketService.getInstance().broadcastToAll("content_removed", {
-        entityId: targetId,
-        entityType: targetType,
-        action,
-        timestamp: Date.now()
-      });
-    }
-  } else if (action === "UNHIDE") {
-    if (targetType === "HUB") {
-      logger.info(`Moderation: Restoring hub ${targetId}`);
-      await prisma.conversation.update({
-        where: { id: targetId },
-        data: { 
-          isSuspended: false,
-          suspendedAt: null
-        }
-      });
+      // 3. Invalidate Redis Caches for ALL participants
+      const RedisCacheService = (await import("../utils/redis-cache.util")).RedisCacheService;
+      
+      // Invalidate individual conversation cache
+      await RedisCacheService.invalidateConversationCache(targetId);
+      
+      // Invalidate metadata list cache for every participant
+      const participantIds = conversation.participants.map(p => p.userId);
+      await Promise.all(participantIds.map(userId => 
+        RedisCacheService.invalidateUserConversationsMetadataCache(userId)
+      ));
 
-      // ✅ Broadcast to all chat users
-      WebSocketService.getInstance().broadcastToAll("content_restored", {
+      logger.info(`Moderation: Invalidated caches for ${participantIds.length} participants of hub ${targetId}`);
+
+      // 4. Broadcast via WebSocket
+      const eventType = (action === "UNHIDE") ? "content_restored" : "content_removed";
+      WebSocketService.getInstance().broadcastToAll(eventType, {
         entityId: targetId,
         entityType: targetType,
         action,
         timestamp: Date.now()
       });
     }
+  } else if (targetType === "MESSAGE" && (action === "HIDE" || action === "DELETE")) {
+    logger.info(`Moderation: Hiding message ${targetId}`);
+    await prisma.message.update({
+      where: { id: targetId },
+      data: { deletedForAll: true }
+    });
+  } else if (targetType === "USER" && (action === "BAN" || action === "SUSPEND")) {
+    logger.info(`Chat message restriction enforced for ${action} on user ${targetId} via Redis block list`);
   }
 }
 

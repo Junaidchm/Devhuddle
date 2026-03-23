@@ -112,7 +112,9 @@ export class ChatRepository extends BaseRepository<
         try {
             return await prisma.conversation.findUnique({
                 where: {
-                    id: conversationId
+                    id: conversationId,
+                    isSuspended: false,
+                    deletedAt: null
                 },
                 include: {
                     participants: true
