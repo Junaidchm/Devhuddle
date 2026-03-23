@@ -129,20 +129,27 @@ export class AdminService implements IAdminService {
           suspendedAt: suspend ? new Date() : null
       });
 
-      // Emit Kafka notification to hub owner
-      if (hub?.ownerId) {
+      // Emit Kafka notification to all hub participants
+      const conversation = await this._chatRepository.findConversationById(hubId);
+      if (conversation?.participants) {
         const { publishEvent } = await import("../../utils/kafka.util");
         const { KAFKA_TOPICS } = await import("../../config/kafka.config");
-        await publishEvent(KAFKA_TOPICS.ADMIN_ACTION_ENFORCED, {
-          targetId: hubId,
-          targetType: "HUB",
-          ownerId: hub.ownerId,
-          action: suspend ? "HIDE" : "UNHIDE",
-          reason: reason || (suspend ? "Hub suspended by admin" : "Hub restored by admin"),
-          adminId: adminId || "system",
-          timestamp: new Date().toISOString(),
-          version: Date.now(),
-        });
+        
+        // Notify every participant individually
+        await Promise.all(
+          conversation.participants.map(async (participant) => {
+            await publishEvent(KAFKA_TOPICS.ADMIN_ACTION_ENFORCED, {
+              targetId: hubId,
+              targetType: "HUB",
+              ownerId: participant.userId, // This is the recipient of the notification
+              action: suspend ? "HIDE" : "UNHIDE",
+              reason: reason || (suspend ? "Hub suspended by admin" : "Hub restored by admin"),
+              adminId: adminId || "system",
+              timestamp: new Date().toISOString(),
+              version: Date.now(),
+            });
+          })
+        );
 
         // Audit the action in auth-service
         try {
@@ -152,7 +159,7 @@ export class AdminService implements IAdminService {
             targetType: "HUB",
             targetId: hubId,
             reason: reason || (suspend ? "Hub suspended by admin" : "Hub restored by admin"),
-            metadata: JSON.stringify({ ownerId: hub.ownerId }),
+            metadata: JSON.stringify({ ownerId: conversation.ownerId }),
           });
         } catch (auditError) {
           logger.error("Failed to create audit log for hub suspend/restore", { error: auditError });
@@ -175,20 +182,26 @@ export class AdminService implements IAdminService {
           deletedAt: new Date()
       });
 
-      // Emit Kafka notification to hub owner
-      if (hub?.ownerId) {
+      // Emit Kafka notification to all hub participants
+      const conversation = await this._chatRepository.findConversationById(hubId);
+      if (conversation?.participants) {
         const { publishEvent } = await import("../../utils/kafka.util");
         const { KAFKA_TOPICS } = await import("../../config/kafka.config");
-        await publishEvent(KAFKA_TOPICS.ADMIN_ACTION_ENFORCED, {
-          targetId: hubId,
-          targetType: "HUB",
-          ownerId: hub.ownerId,
-          action: "DELETE",
-          reason: "Hub permanently removed by admin",
-          adminId: adminId || "system",
-          timestamp: new Date().toISOString(),
-          version: Date.now(),
-        });
+        
+        await Promise.all(
+          conversation.participants.map(async (participant) => {
+            await publishEvent(KAFKA_TOPICS.ADMIN_ACTION_ENFORCED, {
+              targetId: hubId,
+              targetType: "HUB",
+              ownerId: participant.userId,
+              action: "DELETE",
+              reason: "Hub permanently removed by admin",
+              adminId: adminId || "system",
+              timestamp: new Date().toISOString(),
+              version: Date.now(),
+            });
+          })
+        );
       }
     } catch (error: unknown) {
       logger.error("AdminService.deleteHub Error", { error });
