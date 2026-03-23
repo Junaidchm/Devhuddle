@@ -321,6 +321,35 @@ export class WebSocketService {
   }
 
   /**
+   * Broadcast an event to ALL connected users
+   */
+  async broadcastToAll(event: string, data: any): Promise<void> {
+    try {
+      const serializedData = this.serializeBigInt(data);
+      const message = JSON.stringify({
+        type: event,
+        data: serializedData,
+      });
+
+      let sentCount = 0;
+      this.wss.clients.forEach((ws: AuthenticatedWebSocket) => {
+        if (ws.readyState === ws.OPEN) {
+          ws.send(message);
+          sentCount++;
+        }
+      });
+
+      logger.info(
+        `Event ${event} broadcasted to all (${sentCount}) connections`
+      );
+    } catch (error: any) {
+      logger.error(`Error broadcasting ${event} to all`, {
+        error: error.message,
+      });
+    }
+  }
+
+  /**
    * Broadcast message to a specific room (e.g., a post, project, or hub)
    */
   async broadcastToRoom(

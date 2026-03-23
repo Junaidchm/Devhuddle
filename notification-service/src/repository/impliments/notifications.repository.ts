@@ -1585,7 +1585,10 @@ export class NotificationsRepository
       type === NotificationType.HUB_JOIN_REJECTED
     );
 
-    const suffix = isHubAction ? "" : " you";
+    const isModerationAction = type === NotificationType.CONTENT_HIDDEN;
+
+    // ✅ Don't add " you" for hub actions or admin moderation actions
+    const suffix = (isHubAction || isModerationAction) ? "" : " you";
 
     if (count === 1) {
       return `${firstName} ${action}${suffix}`;
@@ -1685,7 +1688,21 @@ export class NotificationsRepository
         return metadata?.hubName ? `rejected your request to join ${metadata.hubName}` : "rejected your request to join the hub";
 
       case NotificationType.CONTENT_HIDDEN:
-        return "hidden"; // This will be handled specifically in the summary if needed
+        const action = metadata?.action || "hidden";
+        const reason = metadata?.reason;
+        const eType = (metadata?.entityType || entityType || "content").toLowerCase();
+        
+        const verb = action === "HIDE" ? "hid" 
+                   : action === "DELETE" ? "deleted"
+                   : action === "BAN" ? "banned"
+                   : action === "SUSPEND" ? "suspended"
+                   : "restored";
+        
+        const actionTarget = action === "BAN" || (action === "SUSPEND" && eType === "user") 
+                           ? "your account" 
+                           : `your ${eType === 'conversation' ? 'hub' : eType}`;
+        
+        return `${verb} ${actionTarget}${reason ? ' due to: ' + reason : ''}`;
         
       default:
         return "interacted with your content";
@@ -1766,10 +1783,13 @@ export class NotificationsRepository
   ): Promise<void> {
     const isHub = entityType === "HUB" || entityType === "CONVERSATION";
     const contentLabel = isHub ? "hub" : entityType.toLowerCase();
-    const actionVerb = action === "HIDE" ? `hid your ${contentLabel}` 
-                     : action === "DELETE" ? `deleted your ${contentLabel}`
-                     : action === "BAN" ? "banned your account"
-                     : action === "SUSPEND" ? (isHub ? "suspended your hub" : "suspended your account")
+    
+    // ✅ Include reason in the notification text
+    const reasonSuffix = reason ? ` due to: ${reason}` : "";
+    const actionVerb = action === "HIDE" ? `hid your ${contentLabel}${reasonSuffix}` 
+                     : action === "DELETE" ? `deleted your ${contentLabel}${reasonSuffix}`
+                     : action === "BAN" ? `banned your account${reasonSuffix}`
+                     : action === "SUSPEND" ? (isHub ? `suspended your hub${reasonSuffix}` : `suspended your account${reasonSuffix}`)
                      : `restored your ${contentLabel}`;
     
     // Use a composite entityId so each unique action creates its OWN notification record.
@@ -1794,6 +1814,24 @@ export class NotificationsRepository
       entityId, // contextId = real entity ID so frontend can navigate
       { action, reason, entityType }
     );
+
+    // ✅ Broadcast "content_removed" to ALL users for real-time UI update (LinkedIn/Instagram style)
+    if (action === "HIDE" || action === "DELETE" || action === "SUSPEND") {
+      this.wsService?.broadcastToAll("content_removed", {
+        entityId,
+        entityType,
+        action,
+        timestamp: Date.now()
+      });
+    } else if (action === "UNHIDE") {
+       // Optional: could broadcast "content_restored" if we want it to reappear in real-time
+       this.wsService?.broadcastToAll("content_restored", {
+        entityId,
+        entityType,
+        action,
+        timestamp: Date.now()
+      });
+    }
   }
 
   async deleteUserNotifications(userId: string): Promise<void> {
