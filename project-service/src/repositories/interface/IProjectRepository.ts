@@ -14,6 +14,7 @@ export interface SearchFilters {
   techStack?: string[];
   tags?: string[];
   limit?: number;
+  skip?: number;
   status?: string;
 }
 
