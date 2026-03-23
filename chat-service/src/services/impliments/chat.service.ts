@@ -261,7 +261,9 @@ export class ChatService implements IChatService {
                         // ✅ FIX: Fallback to username if name is missing/empty
                         // This prevents "Unknown User" when we have a valid username
                         name: profile?.name || profile?.username || 'Unknown User',
-                        profilePhoto: profile?.profilePhoto || null
+                        profilePhoto: profile?.profilePhoto || null,
+                        isOnline: profile?.isOnline || false,
+                        lastSeen: profile?.lastSeen || ""
                     };
                 }),
                 lastMessage: null,
@@ -451,7 +453,9 @@ export class ChatService implements IChatService {
                             profilePhoto: profile?.profilePhoto || null,
                             // ✅ CRITICAL FIX: Include role field from participant record
                             role: p.role as 'ADMIN' | 'MEMBER',
-                            joinedAt: p.joinedAt instanceof Date ? p.joinedAt.toISOString() : (p.joinedAt as any)
+                            joinedAt: p.joinedAt instanceof Date ? p.joinedAt.toISOString() : (p.joinedAt as any),
+                            isOnline: profile?.isOnline || false,
+                            lastSeen: profile?.lastSeen || ""
                         };
                     }),
                     lastMessage: conv.lastMessage ? {
@@ -793,7 +797,9 @@ export class ChatService implements IChatService {
                         name: profile?.name || profile?.username || `User ${p.userId.slice(0, 8)}`,
                         profilePhoto: profile?.profilePhoto || null,
                         role: p.role as 'ADMIN' | 'MEMBER',
-                        joinedAt: p.joinedAt instanceof Date ? p.joinedAt.toISOString() : (p.joinedAt as any)
+                        joinedAt: p.joinedAt instanceof Date ? p.joinedAt.toISOString() : (p.joinedAt as any),
+                        isOnline: profile?.isOnline || false,
+                        lastSeen: profile?.lastSeen || ""
                     };
                 }),
                 lastMessage: null, // Will fetch separately below

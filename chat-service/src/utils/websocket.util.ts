@@ -689,6 +689,17 @@ export class WebSocketService {
             }
         }
         
+        // If this is the first connection, mark as online in Redis and broadcast
+        if (userConnections.size === 0) {
+            try {
+                await redisPublisher.set(`user:${userId}:online`, 'true');
+                await redisPublisher.publish('presence:change', JSON.stringify({ userId, isOnline: true }));
+                logger.info(`[WebSocket] User ${userId} marked as ONLINE`);
+            } catch (err) {
+                logger.error("Failed to set online status in Redis", { userId, error: (err as Error).message });
+            }
+        }
+
         userConnections.add(ws);
         logger.info(`[WebSocket] Registry updated for user ${userId}. Connections: ${userConnections.size}`);
 
