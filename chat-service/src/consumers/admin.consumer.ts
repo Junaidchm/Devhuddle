@@ -109,7 +109,7 @@ async function handleAdminActionEnforced(event: {
 
     if (conversation) {
       // 2. Update DB status
-      if (action === "HIDE" || action === "DELETE" || action === "SUSPEND") {
+      if (action === "HIDE" || action === "SUSPEND") {
         logger.info(`Moderation: Suspending/Hiding hub ${targetId}`);
         await prisma.conversation.update({
           where: { id: targetId },
@@ -117,6 +117,12 @@ async function handleAdminActionEnforced(event: {
             isSuspended: true,
             suspendedAt: new Date()
           }
+        });
+      } else if (action === "DELETE") {
+        logger.info(`Moderation: Deleting hub ${targetId}`);
+        await prisma.conversation.update({
+          where: { id: targetId },
+          data: { deletedAt: new Date() }
         });
       } else if (action === "UNHIDE") {
         logger.info(`Moderation: Restoring hub ${targetId}`);
@@ -143,14 +149,30 @@ async function handleAdminActionEnforced(event: {
 
       logger.info(`Moderation: Invalidated caches for ${participantIds.length} participants of hub ${targetId}`);
 
-      // 4. Broadcast via WebSocket
-      const eventType = (action === "UNHIDE") ? "content_restored" : "content_removed";
-      WebSocketService.getInstance().broadcastToAll(eventType, {
-        entityId: targetId,
-        entityType: targetType,
-        action,
-        timestamp: Date.now()
-      });
+      // 4. Broadcast via WebSocket to all connected participants
+      //    ✅ FIX: Emit the exact event names the frontend listens for.
+      //    Frontend (chat/page.tsx) listens for 'hub_suspended' and 'hub_deleted',
+      //    NOT the generic 'content_removed'/'content_restored' that was previously used.
+      if (action === "DELETE") {
+        WebSocketService.getInstance().broadcastToAll("hub_deleted", {
+          conversationId: targetId,
+          timestamp: Date.now()
+        });
+      } else if (action === "HIDE" || action === "SUSPEND") {
+        // Suspend (both HIDE and SUSPEND mean the same thing)
+        WebSocketService.getInstance().broadcastToAll("hub_suspended", {
+          conversationId: targetId,
+          isSuspended: true,
+          timestamp: Date.now()
+        });
+      } else if (action === "UNHIDE") {
+        // Restore
+        WebSocketService.getInstance().broadcastToAll("hub_suspended", {
+          conversationId: targetId,
+          isSuspended: false,
+          timestamp: Date.now()
+        });
+      }
     }
   } else if (targetType === "MESSAGE" && (action === "HIDE" || action === "DELETE")) {
     logger.info(`Moderation: Hiding message ${targetId}`);

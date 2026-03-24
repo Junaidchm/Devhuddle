@@ -121,16 +121,17 @@ export class AdminService implements IAdminService {
 
   async suspendHub(hubId: string, suspend: boolean, reason?: string, adminId?: string): Promise<Conversation> {
     try {
-      // Fetch hub first to get ownerId
-      const hub = await this._chatRepository.findHubByIdWithReportCount(hubId);
-      
+      // ✅ FIX: Fetch participants BEFORE updating DB.
+      // findConversationById filters isSuspended=false, which would return null after suspending.
+      // findConversationByIdRaw has no such filter, so it works for both suspend and restore.
+      const conversation = await this._chatRepository.findConversationByIdRaw(hubId);
+
       const result = await this._chatRepository.updateConversation(hubId, {
           isSuspended: suspend,
           suspendedAt: suspend ? new Date() : null
       });
 
       // Emit Kafka notification to all hub participants
-      const conversation = await this._chatRepository.findConversationById(hubId);
       if (conversation?.participants) {
         const { publishEvent } = await import("../../utils/kafka.util");
         const { KAFKA_TOPICS } = await import("../../config/kafka.config");
@@ -175,15 +176,15 @@ export class AdminService implements IAdminService {
 
   async deleteHub(hubId: string, adminId?: string): Promise<void> {
     try {
-      // Fetch hub first to get ownerId
-      const hub = await this._chatRepository.findHubByIdWithReportCount(hubId);
-      
+      // ✅ FIX: Fetch participants BEFORE updating DB.
+      // findConversationByIdRaw has no isSuspended/deletedAt filter, so it always returns the hub.
+      const conversation = await this._chatRepository.findConversationByIdRaw(hubId);
+
       await this._chatRepository.updateConversation(hubId, {
           deletedAt: new Date()
       });
 
       // Emit Kafka notification to all hub participants
-      const conversation = await this._chatRepository.findConversationById(hubId);
       if (conversation?.participants) {
         const { publishEvent } = await import("../../utils/kafka.util");
         const { KAFKA_TOPICS } = await import("../../config/kafka.config");

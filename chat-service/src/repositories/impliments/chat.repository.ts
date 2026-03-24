@@ -126,6 +126,22 @@ export class ChatRepository extends BaseRepository<
         }
     }
 
+    /**
+     * Finds a conversation by ID with NO filters on isSuspended/deletedAt.
+     * Use ONLY in admin/internal contexts where the hub may already be suspended or deleted.
+     */
+    async findConversationByIdRaw(conversationId: string): Promise<(Conversation & { participants: Participant[] }) | null> {
+        try {
+            return await prisma.conversation.findUnique({
+                where: { id: conversationId },
+                include: { participants: true }
+            }) as (Conversation & { participants: Participant[] }) | null;
+        } catch (error) {
+            logger.error("Error finding conversation by id (raw)", { error: (error as Error).message });
+            throw new Error("Database error");
+        }
+    }
+
     async findOrCreateConversation(participantIds: string[]): Promise<Conversation & { participants: Participant[] }> {
         try {
             logger.info("👉 [DEBUG] findOrCreateConversation", { participantIds });

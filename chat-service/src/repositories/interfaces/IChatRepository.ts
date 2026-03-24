@@ -28,6 +28,9 @@ export interface IChatRepository {
   
   findConversationById(conversationId: string): Promise<(Conversation & { participants: Participant[] }) | null>;
 
+  // Find a conversation by ID without isSuspended/deletedAt filters — for internal admin use only
+  findConversationByIdRaw(conversationId: string): Promise<(Conversation & { participants: Participant[] }) | null>;
+
   // Find existing conversation between users, or create new one
   findOrCreateConversation(participantIds: string[]): Promise<Conversation & { participants: Participant[] }>;
 
