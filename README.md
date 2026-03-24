@@ -468,5 +468,5 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ---
 
-**Built with ❤️ using modern technologies and best practices**
+**Built with ❤️ using modern technologies and best practices--**
 
