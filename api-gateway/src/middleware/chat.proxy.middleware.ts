@@ -31,10 +31,8 @@ export const chatServiceProxy = createProxyMiddleware(
       proxyReq.setHeader("x-user-data", JSON.stringify(userData));
     }
     
-    // Forward Authorization header
-    if (req.headers["authorization"]) {
-      proxyReq.setHeader("authorization", req.headers["authorization"] as string);
-    }
+    // Proxy shield: Authorization header intentionally stripped to enforce Zero-Trust architecture downstrea
+    // Internal services MUST rely on x-user-data.
     
     // CRITICAL: Handle request body for POST/PUT/PATCH requests
     if (req.method !== "GET" && req.method !== "HEAD" && req.body) {

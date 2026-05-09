@@ -29,10 +29,8 @@ export const notificationServiceProxy = createProxyMiddleware(
       proxyReq.setHeader("x-user-data", JSON.stringify(userData));
     }
     
-    // Forward Authorization header
-    if (req.headers["authorization"]) {
-      proxyReq.setHeader("authorization", req.headers["authorization"] as string);
-    }
+    // Proxy shield: Authorization header intentionally stripped to enforce Zero-Trust architecture downstream
+    // Internal services MUST rely on x-user-data.
 
     // CRITICAL: Handle request body for POST/PUT/PATCH requests
     // When Express.json() parses the body, it consumes the request stream
